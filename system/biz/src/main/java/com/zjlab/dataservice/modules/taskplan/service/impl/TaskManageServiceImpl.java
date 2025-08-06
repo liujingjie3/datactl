@@ -13,12 +13,14 @@ import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.modules.taskplan.mapper.TaskManageMapper;
 import com.zjlab.dataservice.modules.taskplan.model.dto.TaskAddDto;
 import com.zjlab.dataservice.modules.taskplan.model.dto.TaskListDto;
-import com.zjlab.dataservice.modules.taskplan.model.po.PreplanDataPo;
 import com.zjlab.dataservice.modules.taskplan.model.po.TaskManagePo;
 import com.zjlab.dataservice.modules.taskplan.model.vo.*;
+import com.zjlab.dataservice.modules.taskplan.service.OrbitPlanService;
+import com.zjlab.dataservice.modules.taskplan.service.RemoteCommandService;
 import com.zjlab.dataservice.modules.taskplan.service.TaskManageService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpEntity;
@@ -45,6 +47,11 @@ public class TaskManageServiceImpl extends ServiceImpl<TaskManageMapper, TaskMan
     private static final Integer failure = 3;    //失败
     private static final Integer success = 2;    //成功
 
+    @Autowired
+    private RemoteCommandService remoteCommandService;
+
+    @Autowired
+    private OrbitPlanService orbitPlanService;
 
 
     @Override
@@ -62,6 +69,11 @@ public class TaskManageServiceImpl extends ServiceImpl<TaskManageMapper, TaskMan
         if (num <= 0) {
             throw new BaseException(ResultCode.SQL_UPDATE_ERROR);
         }
+
+        // 自动匹配遥控指令并生成轨道计划
+        List<String> commands = remoteCommandService.matchCommands(taskManagePo);
+        orbitPlanService.generateOrbitPlan(taskManagePo, commands);
+
         return taskManagePo.getId();
     }
 
@@ -89,6 +101,8 @@ public class TaskManageServiceImpl extends ServiceImpl<TaskManageMapper, TaskMan
                     .imageArea(TaskManagePo.getImageArea())
                     .geom(TaskManagePo.getGeom())
                     .preplanGeom(TaskManagePo.getPreplanGeom())
+                    .taskType(TaskManagePo.getTaskType())
+                    .needPhoto(TaskManagePo.getNeedPhoto())
                     .level(TaskManagePo.getLevel())
                     .satelliteInfo(TaskManagePo.getSatelliteInfo())
                     .build();

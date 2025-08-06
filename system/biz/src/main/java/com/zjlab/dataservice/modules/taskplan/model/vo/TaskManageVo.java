@@ -73,6 +73,18 @@ public class TaskManageVo {
     private String preplanGeom;
 
     private String imageArea;
+
+    /**
+     * 任务类型
+     */
+    @ApiModelProperty("任务类型")
+    private String taskType;
+
+    /**
+     * 是否需要拍照
+     */
+    @ApiModelProperty("是否需要拍照")
+    private Boolean needPhoto;
     /**
      * 成像起始时间
      */
