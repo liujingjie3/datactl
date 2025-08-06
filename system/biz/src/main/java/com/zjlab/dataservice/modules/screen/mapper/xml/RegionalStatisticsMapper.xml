@@ -1,0 +1,604 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.screen.mapper.RegionalStatisticsMapper">
+
+    <delete id="truncateTable">
+        TRUNCATE regional_statistics;
+    </delete>
+    <insert id="insertTotalProvinceGF2">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            p.pr_adcode AS region_code,
+            ST_Area(p.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF2' AS image_type,
+            'total' AS year,       -- 固定填入 'total'
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            province p
+            JOIN
+            metadata_gf m ON m.region_code = p.pr_adcode          -- 使用 region_code 直接关联
+        GROUP BY
+            p.pr_adcode, p.geom; -- 仅按省份分组
+    </insert>
+    <insert id="insertTotalProvinceGF3">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            p.pr_adcode AS region_code,
+            ST_Area(p.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF3' AS image_type,
+            'total' AS year,       -- 固定填入 'total'
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            province p
+            JOIN
+            metadata_gf3 m ON m.region_code = p.pr_adcode          -- 使用 region_code 直接关联
+        GROUP BY
+            p.pr_adcode, p.geom; -- 仅按省份分组
+    </insert>
+    <insert id="insertTotalCityGF2">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,                -- 固定填入 'total'
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            c.ct_adcode AS region_code,
+            ST_Area(c.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF2' AS image_type,
+            'total' AS year,       -- 固定填入 'total'
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            city c
+            JOIN
+            metadata_gf m ON m.city_code = c.ct_adcode          -- 使用 city_code 直接关联
+        GROUP BY
+            c.ct_adcode, c.geom -- 按市分组
+        ON CONFLICT (region_code, image_type, year) DO NOTHING;
+    </insert>
+    <insert id="insertTotalCityGF3">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,                -- 固定填入 'total'
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            c.ct_adcode AS region_code,
+            ST_Area(c.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF3' AS image_type,
+            'total' AS year,       -- 固定填入 'total'
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            city c
+            JOIN
+            metadata_gf3 m ON m.city_code = c.ct_adcode          -- 使用 city_code 直接关联
+        GROUP BY
+            c.ct_adcode, c.geom -- 按市分组
+        ON CONFLICT (region_code, image_type, year) DO NOTHING;
+    </insert>
+    <insert id="insertProvinceGF2">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,                -- 新增年份字段
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            p.pr_adcode AS region_code,
+            ST_Area(p.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF2',
+            EXTRACT(YEAR FROM m.receive_time) AS year,       -- 按年份统计
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            province p
+            JOIN
+            metadata_gf m ON m.region_code = p.pr_adcode          -- 使用 region_code 直接关联
+        GROUP BY
+            p.pr_adcode, year, p.geom; -- 按省份和年份分组
+    </insert>
+    <insert id="insertProvinceGF3">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,                -- 新增年份字段
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            p.pr_adcode AS region_code,
+            ST_Area(p.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF3',
+            EXTRACT(YEAR FROM m.receive_time) AS year,       -- 按年份统计
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            province p
+            JOIN
+            metadata_gf3 m ON m.region_code = p.pr_adcode          -- 使用 region_code 直接关联
+        GROUP BY
+            p.pr_adcode, year, p.geom; -- 按省份和年份分组
+    </insert>
+    <insert id="insertCityGF2">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,                -- 新增年份字段
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            c.ct_adcode AS region_code,
+            ST_Area(c.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF2',
+            EXTRACT(YEAR FROM m.receive_time) AS year,       -- 按年份统计
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            city c
+            JOIN
+            metadata_gf m ON m.city_code = c.ct_adcode          -- 使用 region_code 直接关联
+        GROUP BY
+            c.ct_adcode, year, c.geom -- 按市和年份分组
+        ON CONFLICT (region_code, image_type, year) DO NOTHING;
+    </insert>
+    <insert id="insertCityGF3">
+        INSERT INTO regional_statistics(
+            region_code,
+            region_area,
+            image_type,
+            year,                -- 新增年份字段
+            deleted,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        )
+        SELECT
+            c.ct_adcode AS region_code,
+            ST_Area(c.geom::geography) / 1000000 AS region_area, -- 计算区域面积（平方公里）
+            'GF3',
+            EXTRACT(YEAR FROM m.receive_time) AS year,       -- 按年份统计
+            FALSE AS deleted,
+            1 AS create_by,
+            CURRENT_TIMESTAMP AS create_time,
+            1 AS update_by,
+            CURRENT_TIMESTAMP AS update_time
+        FROM
+            city c
+            JOIN
+            metadata_gf3 m ON m.city_code = c.ct_adcode          -- 使用 region_code 直接关联
+        GROUP BY
+            c.ct_adcode, year, c.geom -- 按市和年份分组
+        ON CONFLICT (region_code, image_type, year) DO NOTHING;
+    </insert>
+    <update id="updateCoverageAreaProvinceGF2">
+        WITH gf2_data AS (
+            SELECT
+                region_code,
+                EXTRACT(YEAR FROM receive_time) AS year,
+            geom
+        FROM
+            metadata_gf
+            ),
+            combined_data AS (
+        SELECT
+            region_code,
+            year,
+            ST_Union(geom) AS combined_union_geom  -- 只计算 GF2 数据的并集
+        FROM
+            gf2_data
+        GROUP BY
+            region_code, year
+            ),
+            final_coverage AS (
+        SELECT
+            p.pr_adcode AS region_code,
+            c.year,
+            ST_Area(ST_Intersection(c.combined_union_geom, p.geom)::geography) / 1000000 AS coverage_area  -- 计算与省份区域的交集面积
+        FROM
+            combined_data c
+            JOIN
+            province p ON c.region_code = p.pr_adcode
+            )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area,
+        fc.year
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF2'     -- 根据类型过滤，仅统计 GF2 数据
+          AND rs.year = fc.year::text;        -- 根据年份过滤，将 fc.year 转换为字符串
+    </update>
+    <update id="updateCoverageAreaProvinceGF3">
+        WITH gf3_data AS (
+            SELECT
+                region_code,
+                EXTRACT(YEAR FROM receive_time) AS year,
+            geom
+        FROM
+            metadata_gf3
+            ),
+            combined_data AS (
+        SELECT
+            region_code,
+            year,
+            ST_Union(geom) AS combined_union_geom  -- 只计算 GF3 数据的并集
+        FROM
+            gf3_data
+        GROUP BY
+            region_code, year
+            ),
+            final_coverage AS (
+        SELECT
+            p.pr_adcode AS region_code,
+            c.year,
+            ST_Area(ST_Intersection(c.combined_union_geom, p.geom)::geography) / 1000000 AS coverage_area  -- 计算与省份区域的交集面积
+        FROM
+            combined_data c
+            JOIN
+            province p ON c.region_code = p.pr_adcode
+            )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area,
+        fc.year
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF3'     -- 根据类型过滤，仅统计 GF3 数据
+          AND rs.year = fc.year::text;        -- 根据年份过滤，将 fc.year 转换为字符串
+    </update>
+    <update id="updateTotalCoverageAreaProvinceGF2">
+        WITH gf2_data AS (
+            SELECT
+                region_code,
+                geom
+            FROM
+                metadata_gf
+        ),
+             combined_data AS (
+                 SELECT
+                     region_code,
+                     ST_Union(geom) AS combined_union_geom  -- 计算 GF2 数据的并集（所有年份）
+                 FROM
+                     gf2_data
+                 GROUP BY
+                     region_code
+             ),
+             final_coverage AS (
+                 SELECT
+                     p.pr_adcode AS region_code,
+                     ST_Area(ST_Intersection(c.combined_union_geom, p.geom)::geography) / 1000000 AS coverage_area  -- 计算与省份区域的交集面积
+                 FROM
+                     combined_data c
+                         JOIN
+                     province p ON c.region_code = p.pr_adcode
+             )
+            UPDATE regional_statistics rs
+            SET
+                coverage_area = fc.coverage_area,  -- 更新区域面积
+                update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+                FROM (
+            SELECT
+                fc.region_code,
+                fc.coverage_area
+            FROM
+                final_coverage fc
+            ) AS fc
+            WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF2'     -- 根据类型过滤，仅统计 GF2 数据
+          AND rs.year = 'total';        -- 固定年份为 'total'
+    </update>
+    <update id="updateTotalCoverageAreaProvinceGF3">
+        WITH gf3_data AS (
+            SELECT
+                region_code,
+                geom
+            FROM
+                metadata_gf3
+        ),
+             combined_data AS (
+                 SELECT
+                     region_code,
+                     ST_Union(geom) AS combined_union_geom  -- 计算 GF2 数据的并集（所有年份）
+                 FROM
+                     gf3_data
+                 GROUP BY
+                     region_code
+             ),
+             final_coverage AS (
+                 SELECT
+                     p.pr_adcode AS region_code,
+                     ST_Area(ST_Intersection(c.combined_union_geom, p.geom)::geography) / 1000000 AS coverage_area  -- 计算与省份区域的交集面积
+                 FROM
+                     combined_data c
+                         JOIN
+                     province p ON c.region_code = p.pr_adcode
+             )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF3'     -- 根据类型过滤，仅统计 GF3 数据
+          AND rs.year = 'total';        -- 固定年份为 'total'
+    </update>
+    <update id="updateCoverageAreaCityGF2">
+        WITH gf2_data AS (
+            SELECT
+                city_code,
+                EXTRACT(YEAR FROM receive_time) AS year,
+            geom
+        FROM
+            metadata_gf
+            ),
+            combined_data AS (
+        SELECT
+            city_code,
+            year,
+            ST_Union(geom) AS combined_union_geom  -- 计算 GF2 数据的并集
+        FROM
+            gf2_data
+        GROUP BY
+            city_code, year
+            ),
+            final_coverage AS (
+        SELECT
+            c.ct_adcode AS region_code,
+            cd.year,
+            ST_Area(ST_Intersection(cd.combined_union_geom, c.geom)::geography) / 1000000 AS coverage_area  -- 计算与省份区域的交集面积
+        FROM
+            combined_data cd
+            JOIN
+            city c ON cd.city_code = c.ct_adcode
+            )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area,
+        fc.year
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF2'     -- 将类型过滤为 GF2
+          AND rs.year = fc.year::text;       -- 根据年份过滤, 将 fc.year 转换为字符串
+    </update>
+    <update id="updateCoverageAreaCityGF3">
+        WITH gf3_data AS (
+            SELECT
+                city_code,
+                EXTRACT(YEAR FROM receive_time) AS year,
+            geom
+        FROM
+            metadata_gf3
+            ),
+            combined_data AS (
+        SELECT
+            city_code,
+            year,
+            ST_Union(geom) AS combined_union_geom  -- 计算 GF3 数据的并集
+        FROM
+            gf3_data
+        GROUP BY
+            city_code, year
+            ),
+            final_coverage AS (
+        SELECT
+            c.ct_adcode AS region_code,
+            cd.year,
+            ST_Area(ST_Intersection(cd.combined_union_geom, c.geom)::geography) / 1000000 AS coverage_area  -- 计算与省份区域的交集面积
+        FROM
+            combined_data cd
+            JOIN
+            city c ON cd.city_code = c.ct_adcode
+            )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area,
+        fc.year
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF3'     -- 将类型过滤为 GF3
+          AND rs.year = fc.year::text;       -- 根据年份过滤, 将 fc.year 转换为字符串
+    </update>
+    <update id="updateTotalCoverageAreaCityGF2">
+        WITH gf2_data AS (
+            SELECT
+                city_code AS region_code,
+                geom
+            FROM
+                metadata_gf
+        ),
+             combined_data AS (
+                 SELECT
+                     region_code,
+                     ST_Union(geom) AS combined_union_geom  -- 计算 GF2 数据的并集（所有年份）
+                 FROM
+                     gf2_data
+                 GROUP BY
+                     region_code
+             ),
+             final_coverage AS (
+                 SELECT
+                     c.ct_adcode AS region_code,
+                     ST_Area(ST_Intersection(cd.combined_union_geom, c.geom)::geography) / 1000000 AS coverage_area  -- 计算与市级区域的交集面积
+                 FROM
+                     combined_data cd
+                         JOIN
+                     city c ON cd.region_code = c.ct_adcode
+             )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF2'     -- 根据类型过滤，仅统计 GF2 数据
+          AND rs.year = 'total';        -- 固定年份为 'total'
+    </update>
+    <update id="updateTotalCoverageAreaCityGF3">
+        WITH gf3_data AS (
+            SELECT
+                city_code AS region_code,
+                geom
+            FROM
+                metadata_gf3
+        ),
+             combined_data AS (
+                 SELECT
+                     region_code,
+                     ST_Union(geom) AS combined_union_geom  -- 计算 GF3 数据的并集（所有年份）
+                 FROM
+                     gf3_data
+                 GROUP BY
+                     region_code
+             ),
+             final_coverage AS (
+                 SELECT
+                     c.ct_adcode AS region_code,
+                     ST_Area(ST_Intersection(cd.combined_union_geom, c.geom)::geography) / 1000000 AS coverage_area  -- 计算与市级区域的交集面积
+                 FROM
+                     combined_data cd
+                         JOIN
+                     city c ON cd.region_code = c.ct_adcode
+             )
+        UPDATE regional_statistics rs
+        SET
+            coverage_area = fc.coverage_area,  -- 更新区域面积
+            update_time = CURRENT_TIMESTAMP    -- 更新修改时间
+            FROM (
+    SELECT
+        fc.region_code,
+        fc.coverage_area
+    FROM
+        final_coverage fc
+) AS fc
+        WHERE
+            rs.region_code = fc.region_code
+          AND rs.image_type = 'GF3'     -- 根据类型过滤，仅统计 GF3 数据
+          AND rs.year = 'total';        -- 固定年份为 'total'
+    </update>
+    <update id="calculateCoverageRate">
+        UPDATE regional_statistics rs
+        SET coverage_rate =
+                CASE
+                    WHEN region_area > 0 THEN ROUND((coverage_area / region_area) * 100)  -- 计算覆盖率并保留整数
+                    ELSE 0  -- 或者根据需求返回 NULL
+                    END;
+    </update>
+</mapper>

@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.tc.mapper.TodoTaskMapper">
+
+    <select id="selectTodoTaskPage" resultType="com.zjlab.dataservice.modules.tc.model.dto.TodoTaskDto">
+        SELECT
+        id,
+        code,
+        task_id,
+        instance_code,
+        to_user_id,
+        flag,
+        result,
+        remark,
+        pc_url,
+        h5_url,
+        corp_id,
+        agent_id,
+        urge,
+        ext,
+        create_on,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        gmt_audit,
+        gmt_audit_by,
+        opinion
+        FROM
+        tc_todo_task
+        WHERE
+        1 = 1
+        <if test="request.instanceCode != null and request.instanceCode != ''">
+            AND instance_code = #{request.instanceCode}
+        </if>
+        <if test="request.taskId != null and request.taskId != ''">
+            AND task_id = #{request.taskId}
+        </if>
+        <if test="request.taskCode != null and request.taskCode != ''">
+            AND code = #{request.taskCode}
+        </if>
+        <if test="request.flag != null">
+            AND flag = #{request.flag}
+        </if>
+
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY
+                ${request.orderByField}
+                <choose>
+                    <when test="request.orderByType != null and request.orderByType.toLowerCase() == 'asc'">
+                        ASC
+                    </when>
+                    <otherwise>
+                        DESC
+                    </otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                ORDER BY update_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectOneByRequest" resultType="com.zjlab.dataservice.modules.tc.model.entity.TodoTask">
+        SELECT
+        id,
+        code,
+        task_id,
+        instance_code,
+        to_user_id,
+        flag,
+        result,
+        remark,
+        pc_url,
+        h5_url,
+        corp_id,
+        agent_id,
+        urge,
+        ext,
+        create_on,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        gmt_audit,
+        gmt_audit_by,
+        opinion
+        FROM
+        tc_todo_task
+        WHERE
+        1 = 1
+        <if test="request.agentId != null and request.agentId != ''">
+            AND agent_id = #{request.agentId}
+        </if>
+        <if test="request.toUserId != null and request.toUserId != ''">
+            AND to_user_id = #{request.toUserId}
+        </if>
+        <if test="request.instanceCode != null and request.instanceCode != ''">
+            AND instance_code = #{request.instanceCode}
+        </if>
+        <if test="request.code != null and request.code != ''">
+            AND code = #{request.code}
+        </if>
+        <if test="request.taskId != null and request.taskId != ''">
+            AND task_id = #{request.taskId}
+        </if>
+        AND flag = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectTaskInstancePage" resultType="com.zjlab.dataservice.modules.tc.model.dto.TaskWebDto">
+        SELECT DISTINCT
+        ts.id,
+        ts.instance_code AS instanceCode,
+        ts.flag,
+        ts.pc_url AS pcUrl,
+        ts.h5_url AS h5Url,
+        ts.create_on AS createTime,
+        ti.title,
+        ti.from_user_id AS fromUserId,
+        ti.create_on AS createOn
+        FROM
+        (
+        SELECT
+        id, instance_code, flag, pc_url, h5_url, create_on
+        FROM
+        tc_todo_task
+        <where>
+            <if test="request.userCode != null and request.userCode != ''">
+                AND to_user_id = #{request.userCode}
+            </if>
+            <if test="request.flag != null">
+                AND flag = #{request.flag}
+            </if>
+            <if test="request.startTime != null and request.startTime != ''">
+                AND create_on &gt;= #{request.startTime}
+            </if>
+            <if test="request.endTime != null and request.endTime != ''">
+                AND create_on &lt;= #{request.endTime}
+            </if>
+        </where>
+        ) ts
+        INNER JOIN (
+        SELECT code, title, create_on, from_user_id
+        FROM tc_todo_instance
+        WHERE id IN (
+        SELECT MAX(id)
+        FROM tc_todo_instance
+        GROUP BY code
+        )
+        <if test="request.typeCode != null and request.typeCode != ''">
+            AND instance_type = #{request.typeCode}
+        </if>
+        <if test="request.userId != null and request.userId != ''">
+            AND from_user_id = #{request.userId}
+        </if>
+        ) ti ON ts.instance_code = ti.code
+        ORDER BY ts.create_on DESC
+    </select>
+
+    <select id="selectByUserCount" resultType="long">
+        SELECT COUNT(*)
+        from tc_todo_task
+        WHERE  flag = 0
+        <if test="request.userCode != null and request.userCode != ''">
+            and to_user_id = #{request.userCode}
+        </if>
+    </select>
+
+    <select id="countByInstanceCode" resultType="long">
+        SELECT COUNT(*)
+        from tc_todo_task
+        WHERE  instance_code = #{instanceCode}
+    </select>
+
+    <select id="selectCountByUserPage" resultType="com.zjlab.dataservice.modules.tc.model.dto.TaskRemindDto">
+        SELECT t.user_id, t.count
+        FROM (
+                 SELECT to_user_id AS user_id, COUNT(task_id) AS count
+                 FROM tc_todo_task
+                 WHERE flag = 0
+                 GROUP BY to_user_id
+             ) t
+        ORDER BY t.count DESC
+            LIMIT #{request.pageNo}, #{request.pageSize}
+    </select>
+
+    <select id="selectByInstanceCodeAndTaskId" parameterType="com.zjlab.dataservice.modules.tc.model.entity.TodoTask"
+            resultType="com.zjlab.dataservice.modules.tc.model.entity.TodoTask">
+        SELECT id, code, task_id, instance_code, to_user_id, flag, result,
+        remark, urge, agent_id, opinion
+        FROM tc_todo_task
+        <where>
+            <if test="instanceCode != null and instanceCode != ''">
+                and instance_code = #{instanceCode}
+            </if>
+            <if test="taskId != null and taskId != ''">
+                and task_id = #{taskId}
+            </if>
+            <if test="toUserId != null and toUserId != ''">
+                and to_user_id = #{toUserId}
+            </if>
+        </where>
+    </select>
+
+    <update id="updateBatchByInstanceCode" parameterType="list">
+        update tc_todo_task
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="flag = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.flag!=null">
+                        when instance_code = #{item.instanceCode}
+                        then #{item.flag}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="result = case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.result!=null">
+                        when instance_code = #{item.instanceCode}
+                        then #{item.result}
+                    </if>
+                </foreach>
+            </trim>
+
+        </trim>
+        where instance_code in
+        <foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+            #{item.instanceCode}
+        </foreach>
+    </update>
+
+    <select id="selectTodoTaskByflow" resultType="com.zjlab.dataservice.modules.tc.model.dto.TodoTaskDto">
+        SELECT
+        id,
+        code,
+        task_id,
+        instance_code,
+        to_user_id,
+        flag,
+        result,
+        remark,
+        pc_url,
+        h5_url,
+        corp_id,
+        agent_id,
+        urge,
+        ext,
+        create_on,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        gmt_audit,
+        gmt_audit_by,
+        opinion
+        FROM
+        tc_todo_task
+        WHERE
+        flag = 0 AND instance_code = #{instanceCode}
+    </select>
+
+</mapper>

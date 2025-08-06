@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="generator.mapper.ThematicDataMapper">
+
+    <resultMap id="BaseResultMap" type="generator.domain.ThematicData">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="productType" column="product_type" jdbcType="TINYINT"/>
+            <result property="format" column="format" jdbcType="TINYINT"/>
+            <result property="dataSource" column="data_source" jdbcType="VARCHAR"/>
+            <result property="isCoords" column="is_coords" jdbcType="TINYINT"/>
+            <result property="size" column="size" jdbcType="BIGINT"/>
+            <result property="thumb" column="thumb" jdbcType="VARCHAR"/>
+            <result property="dataId" column="data_id" jdbcType="VARCHAR"/>
+            <result property="extent" column="extent" jdbcType="VARCHAR"/>
+            <result property="isPublic" column="is_public" jdbcType="TINYINT"/>
+            <result property="band" column="band" jdbcType="INTEGER"/>
+            <result property="rows" column="rows" jdbcType="INTEGER"/>
+            <result property="cols" column="cols" jdbcType="INTEGER"/>
+            <result property="taskCount" column="task_count" jdbcType="INTEGER"/>
+            <result property="important" column="important" jdbcType="TINYINT"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="timeRange" column="time_range" jdbcType="DATE"/>
+            <result property="resolution" column="resolution" jdbcType="FLOAT"/>
+            <result property="area" column="area" jdbcType="BIGINT"/>
+            <result property="zoomMax" column="zoom_max" jdbcType="INTEGER"/>
+            <result property="zoomMin" column="zoom_min" jdbcType="INTEGER"/>
+            <result property="zoomInit" column="zoom_init" jdbcType="FLOAT"/>
+            <result property="rasterId" column="raster_id" jdbcType="VARCHAR"/>
+            <result property="classification" column="classification" jdbcType="VARCHAR"/>
+            <result property="featureNum" column="feature_num" jdbcType="INTEGER"/>
+            <result property="objectDetection" column="object_detection" jdbcType="VARCHAR"/>
+            <result property="viewCount" column="view_count" jdbcType="INTEGER"/>
+            <result property="center" column="center" jdbcType="VARCHAR"/>
+            <result property="boundary" column="boundary" jdbcType="VARCHAR"/>
+            <result property="styleId" column="style_id" jdbcType="VARCHAR"/>
+            <result property="tenantId" column="tenant_id" jdbcType="INTEGER"/>
+            <result property="delFlag" column="del_flag" jdbcType="TINYINT"/>
+            <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,product_type,
+        format,data_source,is_coords,
+        size,thumb,data_id,
+        extent,is_public,band,
+        rows,cols,task_count,
+        important,region_name,time_range,
+        resolution,area,zoom_max,
+        zoom_min,zoom_init,raster_id,
+        classification,feature_num,object_detection,
+        view_count,center,boundary,
+        style_id,tenant_id,del_flag,
+        create_by,create_time,update_by,
+        update_time
+    </sql>
+</mapper>

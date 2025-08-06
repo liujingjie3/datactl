@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.taskplan.mapper.PreplanDataMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjlab.dataservice.modules.taskplan.model.po.PreplanDataPo">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="time" column="time" jdbcType="TIMESTAMP"/>
+        <result property="latitude" column="latitude" jdbcType="NUMERIC"/>
+        <result property="longitude" column="longitude" jdbcType="NUMERIC"/>
+        <result property="altitude" column="altitude" jdbcType="DOUBLE"/>
+        <result property="latitudeRate" column="latitude_rate" jdbcType="NUMERIC"/>
+        <result property="longitudeRate" column="longitude_rate" jdbcType="NUMERIC"/>
+        <result property="altitudeRate" column="altitude_rate" jdbcType="DOUBLE"/>
+        <result property="satelliteId" column="satellite_id" jdbcType="VARCHAR"/>
+        <result property="geomInfo" column="geom_info" jdbcType="OTHER"/>
+        <result property="elevator" column="elevator" jdbcType="INTEGER"/>
+        <result property="direction" column="direction" jdbcType="VARCHAR"/>
+        <result property="offNadirDeg" column="off_nadir_deg" jdbcType="DOUBLE"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,time,latitude,
+        longitude,altitude,latitude_rate,
+        longitude_rate,altitude_rate,satellite_id,orbit_number,
+        geom_info,elevator,direction,off_nadir_deg, day, local_time
+    </sql>
+
+
+    <!--    <select id="query"-->
+    <!--            parameterType="com.zjlab.dataservice.modules.taskplan.model.dto.PreplanDataDto"-->
+    <!--            resultType="com.zjlab.dataservice.modules.taskplan.model.po.PreplanDataPo">-->
+    <!--        SELECT id, time, latitude, longitude, st_asgeojson(geom_info) AS geomJson,satellite_id,elevator-->
+    <!--        FROM preplan_data_2 pd-->
+    <!--        <where>-->
+    <!--            <if test="request.startTime != null and request.endTime != null">-->
+    <!--                time BETWEEN #{request.startTime} AND #{request.endTime}-->
+    <!--            </if>-->
+    <!--            <if test="request.geometry != null ">-->
+    <!--                AND ST_Contains(-->
+    <!--                ST_GeomFromText(#{request.geometry}, 4326),-->
+    <!--                geom_info)-->
+    <!--            </if>-->
+    <!--            <if test="request.satelliteId != null and request.satelliteId != ''">-->
+    <!--                AND satellite_id IN-->
+    <!--                <foreach collection="request.satelliteId" item="id" open="(" separator="," close=")">-->
+    <!--                    #{id}-->
+    <!--                </foreach>-->
+    <!--            </if>-->
+    <!--            <if test="request.elevator != null">-->
+    <!--                AND elevator = #{request.elevator}-->
+    <!--            </if>-->
+    <!--        </where>-->
+    <!--        order by ${request.orderByField} ${request.orderByType}-->
+    <!--    </select>-->
+
+    <select id="query"
+            parameterType="com.zjlab.dataservice.modules.taskplan.model.dto.PreplanDataDto"
+            resultType="com.zjlab.dataservice.modules.taskplan.model.po.PreplanDataPo">
+        SELECT id, time, latitude, longitude, st_asgeojson(geom_info) AS geomJson, satellite_id,
+        elevator,direction,off_nadir_deg,day,local_time
+        FROM preplan_data_2 pd
+        <where>
+            <if test="request.startTime != null and request.endTime != null">
+                time BETWEEN #{request.startTime} AND #{request.endTime}
+            </if>
+
+            <if test="request.geometry != null">
+                AND ST_Contains(
+                ST_GeomFromText(#{request.geometry}, 4326),
+                geom_info)
+            </if>
+            <if test="request.day != null">
+                AND day = #{request.day}
+            </if>
+
+            <!-- 多组组合条件 -->
+            <if test="request.conditions != null and request.conditions.size() > 0">
+                AND (
+                <foreach collection="request.conditions" item="cond" separator=" OR ">
+                    (
+                    <if test="cond.satelliteId != null and cond.satelliteId != ''">
+                        satellite_id = #{cond.satelliteId}
+                    </if>
+                    <if test="cond.elevator != null">
+                        AND elevator = #{cond.elevator}
+                    </if>
+                    <if test="cond.direction != null and cond.direction != ''">
+                        AND direction = #{cond.direction}
+                    </if>
+                    )
+                </foreach>
+                )
+            </if>
+            <!-- 如果 conditions 为空，则默认 direction = 'center' -->
+            <if test="request.conditions == null or request.conditions.size() == 0">
+                AND direction = 'center'
+            </if>
+        </where>
+        order by satellite_id ASC,${request.orderByField} ${request.orderByType}
+    </select>
+
+    <select id="queryCenter"
+            parameterType="com.zjlab.dataservice.modules.taskplan.model.dto.QueryCenterDto"
+            resultType="com.zjlab.dataservice.modules.taskplan.model.po.PreplanDataPo">
+        SELECT id, time, latitude, longitude, st_asgeojson(geom_info) AS geomJson,
+        satellite_id, elevator, direction, off_nadir_deg
+        FROM preplan_data_2
+        WHERE direction = 'center'
+        <if test="request.conditions != null and request.conditions.size() > 0">
+            AND (
+            <foreach collection="request.conditions" item="c" separator=" OR ">
+                (satellite_id = #{c.satelliteId} AND time = #{c.time})
+            </foreach>
+            )
+        </if>
+    </select>
+
+    <select id="queryDate" resultType="com.zjlab.dataservice.modules.taskplan.model.vo.QueryDateVo">
+        SELECT
+            MIN(time) AS startTime,
+            MAX(time) AS endTime
+        FROM preplan_data_2
+    </select>
+    <select id="queryExistingSatelliteIds" resultType="java.lang.String">
+        SELECT DISTINCT satellite_id
+        FROM preplan_data_2
+        WHERE time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+</mapper>

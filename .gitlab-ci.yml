@@ -1,0 +1,112 @@
+variables:
+  JAR_NAME: datactl-1.0.0-SNAPSHOT.jar
+  DOCKER_NAME: datactl
+  DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME-$CI_PIPELINE_ID
+  SPRINGBOOT_PORT: 28001
+  XXL_JOB_PORT: 9981
+  TARGET_SERVER: 10.101.32.14
+  SSH_USER: root
+#  DINGTALK_WEBHOOK: "https://oapi.dingtalk.com/robot/send?access_token=d60cb1ae5caf8ab992661c926d3177523877e117ba1157615a18e2efac6787e2"
+  DINGTALK_WEBHOOK: "https://oapi.dingtalk.com/robot/send?access_token=aed9bd165710705c5d6f96e854a77bdaf05a3065c3ff38034bfed414c884b058"
+
+
+#定义执行的各个阶段及顺序
+stages:
+  - compile
+  - build
+  - deploy
+
+before_script:
+  - whoami
+  - echo "$ssh_password"
+  - echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+  - echo "$CI_REGISTRY_USER; $CI_REGISTRY_PASSWORD; $CI_REGISTRY"
+  - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+
+#使用 maven 打包
+mvn-package:
+#  image: maven:3.8.7-openjdk-8  # 使用 Maven 官方镜像
+  tags:
+    - java
+  stage: compile
+  script:
+    - pwd
+    - if [[ "$CI_COMMIT_REF_NAME" == "main" || "$CI_COMMIT_REF_NAME" == feature-* ]]; then 
+        echo "Using prod configuration"; 
+        PROFILE="prod";
+      else 
+        echo "Using dev configuration"; 
+        PROFILE="dev"; 
+      fi
+    - echo $PROFILE
+    - mvn package -P$PROFILE
+    - ls -lh system/start/target/*.jar    #列出文件大小
+  after_script:
+    - if [ "$CI_JOB_STATUS" == "failed" ]; then bash send_dingtalk_notification.sh; fi
+  artifacts:
+    paths:
+      - system/start/target/$JAR_NAME   #上传至制品库，否则在build环节会删除；因为没有一个环节是独立的，会初始化，不会保存上一个环节的文件
+
+
+#制作容器镜像，并上传到镜像仓库
+build:
+  image: docker:24.0.7  #使用docker官方镜像
+  tags:
+    - java
+  stage: build
+  services:
+    - docker:24.0.7-dind  #启用 Docker-in-Docker
+  script:
+    - ls -la system/start/target  # 验证文件是否存在
+    - docker build -t $DOCKER_IMAGE_TAG .
+    - docker push $DOCKER_IMAGE_TAG
+  after_script:
+    - if [ "$CI_JOB_STATUS" == "failed" ]; then bash send_dingtalk_notification.sh; fi
+
+#部署
+deploy:
+  image: docker:24.0.7  #使用docker官方镜像
+  tags:
+    - java
+  stage: deploy
+  services:
+    - docker:24.0.7-dind  #启用 Docker-in-Docker
+  script:
+    - echo "$CI_JOB_TOKEN"
+    - ssh $SSH_USER@$TARGET_SERVER "pwd"
+    - ssh $SSH_USER@$TARGET_SERVER "echo $CI_REGISTRY_PASSWORD | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY"
+
+    #停止并删除旧容器
+    - ssh -q $SSH_USER@$TARGET_SERVER "
+      container_id=\$(docker ps -a -q -f name=$DOCKER_NAME 2>/dev/null);
+      if [ -n \"\$container_id\" ]; then
+      echo \"Container $DOCKER_NAME exists, stopping and removing...\";
+      docker stop \$container_id;
+      docker rm \$container_id;
+      else
+      echo \"Container $DOCKER_NAME does not exist, skipping removal.\";
+      fi"
+
+    # 删除上一个部署时的镜像
+    - ssh -q $SSH_USER@$TARGET_SERVER "
+      old_images=\$(docker images '10.101.32.13:5050/dataservice/data-ctl' --format '{{.Repository}}:{{.Tag}}');
+      if [ -n \"\$old_images\" ]; then
+      echo \"Old images found:\$old_images\";
+      echo \"\$old_images\" | xargs -r docker rmi;
+      else
+      echo \"No old images to delete.\";
+      fi"
+
+    #拉取新镜像
+    - ssh $SSH_USER@$TARGET_SERVER "docker pull $DOCKER_IMAGE_TAG"
+    #启动新容器
+    - ssh $SSH_USER@$TARGET_SERVER "docker run -d -v /usr/bin/mysqldump:/usr/bin/mysqldump -v /lib64/libssl.so.10:/lib64/libssl.so.10 -v /lib64/libcrypto.so.10:/lib64/libcrypto.so.10 -e LD_LIBRARY_PATH=/lib64 --network=host --name $DOCKER_NAME $DOCKER_IMAGE_TAG"
+#    - ssh $SSH_USER@$TARGET_SERVER "docker run -d \
+#        -v /usr/bin/mysqldump:/usr/bin/mysqldump \
+#        -v /lib64/libssl.so.10:/lib64/libssl.so.10 \
+#        -v /lib64/libcrypto.so.10:/lib64/libcrypto.so.10 \
+#        -e LD_LIBRARY_PATH=/lib64 \
+#        --network=host \
+#        --name $DOCKER_NAME $DOCKER_IMAGE_TAG"
+  after_script:
+    - if [ "$CI_JOB_STATUS" == "failed" ]; then bash send_dingtalk_notification.sh; fi

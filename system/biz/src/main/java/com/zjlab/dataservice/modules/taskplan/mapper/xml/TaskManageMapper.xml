@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.taskplan.mapper.TaskManageMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjlab.dataservice.modules.taskplan.model.po.TaskManagePo">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="taskName" column="task_name" jdbcType="VARCHAR"/>
+        <result property="taskInfo" column="task_info" jdbcType="VARCHAR"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="geom" column="geom" jdbcType="VARCHAR"/>
+        <result property="preplanGeom" column="preplan_geom" jdbcType="VARCHAR"/>
+        <result property="imageArea" column="image_area" jdbcType="VARCHAR"/>
+        <result property="startTime" column="start_time" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        <result property="satelliteInfo" column="satellite_info" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="predictNumber" column="predict_number" jdbcType="INTEGER"/>
+        <result property="number" column="number" jdbcType="INTEGER"/>
+        <result property="level" column="level" jdbcType="VARCHAR"/>
+        <result property="delFlag" column="del_flag" jdbcType="TINYINT"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,task_name,task_info,
+        user_id,geom,preplan_geom,image_area,start_time,
+        end_time,satellite_info,status,
+        predict_number,number,level,
+        del_flag,create_by,create_time,
+        update_by,update_time
+    </sql>
+
+    <select id="qryTaskList" resultType="com.zjlab.dataservice.modules.taskplan.model.po.TaskManagePo">
+        select *
+        from task_manage
+        where del_flag = false
+        <if test="request.userId != null and request.userId != ''">
+            and ( user_id = #{request.userId})
+        </if>
+        order by ${request.orderByField} ${request.orderByType}
+    </select>
+
+    <select id="statistics" resultType="com.zjlab.dataservice.modules.taskplan.model.vo.TaskStaticsVo">
+        SELECT COUNT(*)           AS taskCount,
+               SUM(number)        AS imageCount,
+               (SELECT AVG(TIMESTAMPDIFF(MINUTE, create_time, update_time))
+                FROM task_manage
+                WHERE user_id = #{userId}
+                  AND status = 3) AS timeCost
+        FROM task_manage
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectByStatus" resultType="com.zjlab.dataservice.modules.taskplan.model.po.TaskManagePo">
+        SELECT * FROM task_manage WHERE status = #{status}
+    </select>
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.backup.mapper.TaskRecordMapper">
+
+    <select id="qryTaskRecordList" resultType="com.zjlab.dataservice.modules.backup.model.entity.TaskRecordListEntity">
+        SELECT
+            r.task_id AS taskId,
+            t.task_name AS taskName,
+            r.source_id AS sourceId,
+            ss.name AS sourceName,
+            ss.type AS sourceType,
+            r.dest_id AS destId,
+            sd.name AS destName,
+            sd.type AS destType,
+            r.cron,
+            r.status AS status,
+            r.sub_status AS subStatus,
+            r.update_time AS updateTime
+        FROM
+            backup_task_record r
+                LEFT JOIN backup_task t ON r.task_id = t.id
+                LEFT JOIN backup_source ss ON r.source_id = ss.id
+                LEFT JOIN backup_source sd ON r.dest_id = sd.id
+        WHERE
+            r.del_flag = FALSE
+        <if test="request.expireDay != null">
+            and r.update_time > #{request.expireDay}
+        </if>
+        <if test="request.sourceType != null">
+            and ss.type = #{request.sourceType}
+        </if>
+        <if test="request.destType != null">
+            and sd.type = #{request.destType}
+        </if>
+        <if test="request.status != null">
+            and r.status = #{request.status}
+        </if>
+        <if test="request.subStatus != null">
+            and r.sub_status = #{request.subStatus}
+        </if>
+        ORDER BY r.update_time ${request.orderByType}
+    </select>
+</mapper>

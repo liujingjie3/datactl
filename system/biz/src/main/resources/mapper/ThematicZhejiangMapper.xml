@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.dataset.mapper.ThematicZhejiangMapper">
+
+    <resultMap id="BaseResultMap" type="generator.domain.ThematicZhejiang">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="geom" column="geom" jdbcType="OTHER"/>
+            <result property="value" column="value" jdbcType="INTEGER"/>
+            <result property="pac1" column="pac_1" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,geom,value,
+        pac_1
+    </sql>
+</mapper>

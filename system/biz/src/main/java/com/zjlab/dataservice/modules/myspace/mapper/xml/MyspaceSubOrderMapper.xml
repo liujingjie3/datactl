@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.myspace.mapper.MyspaceSubOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjlab.dataservice.modules.myspace.model.po.MyspaceSubOrderPo">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="orderId" column="order_id" jdbcType="VARCHAR"/>
+            <result property="imageId" column="image_id" jdbcType="VARCHAR"/>
+            <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+            <result property="orderStatus" column="order_status" jdbcType="SMALLINT"/>
+            <result property="thumbFileLocation" column="thumb_file_location" jdbcType="VARCHAR"/>
+            <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
+            <result property="satellite" column="satellite" jdbcType="VARCHAR"/>
+            <result property="senser" column="senser" jdbcType="VARCHAR"/>
+            <result property="cloudPercent" column="cloud_percent" jdbcType="REAL"/>
+            <result property="receiveDate" column="receive_date" jdbcType="TIMESTAMP"/>
+            <result property="level" column="level" jdbcType="VARCHAR"/>
+            <result property="approver" column="approver" jdbcType="VARCHAR"/>
+            <result property="approvalOpinion" column="approval_opinion" jdbcType="VARCHAR"/>
+            <result property="approvalTime" column="approval_time" jdbcType="TIMESTAMP"/>
+            <result property="tenantId" column="tenant_id" jdbcType="INTEGER"/>
+            <result property="delFlag" column="del_flag" jdbcType="INTEGER"/>
+            <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,order_id,image_id,
+        user_id,order_status,thumb_file_location,
+        file_name,satellite,senser,
+        cloud_percent,receive_date,level,
+        approver,approval_opinion,approval_time,
+        tenant_id,del_flag,create_by,
+        create_time,update_by,update_time
+    </sql>
+</mapper>

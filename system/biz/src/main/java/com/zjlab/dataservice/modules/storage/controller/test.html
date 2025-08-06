@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Download</title>
+</head>
+<body>
+<button id="downloadBtn">Download File</button>
+<button id="exportExcelBtn">Export Excel</button>
+<script>
+    // 定义接口路径
+    var baseUrl = 'http://10.101.32.14:28001/data-ctl/dspp'; // 将 'your_ip_address' 和 'your_port' 替换为实际的 IP 地址和端口号
+    var downloadUrl = baseUrl + '/sys/hdfs/file/download'; // 拼接接口路径
+    var exportExcelUrl = baseUrl + 'mark/export';
+
+    // 设置请求参数
+    var requestData = {
+        srcFile: '/upload/start-3.5.1.jar',
+        dstPath: 'C:/Users/OptiPlex 7070/Desktop/download/start-3.5.1.jar'
+    };
+
+    // 根据需要发送 GET 请求或 POST 请求
+    var requestConfig = {
+        method: 'POST', // 设置请求方法为 GET
+        headers: {
+            'Content-Type': 'application/json' // 设置请求头
+        },
+        body: JSON.stringify(requestData)
+    };
+    var requestConfigExcel = {
+        method: 'POST', // 设置请求方法为 GET
+        headers: {
+            'Content-Type': 'application/json' // 设置请求头
+        }
+    };
+
+    // 获取下载按钮元素
+    var downloadBtn = document.getElementById('downloadBtn');
+    var exportExcelBtn = document.getElementById("exportExcelBtn");
+
+    // 添加点击事件监听器
+    downloadBtn.addEventListener('click', function() {
+        // 发起 GET 请求调用后端接口
+        fetch(downloadUrl, requestConfig)
+            .then(function(response) {
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                // 返回二进制数据
+                return response.blob();
+            })
+            .then(function(blob) {
+                // 创建 a 标签
+                var a = document.createElement('a');
+                // 创建一个新的 Blob 对象
+                var url = window.URL.createObjectURL(blob);
+                // 设置 a 标签的属性
+                a.href = url;
+                a.download = 'start-3.5.1.jar'; // 指定下载的文件名
+                // 模拟点击 a 标签
+                a.click();
+                // 释放 Blob 对象
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(function(error) {
+                console.error('There was a problem with the fetch operation:', error);
+            });
+    });
+    exportExcelBtn.addEventListener("click", function (){
+        // 发起 GET 请求调用后端接口
+        fetch(exportExcelUrl, requestConfigExcel)
+            .then(function(response) {
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                // 返回二进制数据
+                return response.blob();
+            })
+            .then(function(blob) {
+                // 创建 a 标签
+                var a = document.createElement('a');
+                // 创建一个新的 Blob 对象
+                var url = window.URL.createObjectURL(blob);
+                // 设置 a 标签的属性
+                a.href = url;
+                a.download = 'aaa.xlsx'; // 指定下载的文件名
+                // 模拟点击 a 标签
+                a.click();
+                // 释放 Blob 对象
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(function(error) {
+                console.error('There was a problem with the fetch operation:', error);
+            });
+    });
+</script>
+</body>
+</html>

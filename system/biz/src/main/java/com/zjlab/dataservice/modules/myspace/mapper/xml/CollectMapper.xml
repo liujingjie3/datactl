@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.myspace.mapper.CollectMapper">
+
+    <select id="existsByImageId" parameterType="map" resultType="boolean">
+        SELECT CASE WHEN COUNT(1) > 0 THEN TRUE ELSE FALSE END
+        FROM my_favourite
+        WHERE image_id = #{imageId}
+          AND user_id = #{userId}
+          and del_flag = 0;
+    </select>
+
+
+    <select id="selectCollectedImageIds" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select image_id
+        from my_favourite
+        where user_id = #{userId}
+          and image_id is not null
+          and del_flag = false;
+    </select>
+</mapper>

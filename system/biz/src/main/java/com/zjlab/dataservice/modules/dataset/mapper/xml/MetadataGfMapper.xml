@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.dataset.mapper.MetadataGfMapper">
+
+    <select id="qryMonthlyList" resultType="com.zjlab.dataservice.modules.dataset.model.entity.MonthlyPeriodEntity">
+        SELECT
+            TO_CHAR(DATE_TRUNC('month', receive_time), 'YYYY-MM') AS month,
+            TO_CHAR(DATE_TRUNC('month', receive_time), 'YYYY-MM-DD') AS firstDay,
+            COUNT(*) AS count
+        FROM
+            metadata_gf
+        GROUP BY
+            DATE_TRUNC('month', receive_time)
+        ORDER BY
+            month;
+    </select>
+
+
+    <select id="selectImageList" resultType="com.zjlab.dataservice.modules.dataset.model.po.MetadataGfPo">
+        select * from metadata_gf
+        where id in
+        <foreach collection="entity.ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="qryMetadataList" resultType="com.zjlab.dataservice.modules.dataset.model.po.MetadataGfPo">
+        select * from metadata_gf
+        where 1=1
+        <if test="request.query != null and request.query != ''">
+            and name like CONCAT(CONCAT('%', #{request.query}), '%')
+        </if>
+        <!--        <if test="request.userId != null and request.userId != ''">-->
+        <!--            and marker = #{request.userId}-->
+        <!--        </if>-->
+        <if test="request.marker != null and request.marker != ''">
+            and marker = #{request.marker}
+        </if>
+        <if test="request.checker != null and request.checker != ''">
+            and checker = #{request.checker}
+        </if>
+        <if test="request.status != null">
+            and status = #{request.status}
+        </if>
+        <if test="request.reviews != null and request.reviews.size() > 0">
+            and review IN
+            <foreach collection="request.reviews" item="review" open="(" separator="," close=")">
+                #{review}
+            </foreach>
+        </if>
+        order by ${request.orderByField} ${request.orderByType}
+    </select>
+
+    <update id="filterMetadata" parameterType="com.zjlab.dataservice.modules.dataset.model.entity.MetadataFilterEntity">
+        update metadata_gf
+        <set>
+            <if test="entity.filterPassed != null">
+                filter_passed = #{entity.filterPassed},
+            </if>
+            <if test="entity.status != null">
+                status = #{entity.status},
+            </if>
+            <if test="entity.updateBy != null and entity.updateBy != ''">
+                update_by = #{entity.updateBy},
+            </if>
+            <if test="entity.updateTime != null">
+                update_time = #{entity.updateTime}
+            </if>
+        </set>
+        where id in
+        <foreach collection="entity.ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectExistIds" resultType="java.lang.Integer">
+        select count(id) from metadata_gf
+        where
+        status = #{status}
+        and
+        id in
+        <foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="assignMetadata" parameterType="com.zjlab.dataservice.modules.dataset.model.entity.AssignMetadataEntity">
+        update metadata_gf
+        <set>
+            <if test="entity.marker != null and entity.marker != ''">
+                marker = #{entity.marker},
+            </if>
+            <if test="entity.checker != null and entity.checker != ''">
+                checker = #{entity.checker},
+            </if>
+            <if test="entity.status != null">
+                status = #{entity.status},
+            </if>
+            <if test="entity.createBy != null and entity.createBy != ''">
+                create_by = #{entity.createBy},
+            </if>
+            <if test="entity.createTime != null">
+                create_time = #{entity.createTime},
+            </if>
+            <if test="entity.updateBy != null and entity.updateBy != ''">
+                update_by = #{entity.updateBy},
+            </if>
+            <if test="entity.updateTime != null">
+                update_time = #{entity.updateTime}
+            </if>
+        </set>
+        where id in
+        <foreach collection="entity.ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

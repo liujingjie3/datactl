@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="generator.mapper.ThematicTypesMapper">
+
+    <resultMap id="BaseResultMap" type="generator.domain.ThematicTypes">
+            <id property="id" column="id" jdbcType="VARCHAR"/>
+            <result property="nameCh" column="name_ch" jdbcType="VARCHAR"/>
+            <result property="nameEn" column="name_en" jdbcType="VARCHAR"/>
+            <result property="type" column="type" jdbcType="VARCHAR"/>
+            <result property="level" column="level" jdbcType="INTEGER"/>
+            <result property="parent" column="parent" jdbcType="VARCHAR"/>
+            <result property="description" column="description" jdbcType="VARCHAR"/>
+            <result property="icon" column="icon" jdbcType="VARCHAR"/>
+            <result property="background" column="background" jdbcType="VARCHAR"/>
+            <result property="minRes" column="min_res" jdbcType="FLOAT"/>
+            <result property="maxRes" column="max_res" jdbcType="FLOAT"/>
+            <result property="bestRes" column="best_res" jdbcType="FLOAT"/>
+            <result property="minImgSize" column="min_img_size" jdbcType="INTEGER"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="region" column="region" jdbcType="VARCHAR"/>
+            <result property="season" column="season" jdbcType="VARCHAR"/>
+            <result property="bandCount" column="band_count" jdbcType="INTEGER"/>
+            <result property="inputCount" column="input_count" jdbcType="INTEGER"/>
+            <result property="largeImage" column="large_image" jdbcType="TINYINT"/>
+            <result property="fillColor" column="fill_color" jdbcType="VARCHAR"/>
+            <result property="borderColor" column="border_color" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name_ch,name_en,
+        type,level,parent,
+        description,icon,background,
+        min_res,max_res,best_res,
+        min_img_size,status,region,
+        season,band_count,input_count,
+        large_image,fill_color,border_color
+    </sql>
+</mapper>

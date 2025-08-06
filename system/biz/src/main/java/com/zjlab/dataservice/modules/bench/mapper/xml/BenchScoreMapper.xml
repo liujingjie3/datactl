@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.bench.mapper.BenchScoreMapper">
+
+    <!-- 映射查询结果到 BenchScore 类 -->
+    <resultMap id="BenchScoreResultMap" type="com.zjlab.dataservice.modules.bench.model.entity.BenchScore">
+        <!-- 映射数据库列 task_identifier 到实体类字段 taskIdentifier -->
+        <result property="taskIdentifier" column="task_identifier"/>
+        <result property="modelId" column="model_id"/>
+        <result property="datasetName" column="dataset_name"/>
+        <result property="metric" column="metric"/>
+        <result property="score" column="score"/>
+        <result property="lastUpdated" column="last_updated"/>
+    </resultMap>
+
+    <!-- 根据 model_id 和 task_identifier 查询数据 -->
+    <select id="selectByModelAndTask" resultType="com.zjlab.dataservice.modules.bench.model.entity.BenchScore">
+        SELECT model_id, task_identifier, dataset_name, metric, score, last_updated
+        FROM bench_score
+        WHERE 1=1
+        <if test="request.modelId != null and request.modelId != ''">
+            AND model_id = #{request.modelId}
+        </if>
+        <if test="request.taskIdentifier != null and request.taskIdentifier != ''">
+            AND task_identifier LIKE CONCAT('%', #{request.taskIdentifier}, '%')
+        </if>
+
+    </select>
+
+
+</mapper>

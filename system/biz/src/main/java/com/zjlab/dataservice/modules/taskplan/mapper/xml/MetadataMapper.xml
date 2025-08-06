@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.taskplan.mapper.MetadataMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjlab.dataservice.modules.taskplan.model.po.MetadataGf">
+            <result property="id" column="id" jdbcType="INTEGER"/>
+            <result property="fileName" column="file_name" jdbcType="VARCHAR"/>
+            <result property="fileSize" column="file_size" jdbcType="REAL"/>
+            <result property="filePath" column="file_path" jdbcType="VARCHAR"/>
+            <result property="satelliteId" column="satellite_id" jdbcType="VARCHAR"/>
+            <result property="sensorId" column="sensor_id" jdbcType="VARCHAR"/>
+            <result property="sceneId" column="scene_id" jdbcType="VARCHAR"/>
+            <result property="receiveTime" column="receive_time" jdbcType="TIMESTAMP"/>
+            <result property="orbitId" column="orbit_id" jdbcType="INTEGER"/>
+            <result property="produceType" column="produce_type" jdbcType="VARCHAR"/>
+            <result property="productId" column="product_id" jdbcType="BIGINT"/>
+            <result property="productLevel" column="product_level" jdbcType="VARCHAR"/>
+            <result property="productQuality" column="product_quality" jdbcType="VARCHAR"/>
+            <result property="productQualityReport" column="product_quality_report" jdbcType="VARCHAR"/>
+            <result property="productFormat" column="product_format" jdbcType="VARCHAR"/>
+            <result property="produceTime" column="produce_time" jdbcType="TIMESTAMP"/>
+            <result property="bands" column="bands" jdbcType="VARCHAR"/>
+            <result property="scenePath" column="scene_path" jdbcType="INTEGER"/>
+            <result property="sceneRow" column="scene_row" jdbcType="INTEGER"/>
+            <result property="satPath" column="sat_path" jdbcType="INTEGER"/>
+            <result property="satRow" column="sat_row" jdbcType="INTEGER"/>
+            <result property="sceneCount" column="scene_count" jdbcType="INTEGER"/>
+            <result property="sceneShift" column="scene_shift" jdbcType="REAL"/>
+            <result property="startTime" column="start_time" jdbcType="TIMESTAMP"/>
+            <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+            <result property="centerTime" column="center_time" jdbcType="TIMESTAMP"/>
+            <result property="imageGsd" column="image_gsd" jdbcType="REAL"/>
+            <result property="widthInPixels" column="width_in_pixels" jdbcType="INTEGER"/>
+            <result property="heightInPixels" column="height_in_pixels" jdbcType="INTEGER"/>
+            <result property="widthInMeters" column="width_in_meters" jdbcType="BIGINT"/>
+            <result property="heightInMeters" column="height_in_meters" jdbcType="BIGINT"/>
+            <result property="cloudPercent" column="cloud_percent" jdbcType="REAL"/>
+            <result property="qualityInfo" column="quality_info" jdbcType="VARCHAR"/>
+            <result property="pixelBits" column="pixel_bits" jdbcType="VARCHAR"/>
+            <result property="validPixelBits" column="valid_pixel_bits" jdbcType="VARCHAR"/>
+            <result property="rollViewingAngle" column="roll_viewing_angle" jdbcType="DOUBLE"/>
+            <result property="pitchViewingAngle" column="pitch_viewing_angle" jdbcType="DOUBLE"/>
+            <result property="rollSatelliteAngle" column="roll_satellite_angle" jdbcType="DOUBLE"/>
+            <result property="pitchSatelliteAngle" column="pitch_satellite_angle" jdbcType="DOUBLE"/>
+            <result property="yawSatelliteAngle" column="yaw_satellite_angle" jdbcType="DOUBLE"/>
+            <result property="solarAzimuth" column="solar_azimuth" jdbcType="DOUBLE"/>
+            <result property="solarZenith" column="solar_zenith" jdbcType="DOUBLE"/>
+            <result property="satelliteAzimuth" column="satellite_azimuth" jdbcType="DOUBLE"/>
+            <result property="satelliteZenith" column="satellite_zenith" jdbcType="DOUBLE"/>
+            <result property="gainMode" column="gain_mode" jdbcType="VARCHAR"/>
+            <result property="integrationTime" column="integration_time" jdbcType="VARCHAR"/>
+            <result property="integrationLevel" column="integration_level" jdbcType="VARCHAR"/>
+            <result property="mapProjection" column="map_projection" jdbcType="VARCHAR"/>
+            <result property="earthEllipsoid" column="earth_ellipsoid" jdbcType="VARCHAR"/>
+            <result property="zoneNo" column="zone_no" jdbcType="INTEGER"/>
+            <result property="resamplingKernel" column="resampling_kernel" jdbcType="VARCHAR"/>
+            <result property="heightMode" column="height_mode" jdbcType="VARCHAR"/>
+            <result property="mtfCorrection" column="mtf_correction" jdbcType="VARCHAR"/>
+            <result property="relativeCorrectionData" column="relative_correction_data" jdbcType="VARCHAR"/>
+            <result property="topLeftLatitude" column="top_left_latitude" jdbcType="DOUBLE"/>
+            <result property="topLeftLongitude" column="top_left_longitude" jdbcType="DOUBLE"/>
+            <result property="topRightLatitude" column="top_right_latitude" jdbcType="DOUBLE"/>
+            <result property="topRightLongitude" column="top_right_longitude" jdbcType="DOUBLE"/>
+            <result property="bottomRightLatitude" column="bottom_right_latitude" jdbcType="DOUBLE"/>
+            <result property="bottomRightLongitude" column="bottom_right_longitude" jdbcType="DOUBLE"/>
+            <result property="bottomLeftLatitude" column="bottom_left_latitude" jdbcType="DOUBLE"/>
+            <result property="bottomLeftLongitude" column="bottom_left_longitude" jdbcType="DOUBLE"/>
+            <result property="topLeftMapX" column="top_left_map_x" jdbcType="DOUBLE"/>
+            <result property="topLeftMapY" column="top_left_map_y" jdbcType="DOUBLE"/>
+            <result property="topRightMapX" column="top_right_map_x" jdbcType="DOUBLE"/>
+            <result property="topRightMapY" column="top_right_map_y" jdbcType="DOUBLE"/>
+            <result property="bottomRightMapX" column="bottom_right_map_x" jdbcType="DOUBLE"/>
+            <result property="bottomRightMapY" column="bottom_right_map_y" jdbcType="DOUBLE"/>
+            <result property="bottomLeftMapX" column="bottom_left_map_x" jdbcType="DOUBLE"/>
+            <result property="bottomLeftMapY" column="bottom_left_map_y" jdbcType="DOUBLE"/>
+            <result property="receiveStationId" column="receive_station_id" jdbcType="VARCHAR"/>
+            <result property="orbitType" column="orbit_type" jdbcType="VARCHAR"/>
+            <result property="attType" column="att_type" jdbcType="VARCHAR"/>
+            <result property="stripId" column="strip_id" jdbcType="BIGINT"/>
+            <result property="ddsFlag" column="dds_flag" jdbcType="VARCHAR"/>
+            <result property="startLine" column="start_line" jdbcType="VARCHAR"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="endLine" column="end_line" jdbcType="VARCHAR"/>
+            <result property="centerLatitude" column="center_latitude" jdbcType="DOUBLE"/>
+            <result property="centerLongitude" column="center_longitude" jdbcType="DOUBLE"/>
+            <result property="aGain" column="a_gain" jdbcType="VARCHAR"/>
+            <result property="aOffset" column="a_offset" jdbcType="VARCHAR"/>
+            <result property="formula" column="formula" jdbcType="VARCHAR"/>
+            <result property="attitudeData" column="attitude_data" jdbcType="VARCHAR"/>
+            <result property="radiometricMethod" column="radiometric_method" jdbcType="VARCHAR"/>
+            <result property="denoise" column="denoise" jdbcType="VARCHAR"/>
+            <result property="rayleighCorrection" column="rayleigh_correction" jdbcType="VARCHAR"/>
+            <result property="usedGcpNo" column="used_gcp_no" jdbcType="INTEGER"/>
+            <result property="dataArchiveFile" column="data_archive_file" jdbcType="VARCHAR"/>
+            <result property="browseFileLocation" column="browse_file_location" jdbcType="VARCHAR"/>
+            <result property="thumbFileLocation" column="thumb_file_location" jdbcType="VARCHAR"/>
+            <result property="geom" column="geom" jdbcType="OTHER"/>
+            <result property="filterPassed" column="filter_passed" jdbcType="BOOLEAN"/>
+            <result property="status" column="status" jdbcType="INTEGER"/>
+            <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="marker" column="marker" jdbcType="VARCHAR"/>
+            <result property="checker" column="checker" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,file_name,file_size,
+        file_path,satellite_id,sensor_id,
+        scene_id,receive_time,orbit_id,
+        produce_type,product_id,product_level,
+        product_quality,product_quality_report,product_format,
+        produce_time,bands,scene_path,
+        scene_row,sat_path,sat_row,
+        scene_count,scene_shift,start_time,
+        end_time,center_time,image_gsd,
+        width_in_pixels,height_in_pixels,width_in_meters,
+        height_in_meters,cloud_percent,quality_info,
+        pixel_bits,valid_pixel_bits,roll_viewing_angle,
+        pitch_viewing_angle,roll_satellite_angle,pitch_satellite_angle,
+        yaw_satellite_angle,solar_azimuth,solar_zenith,
+        satellite_azimuth,satellite_zenith,gain_mode,
+        integration_time,integration_level,map_projection,
+        earth_ellipsoid,zone_no,resampling_kernel,
+        height_mode,mtf_correction,relative_correction_data,
+        top_left_latitude,top_left_longitude,top_right_latitude,
+        top_right_longitude,bottom_right_latitude,bottom_right_longitude,
+        bottom_left_latitude,bottom_left_longitude,top_left_map_x,
+        top_left_map_y,top_right_map_x,top_right_map_y,
+        bottom_right_map_x,bottom_right_map_y,bottom_left_map_x,
+        bottom_left_map_y,receive_station_id,orbit_type,
+        att_type,strip_id,dds_flag,
+        start_line,region_name,end_line,
+        center_latitude,center_longitude,a_gain,
+        a_offset,formula,attitude_data,
+        radiometric_method,denoise,rayleigh_correction,
+        used_gcp_no,data_archive_file,browse_file_location,
+          
+        thumb_file_location,geom,filter_passed,
+        status,create_by,create_time,
+        update_by,update_time,marker,
+        checker
+    </sql>
+    <select id="query"
+            parameterType="com.zjlab.dataservice.modules.taskplan.model.entity.TaskInfoEntity"
+            resultType="com.zjlab.dataservice.modules.taskplan.model.vo.MetadataVo">
+        SELECT id, receive_time,file_name, thumb_file_location, browse_file_location,data_archive_file
+        FROM metadata_gf
+        <where>
+            <if test="request.startTime != null">
+                receive_time BETWEEN #{request.startTime} AND (#{request.startTime} + interval '7 days')
+            </if>
+            <if test="request.geom != null ">
+                AND ST_Intersects(
+                ST_GeomFromText(#{request.geom}, 4326),
+                geom)
+            </if>
+        </where>
+        order by receive_time ${request.orderByType}
+    </select>
+
+    <select id="queryFile" resultType="com.zjlab.dataservice.modules.taskplan.model.vo.MetadataVo">
+        SELECT id, receive_time,file_name, thumb_file_location
+        FROM metadata_gf
+        <where>
+            <if test="createTime != null">
+                receive_time BETWEEN #{createTime} AND (#{createTime} + interval '7 days')
+            </if>
+            <if test="geom != null ">
+                AND ST_Intersects(
+                ST_GeomFromText(#{geom}, 4326),
+                geom)
+            </if>
+        </where>
+        ORDER BY receive_time DESC
+        LIMIT 1
+    </select>
+</mapper>
+

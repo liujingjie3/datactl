@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.tc.mapper.TodoReadMapper">
+
+    <select id="selectTodoReadPage" resultType="com.zjlab.dataservice.modules.tc.model.dto.TodoReadDto">
+        SELECT
+        id,
+        code,
+        read_id,
+        instance_code,
+        to_user_id,
+        flag,
+        remark,
+        pc_url,
+        h5_url,
+        corp_id,
+        agent_id,
+        urge,
+        ext,
+        create_on,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        gmt_read, gmt_read_by
+        FROM
+        tc_todo_read
+        WHERE
+        1 = 1
+        <if test="request.instanceCode != null and request.instanceCode != ''">
+            AND instance_code = #{request.instanceCode}
+        </if>
+        <if test="request.code != null and request.code != ''">
+            AND code = #{request.code}
+        </if>
+        <if test="request.flag != null">
+            AND flag = #{request.flag}
+        </if>
+
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY
+                ${request.orderByField}
+                <choose>
+                    <when test="request.orderByType != null and request.orderByType.toLowerCase() == 'asc'">
+                        ASC
+                    </when>
+                    <otherwise>
+                        DESC
+                    </otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                ORDER BY update_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectReadInstancePage" resultType="com.zjlab.dataservice.modules.tc.model.dto.TaskWebDto"
+            parameterType="com.zjlab.dataservice.modules.tc.model.dto.BaseTcDto">
+        SELECT DISTINCT ts.id, ts.instance_code instanceCode, ts.flag, ts.pc_url pcUrl, ts.h5_url h5Url,  ts.create_on create_time,
+        ti.title, ti.from_user_id fromUserId, ti.create_on createOn
+        FROM
+        (SELECT id, instance_code, flag, pc_url, h5_url, create_on
+        from tc_todo_read
+        <where>
+            <if test="request.userCode != null and request.userCode != ''">
+                and to_user_id = #{request.userCode}
+            </if>
+            <if test="request.flag != null">
+                and flag = #{request.flag}
+            </if>
+            <if test="request.startTime != null and request.startTime != ''">
+                and UNIX_TIMESTAMP(create_time) &gt;= UNIX_TIMESTAMP(#{request.startTime})
+            </if>
+            <if test="request.endTime != null and request.endTime != ''">
+                and UNIX_TIMESTAMP(create_time) &lt;= UNIX_TIMESTAMP(#{request.endTime})
+            </if>
+        </where>
+        ) ts
+        INNER JOIN (
+        SELECT code, title, create_on, from_user_id FROM tc_todo_instance
+        where id in (SELECT MAX(id) from tc_todo_instance GROUP BY code)
+        <if test="request.typeCode != null and request.typeCode != ''">
+            and instance_type = #{request.typeCode}
+        </if>
+        <if test="request.userId != null and request.userId != ''">
+            and from_user_id = #{request.userId}
+        </if>
+        ) ti ON ts.instance_code = ti.code
+        ORDER BY createOn desc
+    </select>
+
+    <select id="selectOneByRequest" resultType="com.zjlab.dataservice.modules.tc.model.entity.TodoRead">
+        SELECT
+        id,
+        code,
+        read_id,
+        instance_code,
+        to_user_id,
+        flag,
+        remark,
+        pc_url,
+        h5_url,
+        corp_id,
+        agent_id,
+        urge,
+        ext,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        gmt_read,
+        gmt_read_by
+        FROM
+        tc_todo_read
+        WHERE
+        1 = 1
+        <if test="agentId != null and agentId != ''">
+            AND agent_id = #{agentId}
+        </if>
+        <if test="toUserId != null and toUserId != ''">
+            AND to_user_id = #{toUserId}
+        </if>
+        <if test="instanceCode != null and instanceCode != ''">
+            AND instance_code = #{instanceCode}
+        </if>
+        <if test="code != null and code != ''">
+            AND code = #{code}
+        </if>
+        <if test="readId != null and readId != ''">
+            AND read_id = #{readId}
+        </if>
+        AND flag = 0
+        LIMIT 1
+    </select>
+
+    <update id="updateBatchByInstanceCode" parameterType="list">
+        update tc_todo_read
+        <set>
+            flag =
+            <choose>
+                <when test="list != null and list.size() > 0">
+                    case
+                    <foreach collection="list" item="item">
+                        <if test="item.flag != null">
+                            when instance_code = #{item.instanceCode} then #{item.flag}
+                        </if>
+                    </foreach>
+                    end
+                </when>
+                <otherwise>
+                    flag
+                </otherwise>
+            </choose>
+        </set>
+        where instance_code in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item.instanceCode}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.dataset.mapper.ThematicMapMapper">
+    <select id="queryByCondition"
+            parameterType="com.zjlab.dataservice.modules.dataset.model.dto.thematic.ThematicQueryDto"
+            resultType="com.zjlab.dataservice.modules.dataset.model.po.ThematicJZHPo">
+        SELECT id, value, st_asgeojson(ST_Translate(geom, 0.0044, -0.00195)) AS geomJson, pac_1
+--         SELECT id, value, st_asgeojson(geom) AS geomJson, pac_1
+        FROM ${request.tableName}
+        WHERE pac_1 = #{request.pac}
+          AND value != 0
+    </select>
+
+
+    <select id="getAreaSumByValue"
+            parameterType="com.zjlab.dataservice.modules.dataset.model.dto.thematic.ThematicQueryDto"
+            resultType="com.zjlab.dataservice.modules.dataset.model.entity.StatisticsEntity">
+        SELECT value                                   AS id,
+               SUM(ST_Area(ST_Transform(geom, 32633))) AS totalArea,
+               COUNT(*) AS count
+        FROM ${request.tableName}
+        WHERE pac_1 = #{request.pac} AND value != 0
+        GROUP BY value
+    </select>
+
+    <select id="getAreaSum" parameterType="com.zjlab.dataservice.modules.dataset.model.dto.thematic.ThematicQueryDto"
+            resultType="java.lang.Double">
+        SELECT SUM(ST_Area(ST_Transform(geom, 32633)))
+        FROM ${request.tableName}
+        WHERE pac_1 = #{request.pac}
+          AND value != 0
+    </select>
+
+    <select id="queryByConditionPage"
+            parameterType="com.zjlab.dataservice.modules.dataset.model.dto.thematic.ThematicQueryDto"
+            resultType="com.zjlab.dataservice.modules.dataset.model.po.ThematicJZHPo">
+        SELECT id, value, st_asgeojson(ST_Translate(geom, 0.0044, -0.00195)) AS geomJson, pac_1
+        FROM ${request.tableName}
+        WHERE pac_1 = #{request.pac}
+          AND value != 0
+    </select>
+
+</mapper>

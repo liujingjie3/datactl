@@ -1,0 +1,12 @@
+ALTER TABLE metadata_gf
+    ADD COLUMN filter_passed BOOLEAN DEFAULT FALSE,
+    ADD COLUMN status INTEGER DEFAULT 0,
+    ADD COLUMN create_by VARCHAR(100),
+    ADD COLUMN create_time TIMESTAMP,
+    ADD COLUMN update_by VARCHAR(100),
+    ADD COLUMN update_time TIMESTAMP,
+    ADD COLUMN marker VARCHAR(100),
+    ADD COLUMN checker VARCHAR(100);
+
+ALTER TABLE metadata_gf
+    ADD COLUMN review BOOLEAN DEFAULT FALSE;

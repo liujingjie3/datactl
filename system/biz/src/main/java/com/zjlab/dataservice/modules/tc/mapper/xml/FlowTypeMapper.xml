@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.tc.mapper.FlowTypeMapper">
+
+    <select id="selectAllTypeName" resultType="com.zjlab.dataservice.modules.tc.model.entity.FlowType">
+        SELECT id, type_code, type_name
+        FROM tc_flow_type
+        where type_code <![CDATA[!=]]> 'root'
+        ORDER BY sort
+    </select>
+</mapper>

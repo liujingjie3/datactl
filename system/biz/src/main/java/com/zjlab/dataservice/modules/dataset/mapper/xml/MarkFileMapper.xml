@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.dataset.mapper.MarkFileMapper">
+
+    <select id="qryMarkFileList" resultType="com.zjlab.dataservice.modules.dataset.model.po.DatasetMarkFilePo">
+        select * from dataset_mark_file
+        where del_flag = false
+        <if test="request.query != null and request.query != ''">
+            and name like CONCAT(CONCAT('%', #{request.query}), '%')
+        </if>
+<!--        <if test="request.userId != null and request.userId != ''">-->
+<!--            and marker = #{request.userId}-->
+<!--        </if>-->
+        <if test="request.markType != null">
+            and mark_type = #{request.markType}
+        </if>
+        <if test="request.marker != null and request.marker != '' and request.taskType == 'text'">
+            and marker = #{request.marker}
+        </if>
+        <if test="request.marker != null and request.marker != '' and request.taskType == 'classify'">
+            and classify_marker = #{request.marker}
+        </if>
+        <if test="request.marker != null and request.marker != '' and request.taskType == 'segment'">
+            and segment_marker = #{request.marker}
+        </if>
+        <if test="request.checker != null and request.checker != '' and request.taskType == 'text'">
+            and checker = #{request.checker}
+        </if>
+        <if test="request.checker != null and request.checker != '' and request.taskType == 'classify'">
+            and classify_checker = #{request.checker}
+        </if>
+        <if test="request.checker != null and request.checker != '' and request.taskType == 'segment'">
+            and segment_checker = #{request.checker}
+        </if>
+        <if test="request.status != null and request.taskType == 'text'">
+            and status = #{request.status}
+        </if>
+        <if test="request.status != null and request.taskType == 'classify'">
+            and classify_status = #{request.status}
+        </if>
+        <if test="request.status != null and request.taskType == 'segment'">
+            and segment_status = #{request.status}
+        </if>
+        <if test="request.reviews != null and request.reviews.size() > 0 and request.taskType == 'text'">
+            and review IN
+            <foreach collection="request.reviews" item="review" open="(" separator="," close=")">
+                #{review}
+            </foreach>
+        </if>
+        <if test="request.reviews != null and request.reviews.size() > 0 and request.taskType == 'classify'">
+            and classify_review IN
+            <foreach collection="request.reviews" item="review" open="(" separator="," close=")">
+                #{review}
+            </foreach>
+        </if>
+        <if test="request.reviews != null and request.reviews.size() > 0 and request.taskType == 'segment'">
+            and segment_review IN
+            <foreach collection="request.reviews" item="review" open="(" separator="," close=")">
+                #{review}
+            </foreach>
+        </if>
+        <if test="request.purpose != null">
+            and purpose = #{request.purpose}
+        </if>
+        order by ${request.orderByField} ${request.orderByType}
+    </select>
+
+    <update id="assignMarkFile" parameterType="com.zjlab.dataservice.modules.dataset.model.entity.AssignMarkFileEntity">
+        update dataset_mark_file
+        <set>
+            <if test="entity.marker != null and entity.marker != ''">
+                marker = #{entity.marker},
+            </if>
+            <if test="entity.checker != null and entity.checker != ''">
+                checker = #{entity.checker},
+            </if>
+            <if test="entity.status != null">
+                status = #{entity.status},
+            </if>
+            <if test="entity.createBy != null and entity.createBy != ''">
+                create_by = #{entity.createBy},
+            </if>
+            <if test="entity.createTime != null">
+                create_time = #{entity.createTime},
+            </if>
+            <if test="entity.updateBy != null and entity.updateBy != ''">
+                update_by = #{entity.updateBy},
+            </if>
+            <if test="entity.updateTime != null">
+                update_time = #{entity.updateTime},
+            </if>
+            <if test="entity.classifyStatus != null">
+                classify_status = #{entity.classifyStatus},
+            </if>
+            <if test="entity.classifyMarker != null and entity.classifyMarker != ''">
+                classify_marker = #{entity.classifyMarker},
+            </if>
+            <if test="entity.classifyChecker != null and entity.classifyChecker != ''">
+                classify_checker = #{entity.classifyChecker},
+            </if>
+            <if test="entity.classifyUpdateBy != null and entity.classifyUpdateBy != ''">
+                classify_update_by = #{entity.classifyUpdateBy},
+            </if>
+            <if test="entity.classifyUpdateTime != null">
+                classify_update_time = #{entity.classifyUpdateTime},
+            </if>
+            <if test="entity.segmentStatus != null">
+                segment_status = #{entity.segmentStatus},
+            </if>
+            <if test="entity.segmentMarker != null and entity.segmentMarker != ''">
+                segment_marker = #{entity.segmentMarker},
+            </if>
+            <if test="entity.segmentChecker != null and entity.segmentChecker != ''">
+                segment_checker = #{entity.segmentChecker},
+            </if>
+            <if test="entity.segmentUpdateBy != null and entity.segmentUpdateBy != ''">
+                segment_update_by = #{entity.segmentUpdateBy},
+            </if>
+            <if test="entity.segmentUpdateTime != null">
+                segment_update_time = #{entity.segmentUpdateTime}
+            </if>
+        </set>
+        where id in
+        <foreach collection="entity.ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectExistIds" resultType="java.lang.Integer">
+        select count(id) from dataset_mark_file
+        where 1=1
+        <if test="taskType == 'text'">
+            and status = #{status}
+        </if>
+        <if test="taskType == 'classify'">
+            and classify_status = #{status}
+        </if>
+        <if test="taskType == 'segment'">
+            and segment_status = #{status}
+        </if>
+        and
+            id in
+        <foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="filter" parameterType="java.util.List">
+        update dataset_mark_file
+        <set>
+            <if test="entity.status != null">
+                status = #{entity.status},
+                classify_status = #{entity.status},
+                segment_status= #{entity.status},
+            </if>
+            <if test="entity.updateBy != null and entity.updateBy != ''">
+                update_by = #{entity.updateBy},
+                classify_update_by = #{entity.updateBy},
+                segment_update_by = #{entity.updateBy},
+            </if>
+            <if test="entity.updateTime != null">
+                update_time = #{entity.updateTime},
+                classify_update_time = #{entity.updateTime},
+                segment_update_time = #{entity.updateTime},
+            </if>
+        </set>
+        where id in
+        <foreach collection="entity.ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="addMarkBatch" parameterType="com.zjlab.dataservice.modules.dataset.model.entity.AddMarkBatchEntity">
+        update dataset_mark_file
+        set
+        <if test="entity.markType != null">
+            mark_type = #{entity.markType},
+        </if>
+        <if test="entity.status != null">
+            status = #{entity.status},
+        </if>
+        <if test="entity.updateBy != null and entity.updateBy != ''">
+            update_by = #{entity.updateBy},
+        </if>
+        <if test="entity.updateTime != null">
+            update_time = #{entity.updateTime}
+        </if>
+        where id in
+        <foreach collection="entity.ids" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="qryStatusCount" resultType="com.zjlab.dataservice.modules.dataset.model.entity.StatusEntity">
+        SELECT status, COUNT(status) as count
+        FROM dataset_mark_file
+        GROUP BY status;
+    </select>
+
+    <select id="qryStatisticsRank" resultType="com.zjlab.dataservice.modules.dataset.model.entity.MarkStatisticsRankEntity">
+        SELECT mk.checker as userId, u.realname as name, COUNT(mk.checker) as markNum
+        FROM dataset_mark_file mk
+            JOIN sys_user u ON mk.checker = u.id
+        WHERE mk.status = 5
+        <if test="startTime != null">
+            AND mk.update_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND mk.update_time &lt;= #{endTime}
+        </if>
+        GROUP BY mk.checker, u.realname
+        ORDER BY markNum DESC;
+    </select>
+
+    <select id="qryWeeklyList" resultType="com.zjlab.dataservice.modules.dataset.model.entity.WeeklyPeriodEntity">
+        SELECT
+            YEARWEEK(COALESCE(update_time, create_time), 1) AS week,
+            COUNT(*) AS count,
+            DATE_FORMAT(DATE_SUB(COALESCE(update_time, create_time), INTERVAL WEEKDAY(COALESCE(update_time, create_time)) DAY), '%Y-%m-%d') AS firstDay
+        FROM dataset_mark_file
+        WHERE status = 5
+        GROUP BY week, firstDay
+        ORDER BY week;
+
+    </select>
+
+    <select id="qrySegmentDailyStatistics" resultType="com.zjlab.dataservice.modules.dataset.model.entity.DailyEntity">
+        SELECT DATE_FORMAT(mk.segment_update_time, '%Y-%m-%d') as date,mk.segment_checker, u.realname as name, COUNT(mk.segment_checker) as count
+        FROM dataset_mark_file mk
+            JOIN sys_user u ON mk.segment_checker = u.id
+        WHERE mk.segment_status = 5
+        GROUP BY DATE_FORMAT(mk.segment_update_time, '%Y-%m-%d') ,mk.segment_checker, u.realname
+        ORDER BY count DESC;
+    </select>
+
+    <select id="qryClassifyDailyStatistics" resultType="com.zjlab.dataservice.modules.dataset.model.entity.DailyEntity">
+        SELECT DATE_FORMAT(mk.classify_update_time, '%Y-%m-%d') as date,mk.classify_checker, u.realname as name, COUNT(mk.classify_checker) as count
+        FROM dataset_mark_file mk
+            JOIN sys_user u ON mk.classify_checker = u.id
+        WHERE mk.classify_status = 5
+        GROUP BY DATE_FORMAT(mk.classify_update_time, '%Y-%m-%d'),mk.classify_checker, u.realname
+        ORDER BY count DESC;
+    </select>
+
+    <select id="qryTextDailyStatistics" resultType="com.zjlab.dataservice.modules.dataset.model.entity.DailyEntity">
+        SELECT DATE_FORMAT(mk.update_time, '%Y-%m-%d') as date,mk.checker, u.realname as name, COUNT(mk.checker) as count
+        FROM dataset_mark_file mk
+            JOIN sys_user u ON mk.checker = u.id
+        WHERE mk.status = 5
+        GROUP BY DATE_FORMAT(mk.update_time, '%Y-%m-%d') ,mk.checker, u.realname
+        ORDER BY count DESC;
+    </select>
+
+    <select id="qryMarkReviewStatistics" resultType="com.zjlab.dataservice.modules.dataset.model.entity.MarkReviewEntity">
+        select sum(case when segment_review=1 then 1 else 0 end) as segmentReviewCnt,  /*语义分割复审量*/
+               sum(case when classify_review=1 then 1 else 0 end) as classifyReviewCnt, /*图像分类复审量*/
+               sum(case when review=1 then 1 else 0 end) as textReviewCnt /*图文解译校正复审量*/
+        from dataset_mark_file
+    </select>
+</mapper>

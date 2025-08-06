@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.bench.mapper.BenchTaskMapper">
+
+    <select id="qryBenchTaskList" resultType="com.zjlab.dataservice.modules.bench.model.entity.BenchTask">
+        SELECT task_id, task_name, task_name_en, capability_id, task_identifier, evaluation_metric
+        FROM bench_tasks
+        WHERE del_flag = false
+        <if test="request.taskNameEn != null and request.taskNameEn != ''">
+            AND task_name_en LIKE CONCAT('%', #{request.taskNameEn}, '%')
+        </if>
+        <if test="request.capabilityId != null and request.capabilityId != 0">
+            AND capability_id = #{request.capabilityId}
+        </if>
+        <if test="request.taskIdentifier != null and request.taskIdentifier != ''">
+            AND task_identifier LIKE CONCAT('%', #{request.taskIdentifier}, '%')
+        </if>
+
+        <!-- 排序逻辑 -->
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                <!-- 动态限制排序字段，防止 SQL 注入 -->
+                ORDER BY
+                <choose>
+                    <when test="request.orderByField == 'task_name'">
+                        task_name
+                    </when>
+                    <when test="request.orderByField == 'task_identifier'">
+                        task_identifier
+                    </when>
+                    <when test="request.orderByField == 'capability_id'">
+                        capability_id
+                    </when>
+                    <otherwise>
+                        update_time
+                    </otherwise>
+                </choose>
+
+                <!-- 根据 orderByType 选择排序方式 -->
+                <if test="request.orderByType != null and request.orderByType == 'asc'">
+                    ASC
+                </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'">
+                    DESC
+                </if>
+            </when>
+            <otherwise>
+                ORDER BY update_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+
+
+
+</mapper>

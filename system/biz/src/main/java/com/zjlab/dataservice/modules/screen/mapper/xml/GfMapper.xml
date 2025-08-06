@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.screen.mapper.GfMapper">
+
+    <select id="count" parameterType="java.lang.String" resultType="java.lang.Long">
+        select count(*) from metadata_gf
+        <where>
+            <if test="regionCode != null and regionCode != ''">
+                AND region_code = #{regionCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectL2" parameterType="java.lang.String" resultType="java.lang.Long">
+        select count(*)
+        from metadata_gf mg
+        where mss_ortho is not null
+          and mss_ortho != '';
+    </select>
+
+    <select id="selectL3" parameterType="java.lang.String" resultType="java.lang.Long">
+        select count(*)
+        from metadata_gf mg
+        where pansharpen_thumb_url is not null
+          and pansharpen_thumb_url != '';
+    </select>
+
+    <select id="selectGF2TimeSeq" resultType="com.zjlab.dataservice.modules.screen.model.entity.GF2TimeSeqEntity">
+        SELECT to_char(receive_time, 'YYYY') AS year, COUNT(*) AS gf2
+        FROM
+            metadata_gf
+        <where>
+            <if test="regionCode != null and regionCode != ''">
+                AND region_code = #{regionCode}
+            </if>
+        </where>
+        GROUP BY
+            to_char(receive_time, 'YYYY')
+        ORDER BY
+            year;
+    </select>
+
+    <select id="selectGF2RegionData" resultType="com.zjlab.dataservice.modules.screen.model.entity.RegionDataEntity">
+        SELECT
+        <choose>
+            <!-- 如果 regionCode 为空，查询省级数据 -->
+            <when test="regionId == null or regionId == ''">
+                mg.region_code AS regionCode, p.pr_name AS regionName, to_char(mg.receive_time, 'YYYY') AS year
+            </when>
+            <!-- 如果 regionCode 有值，查询该省下所有市的数据 -->
+            <otherwise>
+                mg.city_code AS regionCode, c.ct_name AS regionName, to_char(mg.receive_time, 'YYYY') AS year
+            </otherwise>
+        </choose>,
+        COUNT(*) AS gf2
+        FROM metadata_gf mg
+        INNER JOIN province p ON mg.region_code = p.pr_adcode
+        LEFT JOIN city c ON mg.city_code = c.ct_adcode
+        <where>
+            <if test="regionId != null and regionId != ''">
+                p.pr_adcode = #{regionId}
+            </if>
+        </where>
+        GROUP BY
+        <choose>
+            <when test="regionId == null or regionId == ''">
+                mg.region_code, p.pr_name, to_char(mg.receive_time, 'YYYY')
+            </when>
+            <otherwise>
+                mg.city_code, c.ct_name, to_char(mg.receive_time, 'YYYY')
+            </otherwise>
+        </choose>
+        ORDER BY year ASC
+    </select>
+</mapper>

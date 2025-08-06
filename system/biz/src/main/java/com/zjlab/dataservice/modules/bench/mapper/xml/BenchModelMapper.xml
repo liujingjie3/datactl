@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.bench.mapper.BenchModelMapper">
+
+    <select id="qryBenchModelList" resultType="com.zjlab.dataservice.modules.bench.model.po.BenchModelPo">
+        SELECT *
+        FROM (
+        SELECT bm.name, bm.team_id, bm.release_date, bm.source_type, bm.model_type, bm.parameters,
+        bm.overall_score, bm.global_visual_perception, bm.fine_visual_perception,
+        bm.language_generation, bm.spatiotemporal_reasoning, bm.count,bm.update_time, t.name AS teamName,
+        ROW_NUMBER() OVER (
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY
+                ${request.orderByField}
+                <if test="request.orderByType != null and request.orderByType == 'asc'"> ASC </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'"> DESC </if>
+            </when>
+            <otherwise>
+                ORDER BY bm.overall_score DESC
+            </otherwise>
+        </choose>
+        ) AS `rank`
+        FROM bench_models bm
+        LEFT JOIN bench_teams t ON bm.team_id = t.id
+        WHERE bm.del_flag = false
+        <if test="request.name != null and request.name != ''">
+            AND bm.name LIKE CONCAT('%', #{request.name}, '%')
+        </if>
+        <if test="request.sourceType != null and request.sourceType != ''">
+            AND bm.source_type LIKE CONCAT('%', #{request.sourceType}, '%')
+        </if>
+        <if test="request.modelType != null and request.modelType != ''">
+            AND bm.model_type = #{request.modelType}
+        </if>
+        ) ranked
+    </select>
+
+    <select id="qryModelCoarseList" resultType="com.zjlab.dataservice.modules.bench.model.po.BenchCoarsePo">
+        SELECT *
+        FROM (
+        SELECT
+        bm.name, bm.team_id, bm.release_date, bm.source_type, bm.model_type, bm.parameters,
+        bm.global_visual_perception AS overallScore, bm.img_cls, bm.reg_det_hbb, bm.reg_det_obb,
+        bm.pix_seg, bm.vqa_presence, bm.update_time, t.name AS teamName,
+        ROW_NUMBER() OVER (
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY ${request.orderByField}
+                <if test="request.orderByType != null and request.orderByType == 'asc'"> ASC </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'"> DESC </if>
+            </when>
+            <otherwise>
+                ORDER BY bm.global_visual_perception DESC
+            </otherwise>
+        </choose>
+        ) AS `rank`
+        FROM bench_models bm
+        LEFT JOIN bench_teams t ON bm.team_id = t.id
+        WHERE bm.del_flag = false
+        <if test="request.name != null and request.name != ''">
+            AND bm.name LIKE CONCAT('%', #{request.name}, '%')
+        </if>
+        <if test="request.sourceType != null and request.sourceType != ''">
+            AND bm.source_type LIKE CONCAT('%', #{request.sourceType}, '%')
+        </if>
+        <if test="request.modelType != null and request.modelType != ''">
+            AND bm.model_type = #{request.modelType}
+        </if>
+        ) ranked
+    </select>
+
+    <select id="qryModelFineList" resultType="com.zjlab.dataservice.modules.bench.model.po.BenchFinePo">
+        SELECT *
+        FROM (
+        SELECT
+        bm.name, bm.team_id, bm.release_date, bm.source_type, bm.model_type, bm.parameters,
+        bm.fine_visual_perception AS overallScore, bm.reg_cls_hbb, bm.reg_cls_obb, bm.pix_cls, bm.reg_vg,
+        bm.vqa_numcomp, bm.img_ct, bm.update_time, t.name AS teamName,
+        ROW_NUMBER() OVER (
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY ${request.orderByField}
+                <if test="request.orderByType != null and request.orderByType == 'asc'"> ASC </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'"> DESC </if>
+            </when>
+            <otherwise>
+                ORDER BY bm.fine_visual_perception DESC
+            </otherwise>
+        </choose>
+        ) AS `rank`
+        FROM bench_models bm
+        LEFT JOIN bench_teams t ON bm.team_id = t.id
+        WHERE bm.del_flag = false
+        <if test="request.name != null and request.name != ''">
+            AND bm.name LIKE CONCAT('%', #{request.name}, '%')
+        </if>
+        <if test="request.sourceType != null and request.sourceType != ''">
+            AND bm.source_type LIKE CONCAT('%', #{request.sourceType}, '%')
+        </if>
+        <if test="request.modelType != null and request.modelType != ''">
+            AND bm.model_type = #{request.modelType}
+        </if>
+        ) ranked
+    </select>
+
+    <select id="qryModelLanguageList" resultType="com.zjlab.dataservice.modules.bench.model.po.BenchLanguagePo">
+        SELECT *
+        FROM (
+        SELECT
+        bm.name, bm.team_id, bm.release_date, bm.source_type, bm.model_type, bm.parameters,
+        bm.language_generation AS overallScore, bm.img_cap, bm.img_cap_detailed, bm.reg_cap, bm.update_time,
+        t.name AS teamName,
+        ROW_NUMBER() OVER (
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY ${request.orderByField}
+                <if test="request.orderByType != null and request.orderByType == 'asc'"> ASC </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'"> DESC </if>
+            </when>
+            <otherwise>
+                ORDER BY bm.language_generation DESC
+            </otherwise>
+        </choose>
+        ) AS `rank`
+        FROM bench_models bm
+        LEFT JOIN bench_teams t ON bm.team_id = t.id
+        WHERE bm.del_flag = false
+        <if test="request.name != null and request.name != ''">
+            AND bm.name LIKE CONCAT('%', #{request.name}, '%')
+        </if>
+        <if test="request.sourceType != null and request.sourceType != ''">
+            AND bm.source_type LIKE CONCAT('%', #{request.sourceType}, '%')
+        </if>
+        <if test="request.modelType != null and request.modelType != ''">
+            AND bm.model_type = #{request.modelType}
+        </if>
+        ) ranked
+    </select>
+
+    <select id="qryModelUnderstandingList" resultType="com.zjlab.dataservice.modules.bench.model.po.BenchUnderstandingPo">
+        SELECT *
+        FROM (
+        SELECT
+        bm.name, bm.team_id, bm.release_date, bm.source_type, bm.model_type, bm.parameters,
+        bm.visual_question_answering AS overallScore, bm.update_time,
+        t.name AS teamName,
+        ROW_NUMBER() OVER (
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY ${request.orderByField}
+                <if test="request.orderByType != null and request.orderByType == 'asc'"> ASC </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'"> DESC </if>
+            </when>
+            <otherwise>
+                ORDER BY bm.visual_question_answering DESC
+            </otherwise>
+        </choose>
+        ) AS `rank`
+        FROM bench_models bm
+        LEFT JOIN bench_teams t ON bm.team_id = t.id
+        WHERE bm.del_flag = false
+        <if test="request.name != null and request.name != ''">
+            AND bm.name LIKE CONCAT('%', #{request.name}, '%')
+        </if>
+        <if test="request.sourceType != null and request.sourceType != ''">
+            AND bm.source_type LIKE CONCAT('%', #{request.sourceType}, '%')
+        </if>
+        <if test="request.modelType != null and request.modelType != ''">
+            AND bm.model_type = #{request.modelType}
+        </if>
+        ) ranked
+    </select>
+
+    <select id="qryModelAnalysisList" resultType="com.zjlab.dataservice.modules.bench.model.po.BenchAnalysisPo">
+        SELECT *
+        FROM (
+        SELECT
+        bm.name, bm.team_id, bm.release_date, bm.source_type, bm.model_type, bm.parameters,
+        bm.spatiotemporal_reasoning AS overallScore, bm.pix_chg, bm.update_time,
+        t.name AS teamName,
+        ROW_NUMBER() OVER (
+        <choose>
+            <when test="request.orderByField != null and request.orderByField != ''">
+                ORDER BY ${request.orderByField}
+                <if test="request.orderByType != null and request.orderByType == 'asc'"> ASC </if>
+                <if test="request.orderByType == null or request.orderByType == 'desc'"> DESC </if>
+            </when>
+            <otherwise>
+                ORDER BY bm.spatiotemporal_reasoning DESC
+            </otherwise>
+        </choose>
+        ) AS `rank`
+        FROM bench_models bm
+        LEFT JOIN bench_teams t ON bm.team_id = t.id
+        WHERE bm.del_flag = false
+        <if test="request.name != null and request.name != ''">
+            AND bm.name LIKE CONCAT('%', #{request.name}, '%')
+        </if>
+        <if test="request.sourceType != null and request.sourceType != ''">
+            AND bm.source_type LIKE CONCAT('%', #{request.sourceType}, '%')
+        </if>
+        <if test="request.modelType != null and request.modelType != ''">
+            AND bm.model_type = #{request.modelType}
+        </if>
+        ) ranked
+    </select>
+
+    <select id="selectModelWithTeamName" resultType="com.zjlab.dataservice.modules.bench.model.entity.BenchModel">
+        SELECT m.id, m.name, t.team_name
+        FROM bench_models m
+        LEFT JOIN bench_teams t ON m.team_id = t.id
+        WHERE m.id = #{id}
+    </select>
+
+
+</mapper>
