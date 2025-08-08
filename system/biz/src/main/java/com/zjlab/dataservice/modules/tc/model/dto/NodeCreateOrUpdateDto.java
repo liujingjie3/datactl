@@ -21,8 +21,9 @@ public class NodeCreateOrUpdateDto {
     private Integer timeoutRemind;
     /** 节点状态（1=活跃，0=禁用） */
     private Integer status;
-    /** 节点角色列表 */
+
     private List<NodeRoleDto> roles;
+
     /** 绑定的操作控制项 */
     private List<NodeActionDto> actions;
 }

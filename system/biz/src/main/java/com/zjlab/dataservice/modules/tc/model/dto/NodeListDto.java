@@ -5,7 +5,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
+
 
 /**
  * 节点列表返回
@@ -18,7 +20,9 @@ public class NodeListDto {
     private Integer expectedDuration;
     private Integer timeoutRemind;
     private Integer status;
+
     private List<NodeRoleDto> roles;
+
     private List<String> actionTypes;
     private Long creatorId;
     private String creatorName;

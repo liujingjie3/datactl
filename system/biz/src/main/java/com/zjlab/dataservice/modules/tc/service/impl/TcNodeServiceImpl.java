@@ -97,6 +97,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         List<NodeListDto> dtoList = nodePage.getRecords().stream().map(node -> {
             NodeListDto dto = new NodeListDto();
             BeanUtil.copyProperties(node, dto);
+
             // roles
             List<NodeRoleRel> roleRels = nodeRoleRelMapper.selectByNodeId(node.getId());
             if (roleRels != null && !roleRels.isEmpty()) {
@@ -110,6 +111,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                     return r;
                 }).collect(Collectors.toList());
                 dto.setRoles(roles);
+
             }
             // actions
             List<NodeActionRel> rels = nodeActionRelMapper.selectByNodeId(node.getId());
@@ -128,11 +130,13 @@ public class TcNodeServiceImpl implements TcNodeService {
             dto.setCreateTime(node.getCreateTime());
             return dto;
         }).collect(Collectors.toList());
+
         return new PageResult<NodeListDto>(
                 (int) nodePage.getCurrent(),
                 (int) nodePage.getSize(),
                 (int) nodePage.getTotal(),
                 dtoList);
+
     }
 
     @Override
@@ -141,6 +145,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
         nodeInfoMapper.insert(node);
+
         if (dto.getRoles() != null) {
             for (NodeRoleDto roleDto : dto.getRoles()) {
                 NodeRoleRel rel = new NodeRoleRel();
@@ -150,6 +155,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                 nodeRoleRelMapper.insert(rel);
             }
         }
+
         if (dto.getActions() != null) {
             for (NodeActionDto actionDto : dto.getActions()) {
                 NodeActionConfig cfg = new NodeActionConfig();
@@ -175,6 +181,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         node.setId(id);
         nodeInfoMapper.updateById(node);
         nodeRoleRelMapper.deleteByNodeId(id);
+
         if (dto.getRoles() != null) {
             for (NodeRoleDto roleDto : dto.getRoles()) {
                 NodeRoleRel rel = new NodeRoleRel();
@@ -184,6 +191,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                 nodeRoleRelMapper.insert(rel);
             }
         }
+
         List<NodeActionRel> oldRels = nodeActionRelMapper.selectByNodeId(id);
         for (NodeActionRel ar : oldRels) {
             nodeActionConfigMapper.deleteById(ar.getActionId());
@@ -230,6 +238,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         }
         NodeDetailDto dto = new NodeDetailDto();
         BeanUtil.copyProperties(node, dto);
+
         List<NodeRoleRel> roleRels = nodeRoleRelMapper.selectByNodeId(id);
         if (roleRels != null && !roleRels.isEmpty()) {
             List<NodeRoleDto> roles = roleRels.stream().map(rel -> {
@@ -242,6 +251,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                 return r;
             }).collect(Collectors.toList());
             dto.setRoles(roles);
+
         }
         List<NodeActionRel> rels = nodeActionRelMapper.selectByNodeId(id);
         if (rels != null && !rels.isEmpty()) {
