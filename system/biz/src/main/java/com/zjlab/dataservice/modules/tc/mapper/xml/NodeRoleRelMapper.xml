@@ -20,7 +20,6 @@
         SELECT <include refid="Base_Column_List"/>
         FROM node_role_rel
         WHERE del_flag = 0 AND node_id = #{nodeId}
-        LIMIT 1
     </select>
 
     <update id="deleteByNodeId" parameterType="long">

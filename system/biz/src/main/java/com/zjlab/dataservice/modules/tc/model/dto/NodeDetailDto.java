@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.util.List;
 
+
+import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
+
 /**
  * 节点详情
  */
@@ -15,6 +18,8 @@ public class NodeDetailDto {
     private Integer expectedDuration;
     private Integer timeoutRemind;
     private Integer status;
-    private Long roleId;
+
+    private List<NodeRoleDto> roles;
+
     private List<NodeActionDto> actions;
 }
