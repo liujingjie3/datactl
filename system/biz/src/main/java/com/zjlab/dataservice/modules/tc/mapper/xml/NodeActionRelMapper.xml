@@ -18,11 +18,11 @@
 
     <select id="selectByNodeId" resultMap="BaseResultMap" parameterType="long">
         SELECT <include refid="Base_Column_List"/>
-        FROM node_action_rel
+        FROM tc_node_action_rel
         WHERE del_flag = 0 AND node_id = #{nodeId}
     </select>
 
     <update id="deleteByNodeId" parameterType="long">
-        UPDATE node_action_rel SET del_flag = 1 WHERE node_id = #{nodeId}
+        UPDATE tc_node_action_rel SET del_flag = 1 WHERE node_id = #{nodeId}
     </update>
 </mapper>

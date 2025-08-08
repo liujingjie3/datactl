@@ -15,8 +15,9 @@ public class TcBaseEntity {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableLogic
-    private Integer delFlag;
+
+    @TableLogic(value = "0", delval = "1")
+    private Integer delFlag; // 0=未删, 1=已删
 
     private Long createBy;
 

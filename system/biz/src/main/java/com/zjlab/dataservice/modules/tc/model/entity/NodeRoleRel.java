@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 节点与角色关联表
  */
-@TableName("node_role_rel")
+@TableName("tc_node_role_rel")
 @Data
 public class NodeRoleRel extends TcBaseEntity {
     private Long nodeId;

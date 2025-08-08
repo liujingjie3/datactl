@@ -24,7 +24,7 @@
 
     <select id="selectByName" resultMap="BaseResultMap" parameterType="string">
         SELECT <include refid="Base_Column_List"/>
-        FROM node_info
+        FROM tc_node_info
         WHERE del_flag = 0 AND name = #{name}
         LIMIT 1
     </select>

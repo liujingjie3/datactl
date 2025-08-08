@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 操作控制项配置表
  */
-@TableName("node_action_config")
+@TableName("tc_node_action_config")
 @Data
 public class NodeActionConfig extends TcBaseEntity {
     /** 操作类型（0=上传，1=选择圈次计划，2=决策，3=文本填写） */

@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 节点与操作控制项关联表
  */
-@TableName("node_action_rel")
+@TableName("tc_node_action_rel")
 @Data
 public class NodeActionRel extends TcBaseEntity {
     private Long nodeId;

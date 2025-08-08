@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 节点信息表
  */
-@TableName("node_info")
+@TableName("tc_node_info")
 @Data
 public class NodeInfo extends TcBaseEntity {
     private String name;

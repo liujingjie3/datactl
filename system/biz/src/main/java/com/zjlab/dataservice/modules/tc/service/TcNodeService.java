@@ -8,9 +8,9 @@ public interface TcNodeService {
 
     PageResult<NodeListDto> listNodes(NodeQueryDto queryDto);
 
-    Long createNode(NodeCreateOrUpdateDto dto);
+    Long createNode(NodeInfoDto dto);
 
-    void updateNode(Long id, NodeCreateOrUpdateDto dto);
+    void updateNode(Long id, NodeInfoDto dto);
 
     void updateStatus(Long id, Integer status);
 

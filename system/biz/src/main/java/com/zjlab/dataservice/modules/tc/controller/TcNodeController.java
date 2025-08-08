@@ -45,7 +45,7 @@ public class TcNodeController {
     @PostMapping("/create")
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "新建节点")
-    public Result<Long> create(@RequestBody NodeCreateOrUpdateDto dto) {
+    public Result<Long> create(@RequestBody NodeInfoDto dto) {
         return Result.ok(tcNodeService.createNode(dto));
     }
 
@@ -55,7 +55,7 @@ public class TcNodeController {
     @PutMapping("/update/{id}")
     @ApiOperationSupport(order = 4)
     @ApiOperation(value = "编辑节点")
-    public Result<Void> update(@PathVariable Long id, @RequestBody NodeCreateOrUpdateDto dto) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody NodeInfoDto dto) {
         tcNodeService.updateNode(id, dto);
         return Result.ok();
     }

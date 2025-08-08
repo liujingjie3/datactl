@@ -4,13 +4,11 @@ import lombok.Data;
 
 import java.util.List;
 
-import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
-
 /**
  * 新建或编辑节点请求
  */
 @Data
-public class NodeCreateOrUpdateDto {
+public class NodeInfoDto {
     /** 节点名称 */
     private String name;
     /** 节点描述 */

@@ -20,10 +20,10 @@ import com.zjlab.dataservice.modules.tc.service.TcNodeService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -140,7 +140,9 @@ public class TcNodeServiceImpl implements TcNodeService {
     }
 
     @Override
-    public Long createNode(NodeCreateOrUpdateDto dto) {
+    @Transactional(rollbackFor = RuntimeException.class)
+    public Long createNode(NodeInfoDto dto) {
+        //todo getLoginUser获取用户信息，用于填写创建人和更新人
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
@@ -175,13 +177,15 @@ public class TcNodeServiceImpl implements TcNodeService {
     }
 
     @Override
-    public void updateNode(Long id, NodeCreateOrUpdateDto dto) {
+    @Transactional(rollbackFor = RuntimeException.class)
+    public void updateNode(Long id, NodeInfoDto dto) {
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setId(id);
         nodeInfoMapper.updateById(node);
         nodeRoleRelMapper.deleteByNodeId(id);
 
+        //todo 判断一下，如果角色变了，就删了重新插入，如果没有变，就不修改，下面的操作也是一样
         if (dto.getRoles() != null) {
             for (NodeRoleDto roleDto : dto.getRoles()) {
                 NodeRoleRel rel = new NodeRoleRel();
@@ -224,6 +228,7 @@ public class TcNodeServiceImpl implements TcNodeService {
 
     @Override
     public void deleteNode(Long id) {
+        //todo 对应的关联关系也要删,这里的update有点问题
         NodeInfo node = new NodeInfo();
         node.setId(id);
         node.setDelFlag(1);
