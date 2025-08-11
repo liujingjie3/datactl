@@ -15,5 +15,7 @@ public class NodeInfo extends TcBaseEntity {
     private Integer timeoutRemind;
     /** 节点状态（1=活跃，0=禁用） */
     private Integer status;
+    /** 操作控制项数组：[{type,name,config}] */
+    private String actions;
 }
 

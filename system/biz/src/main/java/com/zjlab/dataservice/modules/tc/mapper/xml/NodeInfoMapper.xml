@@ -9,6 +9,7 @@
         <result column="expected_duration" property="expectedDuration" />
         <result column="timeout_remind" property="timeoutRemind" />
         <result column="status" property="status" />
+        <result column="actions" property="actions" />
         <result column="del_flag" property="delFlag" />
         <result column="create_by" property="createBy" />
         <result column="create_time" property="createTime" />
@@ -18,7 +19,7 @@
 
     <!-- 通用查询列 -->
     <sql id="Base_Column_List">
-        id, name, description, expected_duration, timeout_remind, status,
+        id, name, description, expected_duration, timeout_remind, status, actions,
         del_flag, create_by, create_time, update_by, update_time
     </sql>
 

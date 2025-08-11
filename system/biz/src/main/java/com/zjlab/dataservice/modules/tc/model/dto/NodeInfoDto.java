@@ -2,6 +2,7 @@ package com.zjlab.dataservice.modules.tc.model.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -9,6 +10,7 @@ import java.util.List;
  */
 @Data
 public class NodeInfoDto {
+    private Long id;
     /** 节点名称 */
     private String name;
     /** 节点描述 */
@@ -24,4 +26,14 @@ public class NodeInfoDto {
 
     /** 绑定的操作控制项 */
     private List<NodeActionDto> actions;
+
+    /** 控制项名称列表 */
+    private List<String> actionTypes;
+
+    /** 创建人ID */
+    private Long creatorId;
+    /** 创建人名称 */
+    private String creatorName;
+    /** 创建时间 */
+    private LocalDateTime createTime;
 }

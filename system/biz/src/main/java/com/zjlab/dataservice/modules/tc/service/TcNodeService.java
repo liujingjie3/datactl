@@ -6,7 +6,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.*;
 public interface TcNodeService {
     NodeStatsVo getStats();
 
-    PageResult<NodeListDto> listNodes(NodeQueryDto queryDto);
+    PageResult<NodeInfoDto> listNodes(NodeQueryDto queryDto);
 
     Long createNode(NodeInfoDto dto);
 
@@ -16,5 +16,5 @@ public interface TcNodeService {
 
     void deleteNode(Long id);
 
-    NodeDetailDto getDetail(Long id);
+    NodeInfoDto getDetail(Long id);
 }
