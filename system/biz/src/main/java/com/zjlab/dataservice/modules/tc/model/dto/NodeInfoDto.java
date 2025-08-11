@@ -27,9 +27,6 @@ public class NodeInfoDto {
     /** 绑定的操作控制项 */
     private List<NodeActionDto> actions;
 
-    /** 控制项名称列表 */
-    private List<String> actionTypes;
-
     /** 创建人ID */
     private Long creatorId;
     /** 创建人名称 */

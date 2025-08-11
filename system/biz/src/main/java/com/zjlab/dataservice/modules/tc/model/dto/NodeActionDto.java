@@ -7,8 +7,6 @@ import lombok.Data;
  */
 @Data
 public class NodeActionDto {
-    /** 控制项ID */
-    private Long id;
     /** 操作类型（0=上传，1=选择圈次计划，2=决策，3=文本填写） */
     private Integer type;
     /** 控制项名称 */
