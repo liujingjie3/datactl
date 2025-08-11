@@ -35,7 +35,7 @@ public class TcNodeController {
     @GetMapping("/list")
     @ApiOperationSupport(order = 2)
     @ApiOperation(value = "查询节点列表")
-    public Result<PageResult<NodeListDto>> list(NodeQueryDto queryDto) {
+    public Result<PageResult<NodeInfoDto>> list(NodeQueryDto queryDto) {
         return Result.ok(tcNodeService.listNodes(queryDto));
     }
 
@@ -66,8 +66,8 @@ public class TcNodeController {
     @PatchMapping("/status/{id}")
     @ApiOperationSupport(order = 5)
     @ApiOperation(value = "更新节点状态")
-    public Result<Void> updateStatus(@PathVariable Long id, @RequestBody NodeStatusDto dto) {
-        tcNodeService.updateStatus(id, dto.getStatus());
+    public Result<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
+        tcNodeService.updateStatus(id, status);
         return Result.ok();
     }
 
@@ -88,7 +88,7 @@ public class TcNodeController {
     @GetMapping("/detail/{id}")
     @ApiOperationSupport(order = 7)
     @ApiOperation(value = "获取节点详情")
-    public Result<NodeDetailDto> detail(@PathVariable Long id) {
+    public Result<NodeInfoDto> detail(@PathVariable Long id) {
         return Result.ok(tcNodeService.getDetail(id));
     }
 }

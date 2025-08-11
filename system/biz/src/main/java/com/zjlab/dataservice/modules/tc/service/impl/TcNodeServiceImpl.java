@@ -10,8 +10,6 @@ import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.entity.SysUser;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
-import com.zjlab.dataservice.modules.tc.mapper.NodeActionConfigMapper;
-import com.zjlab.dataservice.modules.tc.mapper.NodeActionRelMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
@@ -22,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.alibaba.fastjson.JSON;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,10 +35,6 @@ public class TcNodeServiceImpl implements TcNodeService {
     private NodeInfoMapper nodeInfoMapper;
     @Autowired
     private NodeRoleRelMapper nodeRoleRelMapper;
-    @Autowired
-    private NodeActionConfigMapper nodeActionConfigMapper;
-    @Autowired
-    private NodeActionRelMapper nodeActionRelMapper;
     @Autowired
     private SysUserMapper sysUserMapper;
     @Autowired
@@ -57,7 +52,7 @@ public class TcNodeServiceImpl implements TcNodeService {
     }
 
     @Override
-    public PageResult<NodeListDto> listNodes(NodeQueryDto queryDto) {
+    public PageResult<NodeInfoDto> listNodes(NodeQueryDto queryDto) {
         Page<NodeInfo> page = new Page<>(queryDto.getPage(), queryDto.getPageSize());
         LambdaQueryWrapper<NodeInfo> wrapper = Wrappers.<NodeInfo>lambdaQuery()
                 .eq(NodeInfo::getDelFlag, 0);
@@ -94,8 +89,8 @@ public class TcNodeServiceImpl implements TcNodeService {
         }
 
         IPage<NodeInfo> nodePage = nodeInfoMapper.selectPage(page, wrapper);
-        List<NodeListDto> dtoList = nodePage.getRecords().stream().map(node -> {
-            NodeListDto dto = new NodeListDto();
+        List<NodeInfoDto> dtoList = nodePage.getRecords().stream().map(node -> {
+            NodeInfoDto dto = new NodeInfoDto();
             BeanUtil.copyProperties(node, dto);
 
             // roles
@@ -114,12 +109,12 @@ public class TcNodeServiceImpl implements TcNodeService {
 
             }
             // actions
-            List<NodeActionRel> rels = nodeActionRelMapper.selectByNodeId(node.getId());
-            if (rels != null && !rels.isEmpty()) {
-                List<Long> actionIds = rels.stream().map(NodeActionRel::getActionId).collect(Collectors.toList());
-                List<NodeActionConfig> cfgs = nodeActionConfigMapper.selectByIds(actionIds);
-                List<String> names = cfgs.stream().map(NodeActionConfig::getName).collect(Collectors.toList());
-                dto.setActionTypes(names);
+            if (StringUtils.isNotBlank(node.getActions())) {
+                List<NodeActionDto> actions = JSON.parseArray(node.getActions(), NodeActionDto.class);
+                if (actions != null) {
+                    List<String> names = actions.stream().map(NodeActionDto::getName).collect(Collectors.toList());
+                    dto.setActionTypes(names);
+                }
             }
             // creator
             dto.setCreatorId(node.getCreateBy());
@@ -131,7 +126,7 @@ public class TcNodeServiceImpl implements TcNodeService {
             return dto;
         }).collect(Collectors.toList());
 
-        return new PageResult<NodeListDto>(
+        return new PageResult<NodeInfoDto>(
                 (int) nodePage.getCurrent(),
                 (int) nodePage.getSize(),
                 (int) nodePage.getTotal(),
@@ -146,6 +141,9 @@ public class TcNodeServiceImpl implements TcNodeService {
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
+        if (dto.getActions() != null) {
+            node.setActions(JSON.toJSONString(dto.getActions()));
+        }
         nodeInfoMapper.insert(node);
 
         if (dto.getRoles() != null) {
@@ -158,21 +156,6 @@ public class TcNodeServiceImpl implements TcNodeService {
             }
         }
 
-        if (dto.getActions() != null) {
-            for (NodeActionDto actionDto : dto.getActions()) {
-                NodeActionConfig cfg = new NodeActionConfig();
-                cfg.setType(actionDto.getType());
-                cfg.setName(actionDto.getName());
-                cfg.setConfig(actionDto.getConfig());
-                cfg.setDelFlag(0);
-                nodeActionConfigMapper.insert(cfg);
-                NodeActionRel ar = new NodeActionRel();
-                ar.setNodeId(node.getId());
-                ar.setActionId(cfg.getId());
-                ar.setDelFlag(0);
-                nodeActionRelMapper.insert(ar);
-            }
-        }
         return node.getId();
     }
 
@@ -182,6 +165,9 @@ public class TcNodeServiceImpl implements TcNodeService {
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setId(id);
+        if (dto.getActions() != null) {
+            node.setActions(JSON.toJSONString(dto.getActions()));
+        }
         nodeInfoMapper.updateById(node);
         nodeRoleRelMapper.deleteByNodeId(id);
 
@@ -193,27 +179,6 @@ public class TcNodeServiceImpl implements TcNodeService {
                 rel.setRoleId(roleDto.getRoleId());
                 rel.setDelFlag(0);
                 nodeRoleRelMapper.insert(rel);
-            }
-        }
-
-        List<NodeActionRel> oldRels = nodeActionRelMapper.selectByNodeId(id);
-        for (NodeActionRel ar : oldRels) {
-            nodeActionConfigMapper.deleteById(ar.getActionId());
-        }
-        nodeActionRelMapper.deleteByNodeId(id);
-        if (dto.getActions() != null) {
-            for (NodeActionDto actionDto : dto.getActions()) {
-                NodeActionConfig cfg = new NodeActionConfig();
-                cfg.setType(actionDto.getType());
-                cfg.setName(actionDto.getName());
-                cfg.setConfig(actionDto.getConfig());
-                cfg.setDelFlag(0);
-                nodeActionConfigMapper.insert(cfg);
-                NodeActionRel ar = new NodeActionRel();
-                ar.setNodeId(id);
-                ar.setActionId(cfg.getId());
-                ar.setDelFlag(0);
-                nodeActionRelMapper.insert(ar);
             }
         }
     }
@@ -228,20 +193,17 @@ public class TcNodeServiceImpl implements TcNodeService {
 
     @Override
     public void deleteNode(Long id) {
-        //todo 对应的关联关系也要删,这里的update有点问题
-        NodeInfo node = new NodeInfo();
-        node.setId(id);
-        node.setDelFlag(1);
-        nodeInfoMapper.updateById(node);
+        nodeInfoMapper.deleteById(id);
+        nodeRoleRelMapper.deleteByNodeId(id);
     }
 
     @Override
-    public NodeDetailDto getDetail(Long id) {
+    public NodeInfoDto getDetail(Long id) {
         NodeInfo node = nodeInfoMapper.selectById(id);
         if (node == null || node.getDelFlag() == 1) {
             return null;
         }
-        NodeDetailDto dto = new NodeDetailDto();
+        NodeInfoDto dto = new NodeInfoDto();
         BeanUtil.copyProperties(node, dto);
 
         List<NodeRoleRel> roleRels = nodeRoleRelMapper.selectByNodeId(id);
@@ -258,18 +220,8 @@ public class TcNodeServiceImpl implements TcNodeService {
             dto.setRoles(roles);
 
         }
-        List<NodeActionRel> rels = nodeActionRelMapper.selectByNodeId(id);
-        if (rels != null && !rels.isEmpty()) {
-            List<Long> actionIds = rels.stream().map(NodeActionRel::getActionId).collect(Collectors.toList());
-            List<NodeActionConfig> cfgs = nodeActionConfigMapper.selectByIds(actionIds);
-            List<NodeActionDto> actions = cfgs.stream().map(cfg -> {
-                NodeActionDto a = new NodeActionDto();
-                a.setId(cfg.getId());
-                a.setType(cfg.getType());
-                a.setName(cfg.getName());
-                a.setConfig(cfg.getConfig());
-                return a;
-            }).collect(Collectors.toList());
+        if (StringUtils.isNotBlank(node.getActions())) {
+            List<NodeActionDto> actions = JSON.parseArray(node.getActions(), NodeActionDto.class);
             dto.setActions(actions);
         }
         return dto;
