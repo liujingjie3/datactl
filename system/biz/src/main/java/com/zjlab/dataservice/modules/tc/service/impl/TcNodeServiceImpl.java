@@ -65,15 +65,6 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (StringUtils.isNotBlank(queryDto.getName())) {
             wrapper.like(NodeInfo::getName, queryDto.getName());
         }
-        if (StringUtils.isNotBlank(queryDto.getCreatorName())) {
-            List<SysUser> users = sysUserMapper.selectList(Wrappers.<SysUser>query()
-                    .like("realname", queryDto.getCreatorName()));
-            if (users.isEmpty()) {
-                return new PageResult<>(queryDto.getPage(), queryDto.getPageSize(), 0, Collections.emptyList());
-            }
-            List<Long> userIds = users.stream().map(u -> Long.valueOf(u.getId())).collect(Collectors.toList());
-            wrapper.in(NodeInfo::getCreateBy, userIds);
-        }
         if (StringUtils.isNotBlank(queryDto.getRoleName())) {
             List<SysRole> roles = sysRoleMapper.selectList(Wrappers.<SysRole>query()
                     .like("role_name", queryDto.getRoleName()));
@@ -216,12 +207,6 @@ public class TcNodeServiceImpl implements TcNodeService {
                     }
                     nodeRoleRelMapper.insert(rel);
                 }
-            }
-        } else {
-            if (loginUser != null) {
-                NodeRoleRel updateRel = new NodeRoleRel();
-                updateRel.setUpdateBy(Long.valueOf(loginUser.getId()));
-                nodeRoleRelMapper.update(updateRel, Wrappers.<NodeRoleRel>lambdaUpdate().eq(NodeRoleRel::getNodeId, id));
             }
         }
     }
