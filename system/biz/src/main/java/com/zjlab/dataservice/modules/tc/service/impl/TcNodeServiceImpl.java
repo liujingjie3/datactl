@@ -65,16 +65,10 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (StringUtils.isNotBlank(queryDto.getName())) {
             wrapper.like(NodeInfo::getName, queryDto.getName());
         }
-        if (StringUtils.isNotBlank(queryDto.getRoleName())) {
-            List<SysRole> roles = sysRoleMapper.selectList(Wrappers.<SysRole>query()
-                    .like("role_name", queryDto.getRoleName()));
-            if (roles.isEmpty()) {
-                return new PageResult<>(queryDto.getPage(), queryDto.getPageSize(), 0, Collections.emptyList());
-            }
-            List<Long> roleIds = roles.stream().map(r -> Long.valueOf(r.getId())).collect(Collectors.toList());
+        if (queryDto.getRoleId() != null) {
             List<Long> nodeIds = nodeRoleRelMapper.selectList(Wrappers.<NodeRoleRel>lambdaQuery()
                             .eq(NodeRoleRel::getDelFlag, 0)
-                            .in(NodeRoleRel::getRoleId, roleIds))
+                            .eq(NodeRoleRel::getRoleId, queryDto.getRoleId()))
                     .stream().map(NodeRoleRel::getNodeId).collect(Collectors.toList());
             if (nodeIds.isEmpty()) {
                 return new PageResult<>(queryDto.getPage(), queryDto.getPageSize(), 0, Collections.emptyList());
