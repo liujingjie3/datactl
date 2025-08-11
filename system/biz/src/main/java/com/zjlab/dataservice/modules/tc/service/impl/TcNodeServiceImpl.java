@@ -15,14 +15,18 @@ import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.*;
 import com.zjlab.dataservice.modules.tc.service.TcNodeService;
+import com.zjlab.dataservice.common.system.vo.LoginUser;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.alibaba.fastjson.JSON;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -112,8 +116,14 @@ public class TcNodeServiceImpl implements TcNodeService {
             if (StringUtils.isNotBlank(node.getActions())) {
                 List<NodeActionDto> actions = JSON.parseArray(node.getActions(), NodeActionDto.class);
                 if (actions != null) {
-                    List<String> names = actions.stream().map(NodeActionDto::getName).collect(Collectors.toList());
-                    dto.setActionTypes(names);
+                    List<NodeActionDto> simple = actions.stream().map(a -> {
+                        NodeActionDto na = new NodeActionDto();
+                        na.setType(a.getType());
+                        na.setName(a.getName());
+                        return na;
+                    }).collect(Collectors.toList());
+                    dto.setActions(simple);
+                    dto.setActionTypes(simple.stream().map(NodeActionDto::getName).collect(Collectors.toList()));
                 }
             }
             // creator
@@ -123,6 +133,13 @@ public class TcNodeServiceImpl implements TcNodeService {
                 dto.setCreatorName(user.getUsername());
             }
             dto.setCreateTime(node.getCreateTime());
+            // updater
+            dto.setUpdaterId(node.getUpdateBy());
+            SysUser upUser = sysUserMapper.selectById(String.valueOf(node.getUpdateBy()));
+            if (upUser != null) {
+                dto.setUpdaterName(upUser.getUsername());
+            }
+            dto.setUpdateTime(node.getUpdateTime());
             return dto;
         }).collect(Collectors.toList());
 
@@ -137,10 +154,16 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public Long createNode(NodeInfoDto dto) {
-        //todo getLoginUser获取用户信息，用于填写创建人和更新人
+        LoginUser loginUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
+        if (loginUser != null) {
+            node.setCreateBy(Long.valueOf(loginUser.getId()));
+            node.setUpdateBy(Long.valueOf(loginUser.getId()));
+            node.setCreateTime(LocalDateTime.now());
+            node.setUpdateTime(LocalDateTime.now());
+        }
         if (dto.getActions() != null) {
             node.setActions(JSON.toJSONString(dto.getActions()));
         }
@@ -162,23 +185,34 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public void updateNode(Long id, NodeInfoDto dto) {
+        LoginUser loginUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setId(id);
+        if (loginUser != null) {
+            node.setUpdateBy(Long.valueOf(loginUser.getId()));
+            node.setUpdateTime(LocalDateTime.now());
+        }
         if (dto.getActions() != null) {
             node.setActions(JSON.toJSONString(dto.getActions()));
         }
         nodeInfoMapper.updateById(node);
-        nodeRoleRelMapper.deleteByNodeId(id);
 
-        //todo 判断一下，如果角色变了，就删了重新插入，如果没有变，就不修改，下面的操作也是一样
-        if (dto.getRoles() != null) {
-            for (NodeRoleDto roleDto : dto.getRoles()) {
-                NodeRoleRel rel = new NodeRoleRel();
-                rel.setNodeId(id);
-                rel.setRoleId(roleDto.getRoleId());
-                rel.setDelFlag(0);
-                nodeRoleRelMapper.insert(rel);
+        // 更新角色信息，只有变化时才调整
+        List<NodeRoleRel> existing = nodeRoleRelMapper.selectByNodeId(id);
+        Set<Long> oldIds = existing.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toSet());
+        Set<Long> newIds = dto.getRoles() == null ? Collections.emptySet() :
+                dto.getRoles().stream().map(NodeRoleDto::getRoleId).collect(Collectors.toSet());
+        if (!oldIds.equals(newIds)) {
+            nodeRoleRelMapper.deleteByNodeId(id);
+            if (dto.getRoles() != null) {
+                for (NodeRoleDto roleDto : dto.getRoles()) {
+                    NodeRoleRel rel = new NodeRoleRel();
+                    rel.setNodeId(id);
+                    rel.setRoleId(roleDto.getRoleId());
+                    rel.setDelFlag(0);
+                    nodeRoleRelMapper.insert(rel);
+                }
             }
         }
     }
@@ -223,6 +257,16 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (StringUtils.isNotBlank(node.getActions())) {
             List<NodeActionDto> actions = JSON.parseArray(node.getActions(), NodeActionDto.class);
             dto.setActions(actions);
+        }
+        dto.setCreatorId(node.getCreateBy());
+        SysUser creator = sysUserMapper.selectById(String.valueOf(node.getCreateBy()));
+        if (creator != null) {
+            dto.setCreatorName(creator.getUsername());
+        }
+        dto.setUpdaterId(node.getUpdateBy());
+        SysUser upUser = sysUserMapper.selectById(String.valueOf(node.getUpdateBy()));
+        if (upUser != null) {
+            dto.setUpdaterName(upUser.getUsername());
         }
         return dto;
     }

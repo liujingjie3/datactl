@@ -36,4 +36,11 @@ public class NodeInfoDto {
     private String creatorName;
     /** 创建时间 */
     private LocalDateTime createTime;
+
+    /** 更新人ID */
+    private Long updaterId;
+    /** 更新人名称 */
+    private String updaterName;
+    /** 更新时间 */
+    private LocalDateTime updateTime;
 }
