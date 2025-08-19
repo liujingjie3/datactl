@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.zjlab.dataservice.modules.task.mapper.TaskMapper">
+<mapper namespace="com.zjlab.dataservice.modules.tc.mapper.TaskMapper">
 
     <sql id="selectFields">
         t.id AS taskId,
@@ -57,7 +57,7 @@
         </if>
     </sql>
 
-    <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.task.model.po.TaskListItemPO">
+    <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.po.TaskListItemPO">
         <script>
             SELECT
             <include refid="selectFields"/>

@@ -1,4 +1,4 @@
-package com.zjlab.dataservice.modules.task.model.vo;
+package com.zjlab.dataservice.modules.tc.model.vo;
 
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
 import lombok.Data;

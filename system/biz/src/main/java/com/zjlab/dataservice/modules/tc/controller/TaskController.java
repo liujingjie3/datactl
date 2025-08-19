@@ -1,9 +1,9 @@
-package com.zjlab.dataservice.modules.task.controller;
+package com.zjlab.dataservice.modules.tc.controller;
 
 import com.zjlab.dataservice.common.api.vo.Result;
-import com.zjlab.dataservice.modules.task.model.dto.TaskListQuery;
-import com.zjlab.dataservice.modules.task.model.vo.TaskListPageVO;
-import com.zjlab.dataservice.modules.task.service.TaskService;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskListQuery;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskListPageVO;
+import com.zjlab.dataservice.modules.tc.service.TaskService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
