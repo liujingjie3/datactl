@@ -41,7 +41,7 @@ public interface ISysUserService extends IService<SysUser> {
 	 * @param pageNo
 	 * @return
 	 */
-	Result<IPage<SysUser>> queryPageList(HttpServletRequest req, QueryWrapper<SysUser> queryWrapper, Integer pageSize, Integer pageNo);
+	Result<IPage<SysUser>> queryPageList(HttpServletRequest req, QueryWrapper<SysUser> queryWrapper, Integer pageSize, Integer pageNo,Boolean filter);
 	
 	/**
 	 * 重置密码

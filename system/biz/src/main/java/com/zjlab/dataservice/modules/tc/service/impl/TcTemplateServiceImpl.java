@@ -14,9 +14,12 @@ import com.zjlab.dataservice.common.exception.BaseException;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.common.util.Func;
+import com.zjlab.dataservice.modules.taskplan.mapper.MetadataMapper;
+import com.zjlab.dataservice.modules.tc.mapper.TcCommandMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
+import com.zjlab.dataservice.modules.tc.model.entity.TcCommand;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +28,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.zjlab.dataservice.common.system.api.ISysBaseAPI;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTask;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.validation.constraints.NotNull;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @Service
 @Slf4j
@@ -38,6 +51,10 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Autowired
     private ISysBaseAPI userService;  // 注入 UserService
+
+    @Resource
+    private TcCommandMapper tcCommandMapper;
+
 
     @Override
     public PageResult<TodoTemplateDto> qryTemplateList(TodoTemplateQueryDto todoTemplateQueryDto) {
@@ -85,7 +102,8 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     }
 
     @Override
-    public TodoTemplateDto submit(TodoTemplateDto todoTemplateDto) {
+    @Transactional(rollbackFor = Exception.class)
+    public TodoTemplateDto submit(MultipartFile file, TodoTemplateDto todoTemplateDto) {
         // 统一code处理
         if (Func.isBlank(todoTemplateDto.getCode())) {
             todoTemplateDto.setCode(Func.randomUUID());
@@ -118,10 +136,11 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         }
 
         LoginUser user = userService.getUserById(userId);
-
+        String templateId;
         if (Func.isNull(existing)) {
             // 新增
-            template.setTemplateId(Func.randomUUID());
+            templateId = Func.randomUUID();
+            template.setTemplateId(templateId);
             template.setCreateTime(LocalDateTime.now());
             template.setUpdateTime(LocalDateTime.now());
             if (Func.notNull(user)) {
@@ -132,6 +151,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             save(template);
         } else {
             // 更新
+            templateId = existing.getTemplateId();
             BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
             existing.setTemplateAttr(template.getTemplateAttr());
             existing.setUpdateTime(LocalDateTime.now());
@@ -143,6 +163,14 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             updateWrapper.eq("code", template.getCode());
             log.info("before update template info: {}", existing);
             update(existing, updateWrapper);
+        }
+
+        // ====== 5. 解析 Excel 并批量插入 tc_commands ======
+        if (file != null && !file.isEmpty()) {
+            List<TcCommand> commands = parseExcel(file, templateId);
+            if (!commands.isEmpty()) {
+                tcCommandMapper.batchInsert(commands); // 批量插入
+            }
         }
 
         return todoTemplateDto;
@@ -284,5 +312,33 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         result.setData(listRecords);
         return result;
     }
+
+    private List<TcCommand> parseExcel(MultipartFile file, String templateId) {
+        List<TcCommand> list = new ArrayList<>();
+        try (InputStream is = file.getInputStream()) {
+            Workbook workbook = new XSSFWorkbook(is);
+            Sheet sheet = workbook.getSheetAt(0);
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) { // 从第2行开始
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                TcCommand cmd = new TcCommand();
+                cmd.setTemplateId(templateId);
+                cmd.setCode(row.getCell(0).getStringCellValue());
+                cmd.setName(row.getCell(1).getStringCellValue());
+                cmd.setTimeOrder(row.getCell(2).getStringCellValue());
+                cmd.setExecution(row.getCell(3).getStringCellValue());
+                cmd.setDescription(row.getCell(4).getStringCellValue());
+                cmd.setDelFlag(0);
+                cmd.setCreateTime(LocalDateTime.now());
+                cmd.setUpdateTime(LocalDateTime.now());
+                list.add(cmd);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return list;
+    }
+
 
 }

@@ -10,6 +10,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,7 +28,7 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
      * @param templateVO
      * @return
      */
-    TodoTemplateDto submit(TodoTemplateDto templateVO);
+    TodoTemplateDto submit(MultipartFile file, TodoTemplateDto templateVO);
 
     /**
      * 通过名称查询模板实例

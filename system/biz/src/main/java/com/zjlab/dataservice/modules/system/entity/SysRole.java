@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zjlab.dataservice.common.aspect.annotation.Dict;
 import org.jeecgframework.poi.excel.annotation.Excel;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -98,7 +99,11 @@ public class SysRole implements Serializable {
     @Dict(dicCode = "user_status")
     private Integer status;
 
-
+    /**
+     * 是否为tc角色(1：是 ）
+     */
+    @JsonIgnore
+    private Integer tc;
     /**
      * 数量统计
      */

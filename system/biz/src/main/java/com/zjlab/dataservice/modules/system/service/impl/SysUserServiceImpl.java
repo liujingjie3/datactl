@@ -102,7 +102,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private ISysUserRoleService sysUserRoleService;
 
     @Override
-    public Result<IPage<SysUser>> queryPageList(HttpServletRequest req, QueryWrapper<SysUser> queryWrapper, Integer pageSize, Integer pageNo) {
+    public Result<IPage<SysUser>> queryPageList(HttpServletRequest req, QueryWrapper<SysUser> queryWrapper, Integer pageSize, Integer pageNo, Boolean filter) {
         Result<IPage<SysUser>> result = new Result<IPage<SysUser>>();
         //update-begin-Author:wangshuai--Date:20211119--for:【vue3】通过部门id查询用户，通过code查询id
         //部门ID
@@ -137,6 +137,22 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         //TODO 外部模拟登陆临时账号，列表不显示
         queryWrapper.ne("username", "_reserve_user_external");
+
+        // filter过滤天基中心的user
+        if (Boolean.TRUE.equals(filter)) {
+            // 先查出符合部门条件的用户ID
+            List<String> tianjiUserIds = sysUserDepartMapper.selectList(
+                    new LambdaQueryWrapper<SysUserDepart>()
+                            .eq(SysUserDepart::getDepId, "310000000")
+            ).stream().map(SysUserDepart::getUserId).collect(Collectors.toList());
+
+            if (oConvertUtils.listIsNotEmpty(tianjiUserIds)) {
+                queryWrapper.in("id", tianjiUserIds);
+            } else {
+                return Result.OK(); // 没有符合的用户直接返回空
+            }
+        }
+
         Page<SysUser> page = new Page<SysUser>(pageNo, pageSize);
         IPage<SysUser> pageList = this.page(page, queryWrapper);
 

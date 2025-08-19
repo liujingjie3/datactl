@@ -9,7 +9,9 @@ import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 
@@ -48,12 +50,13 @@ public class TcTemplateController {
     /**
      * 新增 实例模板信息表
      */
-    @PostMapping("/submit")
+    @PostMapping(value ="/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "新增或修改", notes = "传入templateVO")
-    public Result<TodoTemplateDto> save(@Valid @RequestBody TodoTemplateDto todoTemplateDto) {
+    public Result<TodoTemplateDto> save(@RequestParam("file") MultipartFile file,
+                                        @RequestPart("template") TodoTemplateDto todoTemplateDto) {
         try {
-            TodoTemplateDto todoTemplate = tcTemplateService.submit(todoTemplateDto);
+            TodoTemplateDto todoTemplate = tcTemplateService.submit(file,todoTemplateDto);
             return Result.OK("新增或修改成功", todoTemplate);
         } catch (Exception e) {
             return Result.error("新增或修改失败: " + e.getMessage());
