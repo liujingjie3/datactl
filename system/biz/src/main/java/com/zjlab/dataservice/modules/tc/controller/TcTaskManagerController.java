@@ -13,7 +13,7 @@ import javax.annotation.Resource;
 /** 任务列表接口 */
 @RestController
 @RequestMapping("/task")
-public class TaskController {
+public class TcTaskManagerController {
 
     @Resource
     private TaskService taskService;
