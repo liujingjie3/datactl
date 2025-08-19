@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  * 任务列表查询结果的持久对象
  */
 @Data
-public class TaskListItemPO {
+public class TaskManagerListItemPO {
     private Long taskId;
     private String taskName;
     private String taskCode;

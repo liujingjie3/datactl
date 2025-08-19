@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * 查询任务列表的参数
  */
 @Data
-public class TaskListQuery {
+public class TaskManagerListQuery {
     /** Tab类型：all/startedByMe/todo/participated/handled */
     private String tab;
     /** 模糊搜索：任务名称或编码 */

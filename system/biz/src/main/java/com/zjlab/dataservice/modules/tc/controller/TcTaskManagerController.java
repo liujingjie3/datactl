@@ -1,9 +1,9 @@
 package com.zjlab.dataservice.modules.tc.controller;
 
 import com.zjlab.dataservice.common.api.vo.Result;
-import com.zjlab.dataservice.modules.tc.model.dto.TaskListQuery;
-import com.zjlab.dataservice.modules.tc.model.vo.TaskListPageVO;
-import com.zjlab.dataservice.modules.tc.service.TaskService;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListPageVO;
+import com.zjlab.dataservice.modules.tc.service.TaskManagerService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,11 +16,11 @@ import javax.annotation.Resource;
 public class TcTaskManagerController {
 
     @Resource
-    private TaskService taskService;
+    private TaskManagerService taskManagerService;
 
     @GetMapping("/list")
-    public Result<TaskListPageVO> list(TaskListQuery query) {
-        TaskListPageVO page = taskService.listTasks(query);
+    public Result<TaskManagerListPageVO> list(TaskManagerListQuery query) {
+        TaskManagerListPageVO page = taskManagerService.listTasks(query);
         return Result.ok(page);
     }
 }
