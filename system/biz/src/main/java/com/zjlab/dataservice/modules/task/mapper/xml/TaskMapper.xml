@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.task.mapper.TaskMapper">
+
+    <sql id="selectFields">
+        t.id AS taskId,
+        t.task_name AS taskName,
+        t.task_code AS taskCode,
+        JSON_OBJECT(
+            'templateId', t.template_id,
+            'templateName', tt.template_name
+        ) AS template,
+        t.satellites AS satellites,
+        t.create_time AS createTime,
+        t.status AS status,
+        COALESCE(curN.current_nodes_json, JSON_ARRAY()) AS currentNodes
+    </sql>
+
+    <sql id="joinCurrentNodes">
+        LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+        LEFT JOIN (
+            SELECT
+                ni.task_id,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'nodeInstId', ni.id,
+                        'nodeName', ninfo.name,
+                        'roles',
+                        (
+                            SELECT JSON_ARRAYAGG(JSON_OBJECT('roleId', r.id, 'roleName', r.role_name))
+                            FROM JSON_TABLE(ni.handler_role_ids, '$[*]' COLUMNS (role_id VARCHAR(64) PATH '$')) jt
+                            JOIN sys_role r ON r.id = jt.role_id
+                        )
+                    )
+                    ORDER BY ni.order_no, ni.id
+                ) AS current_nodes_json
+            FROM tc_task_node_inst ni
+            JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
+            WHERE ni.del_flag = 0 AND ni.status = 1
+            GROUP BY ni.task_id
+        ) curN ON curN.task_id = t.id
+    </sql>
+
+    <sql id="whereCommon">
+        t.del_flag = 0
+        <if test="query.q != null and query.q != ''">
+            AND (t.task_name LIKE CONCAT('%', #{query.q}, '%') OR t.task_code LIKE CONCAT('%', #{query.q}, '%'))
+        </if>
+        <if test="query.status != null">
+            AND t.status = #{query.status}
+        </if>
+        <if test="query.templateId != null">
+            AND t.template_id = #{query.templateId}
+        </if>
+        <if test="query.startTimeFrom != null">
+            AND t.create_time &gt;= #{query.startTimeFrom}
+        </if>
+    </sql>
+
+    <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.task.model.po.TaskListItemPO">
+        <script>
+            SELECT
+            <include refid="selectFields"/>
+            FROM tc_task t
+            <if test="query.tab == 'todo' or query.tab == 'participated'">
+                JOIN tc_task_work_item w ON w.task_id = t.id
+            </if>
+            <if test="query.tab == 'handled'">
+                JOIN tc_task_work_item wi ON wi.task_id = t.id
+            </if>
+            <include refid="joinCurrentNodes"/>
+            WHERE
+            <include refid="whereCommon"/>
+            <if test="query.tab == 'startedByMe'">
+                AND t.create_by = #{query.userId}
+            </if>
+            <if test="query.tab == 'todo'">
+                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 1
+            </if>
+            <if test="query.tab == 'participated'">
+                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
+            </if>
+            <if test="query.tab == 'handled'">
+                AND wi.del_flag = 0 AND wi.phase_status = 2
+                AND wi.assignee_id IN (
+                    SELECT DISTINCT sur.user_id
+                    FROM sys_user_role sur
+                    WHERE sur.role_id IN (
+                        SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
+                    )
+                )
+            </if>
+            ORDER BY t.create_time DESC
+            LIMIT #{query.offset}, #{query.pageSize}
+        </script>
+    </select>
+
+    <select id="countTaskList" resultType="long">
+        <script>
+            SELECT
+            <choose>
+                <when test="query.tab == 'todo' or query.tab == 'participated' or query.tab == 'handled'">
+                    COUNT(DISTINCT t.id)
+                </when>
+                <otherwise>
+                    COUNT(1)
+                </otherwise>
+            </choose>
+            FROM tc_task t
+            <if test="query.tab == 'todo' or query.tab == 'participated'">
+                JOIN tc_task_work_item w ON w.task_id = t.id
+            </if>
+            <if test="query.tab == 'handled'">
+                JOIN tc_task_work_item wi ON wi.task_id = t.id
+            </if>
+            WHERE
+            <include refid="whereCommon"/>
+            <if test="query.tab == 'startedByMe'">
+                AND t.create_by = #{query.userId}
+            </if>
+            <if test="query.tab == 'todo'">
+                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 1
+            </if>
+            <if test="query.tab == 'participated'">
+                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
+            </if>
+            <if test="query.tab == 'handled'">
+                AND wi.del_flag = 0 AND wi.phase_status = 2
+                AND wi.assignee_id IN (
+                    SELECT DISTINCT sur.user_id
+                    FROM sys_user_role sur
+                    WHERE sur.role_id IN (
+                        SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
+                    )
+                )
+            </if>
+        </script>
+    </select>
+
+</mapper>
