@@ -1,7 +1,7 @@
-package com.zjlab.dataservice.modules.task.mapper;
+package com.zjlab.dataservice.modules.tc.mapper;
 
-import com.zjlab.dataservice.modules.task.model.dto.TaskListQuery;
-import com.zjlab.dataservice.modules.task.model.po.TaskListItemPO;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskListQuery;
+import com.zjlab.dataservice.modules.tc.model.po.TaskListItemPO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

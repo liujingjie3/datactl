@@ -1,4 +1,4 @@
-package com.zjlab.dataservice.modules.task.enums;
+package com.zjlab.dataservice.modules.tc.enums;
 
 /**
  * 任务状态

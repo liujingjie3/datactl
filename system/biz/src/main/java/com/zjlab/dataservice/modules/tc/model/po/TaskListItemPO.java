@@ -1,4 +1,4 @@
-package com.zjlab.dataservice.modules.task.model.po;
+package com.zjlab.dataservice.modules.tc.model.po;
 
 import lombok.Data;
 

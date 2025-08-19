@@ -1,6 +1,6 @@
-package com.zjlab.dataservice.modules.task.model.vo;
+package com.zjlab.dataservice.modules.tc.model.vo;
 
-import com.zjlab.dataservice.modules.task.enums.TaskStatusEnum;
+import com.zjlab.dataservice.modules.tc.enums.TaskStatusEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
