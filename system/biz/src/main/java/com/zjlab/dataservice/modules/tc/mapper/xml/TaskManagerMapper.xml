@@ -58,83 +58,79 @@
     </sql>
 
     <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.po.TaskManagerListItemPO">
-        <script>
-            SELECT
-            <include refid="selectFields"/>
-            FROM tc_task t
-            <if test="query.tab == 'todo' or query.tab == 'participated'">
-                JOIN tc_task_work_item w ON w.task_id = t.id
-            </if>
-            <if test="query.tab == 'handled'">
-                JOIN tc_task_work_item wi ON wi.task_id = t.id
-            </if>
-            <include refid="joinCurrentNodes"/>
-            WHERE
-            <include refid="whereCommon"/>
-            <if test="query.tab == 'startedByMe'">
-                AND t.create_by = #{query.userId}
-            </if>
-            <if test="query.tab == 'todo'">
-                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 1
-            </if>
-            <if test="query.tab == 'participated'">
-                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
-            </if>
-            <if test="query.tab == 'handled'">
-                AND wi.del_flag = 0 AND wi.phase_status = 2
-                AND wi.assignee_id IN (
-                    SELECT DISTINCT sur.user_id
-                    FROM sys_user_role sur
-                    WHERE sur.role_id IN (
-                        SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
-                    )
+        SELECT
+        <include refid="selectFields"/>
+        FROM tc_task t
+        <if test="query.tab == 'todo' or query.tab == 'participated'">
+            JOIN tc_task_work_item w ON w.task_id = t.id
+        </if>
+        <if test="query.tab == 'handled'">
+            JOIN tc_task_work_item wi ON wi.task_id = t.id
+        </if>
+        <include refid="joinCurrentNodes"/>
+        WHERE
+        <include refid="whereCommon"/>
+        <if test="query.tab == 'startedByMe'">
+            AND t.create_by = #{query.userId}
+        </if>
+        <if test="query.tab == 'todo'">
+            AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 1
+        </if>
+        <if test="query.tab == 'participated'">
+            AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
+        </if>
+        <if test="query.tab == 'handled'">
+            AND wi.del_flag = 0 AND wi.phase_status = 2
+            AND wi.assignee_id IN (
+                SELECT DISTINCT sur.user_id
+                FROM sys_user_role sur
+                WHERE sur.role_id IN (
+                    SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
                 )
-            </if>
-            ORDER BY t.create_time DESC
-            LIMIT #{query.offset}, #{query.pageSize}
-        </script>
+            )
+        </if>
+        ORDER BY t.create_time DESC
+        LIMIT #{query.offset}, #{query.pageSize}
     </select>
 
     <select id="countTaskList" resultType="long">
-        <script>
-            SELECT
-            <choose>
-                <when test="query.tab == 'todo' or query.tab == 'participated' or query.tab == 'handled'">
-                    COUNT(DISTINCT t.id)
-                </when>
-                <otherwise>
-                    COUNT(1)
-                </otherwise>
-            </choose>
-            FROM tc_task t
-            <if test="query.tab == 'todo' or query.tab == 'participated'">
-                JOIN tc_task_work_item w ON w.task_id = t.id
-            </if>
-            <if test="query.tab == 'handled'">
-                JOIN tc_task_work_item wi ON wi.task_id = t.id
-            </if>
-            WHERE
-            <include refid="whereCommon"/>
-            <if test="query.tab == 'startedByMe'">
-                AND t.create_by = #{query.userId}
-            </if>
-            <if test="query.tab == 'todo'">
-                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 1
-            </if>
-            <if test="query.tab == 'participated'">
-                AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
-            </if>
-            <if test="query.tab == 'handled'">
-                AND wi.del_flag = 0 AND wi.phase_status = 2
-                AND wi.assignee_id IN (
-                    SELECT DISTINCT sur.user_id
-                    FROM sys_user_role sur
-                    WHERE sur.role_id IN (
-                        SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
-                    )
+        SELECT
+        <choose>
+            <when test="query.tab == 'todo' or query.tab == 'participated' or query.tab == 'handled'">
+                COUNT(DISTINCT t.id)
+            </when>
+            <otherwise>
+                COUNT(1)
+            </otherwise>
+        </choose>
+        FROM tc_task t
+        <if test="query.tab == 'todo' or query.tab == 'participated'">
+            JOIN tc_task_work_item w ON w.task_id = t.id
+        </if>
+        <if test="query.tab == 'handled'">
+            JOIN tc_task_work_item wi ON wi.task_id = t.id
+        </if>
+        WHERE
+        <include refid="whereCommon"/>
+        <if test="query.tab == 'startedByMe'">
+            AND t.create_by = #{query.userId}
+        </if>
+        <if test="query.tab == 'todo'">
+            AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 1
+        </if>
+        <if test="query.tab == 'participated'">
+            AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
+        </if>
+        <if test="query.tab == 'handled'">
+            AND wi.del_flag = 0 AND wi.phase_status = 2
+            AND wi.assignee_id IN (
+                SELECT DISTINCT sur.user_id
+                FROM sys_user_role sur
+                WHERE sur.role_id IN (
+                    SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
                 )
-            </if>
-        </script>
+            )
+        </if>
     </select>
 
 </mapper>
