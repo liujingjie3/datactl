@@ -2,15 +2,15 @@ package com.zjlab.dataservice.modules.tc.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
-import com.zjlab.dataservice.modules.tc.enums.TaskStatusEnum;
-import com.zjlab.dataservice.modules.tc.mapper.TaskMapper;
-import com.zjlab.dataservice.modules.tc.model.dto.TaskListQuery;
-import com.zjlab.dataservice.modules.tc.model.po.TaskListItemPO;
+import com.zjlab.dataservice.modules.tc.enums.TaskManagerStatusEnum;
+import com.zjlab.dataservice.modules.tc.mapper.TaskManagerMapper;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.po.TaskManagerListItemPO;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
-import com.zjlab.dataservice.modules.tc.model.vo.TaskListItemVO;
-import com.zjlab.dataservice.modules.tc.model.vo.TaskListPageVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListPageVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateVO;
-import com.zjlab.dataservice.modules.tc.service.TaskService;
+import com.zjlab.dataservice.modules.tc.service.TaskManagerService;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +22,13 @@ import java.util.List;
  * 任务相关服务实现
  */
 @Service
-public class TaskServiceImpl implements TaskService {
+public class TaskManagerServiceImpl implements TaskManagerService {
 
     @Resource
-    private TaskMapper taskMapper;
+    private TaskManagerMapper taskManagerMapper;
 
     @Override
-    public TaskListPageVO listTasks(TaskListQuery query) {
+    public TaskManagerListPageVO listTasks(TaskManagerListQuery query) {
         Object principal = SecurityUtils.getSubject().getPrincipal();
         if (principal instanceof LoginUser) {
             query.setUserId(((LoginUser) principal).getId());
@@ -42,10 +42,10 @@ public class TaskServiceImpl implements TaskService {
         }
         query.setOffset((query.getPage() - 1) * query.getPageSize());
 
-        List<TaskListItemPO> pos = taskMapper.selectTaskList(query);
-        List<TaskListItemVO> vos = new ArrayList<>();
-        for (TaskListItemPO po : pos) {
-            TaskListItemVO vo = new TaskListItemVO();
+        List<TaskManagerListItemPO> pos = taskManagerMapper.selectTaskList(query);
+        List<TaskManagerListItemVO> vos = new ArrayList<>();
+        for (TaskManagerListItemPO po : pos) {
+            TaskManagerListItemVO vo = new TaskManagerListItemVO();
             vo.setTaskId(po.getTaskId());
             vo.setTaskName(po.getTaskName());
             vo.setTaskCode(po.getTaskCode());
@@ -54,14 +54,14 @@ public class TaskServiceImpl implements TaskService {
             }
             vo.setSatellites(po.getSatellites());
             vo.setCreateTime(po.getCreateTime());
-            vo.setStatus(TaskStatusEnum.fromCode(po.getStatus()));
+            vo.setStatus(TaskManagerStatusEnum.fromCode(po.getStatus()));
             if (po.getCurrentNodes() != null) {
                 List<CurrentNodeVO> nodes = JSON.parseArray(po.getCurrentNodes(), CurrentNodeVO.class);
                 vo.setCurrentNodes(nodes);
             }
             vos.add(vo);
         }
-        long total = taskMapper.countTaskList(query);
-        return new TaskListPageVO(vos, total);
+        long total = taskManagerMapper.countTaskList(query);
+        return new TaskManagerListPageVO(vos, total);
     }
 }

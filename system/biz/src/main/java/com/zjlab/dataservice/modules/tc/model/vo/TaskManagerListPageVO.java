@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskListPageVO {
-    private List<TaskListItemVO> list;
+public class TaskManagerListPageVO {
+    private List<TaskManagerListItemVO> list;
     private Long total;
 }
