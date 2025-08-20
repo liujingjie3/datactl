@@ -1,4 +1,5 @@
 package com.zjlab.dataservice.modules.tc.controller;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
@@ -50,16 +51,17 @@ public class TcTemplateController {
     /**
      * 新增 实例模板信息表
      */
-    @PostMapping(value ="/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value ="/submit",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "新增或修改", notes = "传入templateVO")
-    public Result<TodoTemplateDto> save(@RequestParam("file") MultipartFile file,
-                                        @RequestPart("template") TodoTemplateDto todoTemplateDto) {
+    public Result<TodoTemplateDto> save(@RequestParam(value = "file", required = false) MultipartFile file,
+                                        @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
         try {
-            TodoTemplateDto todoTemplate = tcTemplateService.submit(file,todoTemplateDto);
-            return Result.OK("新增或修改成功", todoTemplate);
+            TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
+            TodoTemplateDto todoTemplate = tcTemplateService.submit(file,dto);
+            return Result.OK("新增模版成功", todoTemplate);
         } catch (Exception e) {
-            return Result.error("新增或修改失败: " + e.getMessage());
+            return Result.error("新增模版失败: " + e.getMessage());
         }
     }
 

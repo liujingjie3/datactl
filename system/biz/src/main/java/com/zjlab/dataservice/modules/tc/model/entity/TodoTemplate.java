@@ -69,4 +69,12 @@ public class TodoTemplate extends BasePo implements Serializable {
     @ApiModelProperty(value = "扩展字段")
     private String ext;
 
+    public String getAttrsJson() {
+        try {
+            return templateAttr == null ? "{}" : new ObjectMapper().writeValueAsString(templateAttr);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
 }

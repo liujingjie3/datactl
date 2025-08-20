@@ -157,7 +157,7 @@ spring:
           driver-class-name: org.postgresql.Driver
           type: com.alibaba.druid.pool.DruidDataSource
         mysql:
-          url: jdbc:mysql://10.200.56.151:3306/dataservice_ctl?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+          url: jdbc:mysql://10.200.56.154:3306/dataservice_ctl?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
           username: dataservice
           password: Dataservice@ctl123
           #          url: jdbc:mysql://10.101.4.101:3306/dataservice_ctl?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
@@ -232,7 +232,7 @@ jeecg:
   file-view-domain: http://127.0.0.1:8012
   # minio文件上传
   minio:
-    endpoint: http://10.200.56.153:9000
+    endpoint: http://10.107.104.60:9000
     accessKey: root
     secretKey: zjlab@7579
     bucketName: dspp
@@ -373,7 +373,7 @@ xxl:
       #      address:
       logretentiondays: 30
       ip:
-      port: 9981
+      port: 18089
       logpath: /data/applogs/image-xxl-service/jobhandler_dev
 
 geoserver:
@@ -382,7 +382,7 @@ geoserver:
   password: zjlab@7579
 
 url:
-    cyk: http://10.107.104.48:32293/base/api/v1.0/cxxq
+  cyk: http://10.107.104.48:32293/base/api/v1.0/cxxq
 #  cyk: http://10.5.2.3:28000/base/api/v1.0/cxxq
 
 kafka:

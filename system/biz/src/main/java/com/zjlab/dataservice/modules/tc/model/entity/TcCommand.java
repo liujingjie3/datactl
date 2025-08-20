@@ -2,6 +2,7 @@ package com.zjlab.dataservice.modules.tc.model.entity;
 
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.zjlab.dataservice.common.system.base.entity.BasePo;
 import lombok.Data;
 
 /**
@@ -10,7 +11,7 @@ import lombok.Data;
  */
 @TableName("tc_command")
 @Data
-public class TcCommand extends TcBaseEntity {
+public class TcCommand extends BasePo {
 
     /**
      * 模版ID

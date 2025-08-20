@@ -51,7 +51,9 @@ public class TodoTemplateDto implements Serializable{
      */
     @ApiModelProperty(value = "模板属性")
     @JsonProperty("attrs")
+//    private Map<String, Object> attrs;
     private Map<String, Object> attrs;
+
 
     /**
      * 模板备注
@@ -71,16 +73,17 @@ public class TodoTemplateDto implements Serializable{
     @ApiModelProperty(value = "客户端应用标识")
     private String agentId;
 
-    public void setAttrs(String json) {
-        try {
-            this.attrs = MAPPER.readValue(json, Map.class);
-        } catch (Exception e) {
-            this.attrs = Collections.emptyMap();
-        }
-    }
+//    public void setAttrs(String json) {
+//        try {
+//            this.attrs = MAPPER.readValue(json, Map.class);
+//        } catch (Exception e) {
+//            this.attrs = Collections.emptyMap();
+//        }
+//    }
 
     public Map<String, Object> getAttrs() {
         return attrs;
     }
+
 
 }

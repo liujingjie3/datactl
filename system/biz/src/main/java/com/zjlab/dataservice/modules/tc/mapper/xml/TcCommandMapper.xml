@@ -27,13 +27,13 @@
     </sql>
 
     <insert id="batchInsert" parameterType="java.util.List">
-        INSERT INTO tc_commands
-        (template_id, code, name, time_order, execution, description, del_flag, create_time, update_time)
+        INSERT INTO tc_command
+        (template_id, code, name, time_order, execution, description, del_flag, create_by, create_time, update_by, update_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (#{item.templateId}, #{item.code}, #{item.name}, #{item.timeOrder},
-            #{item.execution}, #{item.description}, #{item.delFlag},
-            #{item.createTime}, #{item.updateTime})
+            #{item.execution}, #{item.description}, #{item.delFlag},#{item.createBy},
+            #{item.createTime}, #{item.updateBy},#{item.updateTime})
         </foreach>
     </insert>
 </mapper>

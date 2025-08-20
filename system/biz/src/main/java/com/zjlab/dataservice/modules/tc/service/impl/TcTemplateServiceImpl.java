@@ -52,6 +52,8 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Autowired
     private ISysBaseAPI userService;  // 注入 UserService
 
+    @Autowired
+    private TodoTemplateMapper todoTemplateMapper;
     @Resource
     private TcCommandMapper tcCommandMapper;
 
@@ -105,9 +107,9 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Transactional(rollbackFor = Exception.class)
     public TodoTemplateDto submit(MultipartFile file, TodoTemplateDto todoTemplateDto) {
         // 统一code处理
-        if (Func.isBlank(todoTemplateDto.getCode())) {
-            todoTemplateDto.setCode(Func.randomUUID());
-        }
+//        if (Func.isBlank(todoTemplateDto.getCode())) {
+//            todoTemplateDto.setCode(Func.randomUUID());
+//        }
 
         // 将 DTO 转为实体
         TodoTemplate template = new TodoTemplate();
@@ -116,19 +118,20 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         template.setFlag(1);
 
         // 查询是否存在同code + agentId 模板
-        TodoTemplate query = new TodoTemplate();
-        query.setCode(template.getCode());
-        query.setAgentId(template.getAgentId());
-        TodoTemplate existing = baseMapper.selectOneByTemplate(query);
-
-        if (Func.notNull(existing)
-                && existing.getTemplateName().equals(todoTemplateDto.getTemplateName())) {
-            throw new BaseException(ResultCode.DUPLICATE_TEMPLATE_NAME);
-        }
-
-        if (Func.isBlank(template.getCode()) && Func.isNull(existing)) {
-            throw new BaseException(ResultCode.QUERY_TEMPLATE_FAIL);
-        }
+//        TodoTemplate query = new TodoTemplate();
+//        query.setCode(template.getCode());
+//        query.setAgentId(template.getAgentId());
+//        query.setTemplateId(template.getTemplateId());
+//        TodoTemplate existing = baseMapper.selectOneByTemplate(query);
+//
+//        if (Func.notNull(existing)
+//                && existing.getTemplateName().equals(todoTemplateDto.getTemplateName())) {
+//            throw new BaseException(ResultCode.DUPLICATE_TEMPLATE_NAME);
+//        }
+//
+//        if (Func.isBlank(template.getCode()) && Func.isNull(existing)) {
+//            throw new BaseException(ResultCode.QUERY_TEMPLATE_FAIL);
+//        }
 
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
@@ -137,37 +140,37 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
         LoginUser user = userService.getUserById(userId);
         String templateId;
-        if (Func.isNull(existing)) {
-            // 新增
-            templateId = Func.randomUUID();
-            template.setTemplateId(templateId);
-            template.setCreateTime(LocalDateTime.now());
-            template.setUpdateTime(LocalDateTime.now());
-            if (Func.notNull(user)) {
-                template.setCreateBy(user.getUsername());
-                template.setUpdateBy(user.getUsername());
-            }
-            log.info("before insert template info: {}", template);
-            save(template);
-        } else {
-            // 更新
-            templateId = existing.getTemplateId();
-            BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
-            existing.setTemplateAttr(template.getTemplateAttr());
-            existing.setUpdateTime(LocalDateTime.now());
-            if (Func.notNull(user)) {
-                existing.setUpdateBy(user.getUsername());
-            }
 
-            UpdateWrapper<TodoTemplate> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.eq("code", template.getCode());
-            log.info("before update template info: {}", existing);
-            update(existing, updateWrapper);
+        // 新增
+        templateId = Func.randomUUID();
+        template.setTemplateId(templateId);
+        template.setCreateTime(LocalDateTime.now());
+        template.setUpdateTime(LocalDateTime.now());
+        if (Func.notNull(user)) {
+            template.setCreateBy(user.getUsername());
+            template.setUpdateBy(user.getUsername());
         }
+        log.info("before insert template info: {}", template);
+        todoTemplateMapper.insert(template);
+
+//            // 更新
+//            templateId = existing.getTemplateId();
+//            BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
+//            existing.setTemplateAttr(template.getTemplateAttr());
+//            existing.setUpdateTime(LocalDateTime.now());
+//            if (Func.notNull(user)) {
+//                existing.setUpdateBy(user.getUsername());
+//            }
+//
+//            UpdateWrapper<TodoTemplate> updateWrapper = new UpdateWrapper<>();
+//            updateWrapper.eq("code", template.getCode());
+//            log.info("before update template info: {}", existing);
+//            update(existing, updateWrapper);
+
 
         // ====== 5. 解析 Excel 并批量插入 tc_commands ======
         if (file != null && !file.isEmpty()) {
-            List<TcCommand> commands = parseExcel(file, templateId);
+            List<TcCommand> commands = parseExcel(user,file, templateId);
             if (!commands.isEmpty()) {
                 tcCommandMapper.batchInsert(commands); // 批量插入
             }
@@ -187,17 +190,17 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         if (Func.isNotBlank(todoTemplateQueryVO.getAgentId())) {
             queryWrapper.eq("agent_id", todoTemplateQueryVO.getAgentId());
         }
-        if (Func.isNotBlank(todoTemplateQueryVO.getTemplateType())){
+        if (Func.isNotBlank(todoTemplateQueryVO.getTemplateType())) {
             queryWrapper.eq("template_type", todoTemplateQueryVO.getTemplateType());
         }
-        if (Func.isNotBlank(todoTemplateQueryVO.getTemplateCode())){
+        if (Func.isNotBlank(todoTemplateQueryVO.getTemplateCode())) {
             queryWrapper.eq("code", todoTemplateQueryVO.getTemplateCode());
         }
         queryWrapper.eq("del_flag", 0)
                 .orderByDesc("id")
                 .last("limit 1");
         TodoTemplate todoTemplate = baseMapper.selectOne(queryWrapper);
-        if (Func.isNull(todoTemplate)){
+        if (Func.isNull(todoTemplate)) {
             return null;
         }
         TodoTemplateDto todoTemplateDto = new TodoTemplateDto();
@@ -210,7 +213,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     public TodoTemplateQueryDto deleteByCode(TodoTemplateQueryDto templateQueryVO) {
 
         List<String> templateCodes = templateQueryVO.getCodes();
-        if (Func.notNull(templateCodes) && !templateCodes.isEmpty()){
+        if (Func.notNull(templateCodes) && !templateCodes.isEmpty()) {
 
             List<TodoTemplate> templates = new ArrayList<>();
 
@@ -220,12 +223,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             }
             LoginUser user = userService.getUserById(userId);
 
-            for (String code : templateCodes){
+            for (String code : templateCodes) {
                 QueryWrapper<TodoTemplate> queryWrapper = new QueryWrapper<>();
                 queryWrapper.eq("code", code).orderByDesc("id")
                         .last("limit 1");
                 TodoTemplate todoTemplate = baseMapper.selectOne(queryWrapper);
-                if (Func.notNull(todoTemplate)){
+                if (Func.notNull(todoTemplate)) {
                     todoTemplate.setDelFlag(true);
                     LocalDateTime now = LocalDateTime.now();
                     todoTemplate.setUpdateTime(now);
@@ -257,7 +260,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         queryWrapper.eq("code", templateQueryVO.getTemplateCode()).orderByDesc("id")
                 .last("limit 1");
         TodoTemplate todoTemplate = baseMapper.selectOne(queryWrapper);
-        if (Func.notNull(todoTemplate)){
+        if (Func.notNull(todoTemplate)) {
 
             todoTemplate.setDelFlag(true);
             todoTemplate.setUpdateTime(now);
@@ -313,7 +316,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         return result;
     }
 
-    private List<TcCommand> parseExcel(MultipartFile file, String templateId) {
+    private List<TcCommand> parseExcel(LoginUser user,MultipartFile file, String templateId) {
         List<TcCommand> list = new ArrayList<>();
         try (InputStream is = file.getInputStream()) {
             Workbook workbook = new XSSFWorkbook(is);
@@ -329,7 +332,11 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
                 cmd.setTimeOrder(row.getCell(2).getStringCellValue());
                 cmd.setExecution(row.getCell(3).getStringCellValue());
                 cmd.setDescription(row.getCell(4).getStringCellValue());
-                cmd.setDelFlag(0);
+                cmd.setDelFlag(false);
+                if (Func.notNull(user)) {
+                    cmd.setCreateBy(user.getUsername());
+                    cmd.setUpdateBy(user.getUsername());
+                }
                 cmd.setCreateTime(LocalDateTime.now());
                 cmd.setUpdateTime(LocalDateTime.now());
                 list.add(cmd);
