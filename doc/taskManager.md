@@ -428,52 +428,13 @@ WHERE t.del_flag=0
 
 ```
 注：上面 SELECT_FIELDS / WHERE_CONDITIONS / curN_subquery 为示意占位，实际写 SQL 时请替换成完整片段。
-#### 2.2.6 Swagger 调试：Mock 登录（Shiro）
-
-SecurityUtils.getSubject().getPrincipal() 在 Swagger 下为空时，启用开发环境 Mock。
-通过请求头注入：X-Mock-UserId。
-```java
-@Profile({"dev","swagger"})
-@Component
-public class MockLoginFilter extends OncePerRequestFilter {
-    @Autowired(required = false)
-    private org.apache.shiro.mgt.SecurityManager securityManager;
-    @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws ServletException, IOException {
-        if (SecurityUtils.getSubject() != null && SecurityUtils.getSubject().getPrincipal() != null) {
-            chain.doFilter(req, res); return;
-        }
-        String uid = req.getHeader("X-Mock-UserId");
-        if (uid != null && securityManager != null) {
-            LoginUser mock = new LoginUser();
-            mock.setId(uid);
-            mock.setUsername(uid);
-            mock.setRealname(uid);
-            Subject subject = new Subject.Builder(securityManager).buildSubject();
-            PrincipalCollection pc = new SimplePrincipalCollection(mock, "mockRealm");
-            subject.runAs(pc);
-            ThreadContext.bind(subject);
-        }
-        chain.doFilter(req, res);
-    }
-}
-```
-
-**使用方式（Swagger 调试时加请求头）**
-
-* X-Mock-UserId: 10001
-
-#### 2.2.7 小结
+#### 2.2.6 小结
 
 * 单接口 GET /task/list 支持五个 Tab。
 * 筛选项全可选，时间仅“起”。
 * 返回结构对象化：模板对象、当前激活节点对象（含实例ID、名称、角色数组）。
 * tab=all 暂不做管理员限制（已标注 TODO）。
 * SQL 使用 JSON 聚合，后端直接返回最终结构，前端零拼装。
-
-```
-```
 
 
 ### 2.3 节点办理（提交动作 → 完成 → 推进后继）

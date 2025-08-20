@@ -97,12 +97,13 @@ public class Swagger2Config implements WebMvcConfigurer {
     private List<Parameter> setHeaderToken() {
         ParameterBuilder tokenPar = new ParameterBuilder();
         List<Parameter> pars = new ArrayList<>();
-        tokenPar.name(CommonConstant.X_ACCESS_TOKEN).description("token").modelRef(new ModelRef("string")).parameterType("header").required(false).build();
+        tokenPar.name(CommonConstant.X_ACCESS_TOKEN)
+                .description("token")
+                .modelRef(new ModelRef("string"))
+                .parameterType("header")
+                .required(false)
+                .build();
         pars.add(tokenPar.build());
-
-        ParameterBuilder mockUserPar = new ParameterBuilder();
-        mockUserPar.name("X-Mock-UserId").description("mock user id").modelRef(new ModelRef("string")).parameterType("header").required(false).build();
-        pars.add(mockUserPar.build());
 
         return pars;
     }
