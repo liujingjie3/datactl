@@ -18,7 +18,7 @@ import javax.annotation.Resource;
 
 /** 任务列表接口 */
 @RestController
-@RequestMapping("/tc/task")
+@RequestMapping("/tc/taskManager")
 @Api(tags="任务管理")
 public class TcTaskManagerController {
 
