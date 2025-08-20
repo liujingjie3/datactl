@@ -23,6 +23,8 @@ public class TaskManagerServiceImpl implements TaskManagerService {
 
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
+        //todo ,对于管理员看所有任务，因为还没有确认如何判断管理员账号，这里暂时还没有做筛选，就是都能看到所有任务
+
         Object principal = SecurityUtils.getSubject().getPrincipal();
         if (principal instanceof LoginUser) {
             query.setUserId(((LoginUser) principal).getId());
