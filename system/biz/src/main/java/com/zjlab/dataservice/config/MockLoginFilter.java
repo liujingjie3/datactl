@@ -36,14 +36,11 @@ public class MockLoginFilter extends OncePerRequestFilter {
             return;
         }
         String uid = req.getHeader("X-Mock-UserId");
-        String uname = req.getHeader("X-Mock-Username");
-        String rolesCsv = req.getHeader("X-Mock-Roles");
         if (uid != null && securityManager != null) {
             LoginUser mock = new LoginUser();
             mock.setId(uid);
-            mock.setUsername(uname != null ? uname : "swagger");
-            mock.setRealname(uname != null ? uname : "swagger");
-            mock.setRoles(rolesCsv);
+            mock.setUsername(uid);
+            mock.setRealname(uid);
             Subject subject = new Subject.Builder(securityManager).buildSubject();
             PrincipalCollection pc = new SimplePrincipalCollection(mock, "mockRealm");
             subject.runAs(pc);

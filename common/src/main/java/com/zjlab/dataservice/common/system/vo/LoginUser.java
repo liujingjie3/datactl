@@ -42,14 +42,8 @@ public class LoginUser {
 	@SensitiveField
 	private String realname;
         /**
-         * 逗号分隔的角色ID
+         * 登录人密码
          */
-        private String roles;
-
-
-	/**
-	 * 登录人密码
-	 */
 	@SensitiveField
 	private String password;
 
