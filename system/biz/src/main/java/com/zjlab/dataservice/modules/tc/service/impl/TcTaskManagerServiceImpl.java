@@ -2,16 +2,29 @@ package com.zjlab.dataservice.modules.tc.service.impl;
 
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
+import com.alibaba.fastjson.JSON;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
+import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
+import com.zjlab.dataservice.modules.system.entity.SysRole;
+import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 任务相关服务实现
@@ -21,6 +34,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private TcTaskManagerMapper tcTaskManagerMapper;
+
+    @Autowired
+    private SysRoleMapper sysRoleMapper;
 
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
@@ -40,6 +56,58 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         query.setOffset((query.getPage() - 1) * query.getPageSize());
 
         List<TaskManagerListItemVO> vos = tcTaskManagerMapper.selectTaskList(query);
+        if (!vos.isEmpty()) {
+            // query current nodes
+            List<Long> taskIds = vos.stream().map(TaskManagerListItemVO::getTaskId).collect(Collectors.toList());
+            List<CurrentNodeRow> rows = tcTaskManagerMapper.selectCurrentNodes(taskIds);
+            Map<Long, Map<Long, CurrentNodeVO>> taskNodeMap = new HashMap<>();
+            Set<Long> roleIds = new HashSet<>();
+            for (CurrentNodeRow row : rows) {
+                Map<Long, CurrentNodeVO> nodeMap = taskNodeMap.computeIfAbsent(row.getTaskId(), k -> new LinkedHashMap<>());
+                CurrentNodeVO node = nodeMap.computeIfAbsent(row.getNodeInstId(), k -> {
+                    CurrentNodeVO cn = new CurrentNodeVO();
+                    cn.setNodeInstId(row.getNodeInstId());
+                    cn.setNodeName(row.getNodeName());
+                    cn.setRoles(new ArrayList<>());
+                    return cn;
+                });
+                if (StringUtils.isNotBlank(row.getHandlerRoleIds())) {
+                    List<Long> ids = JSON.parseArray(row.getHandlerRoleIds(), Long.class);
+                    if (ids != null) {
+                        for (Long rid : ids) {
+                            NodeRoleDto role = new NodeRoleDto();
+                            role.setRoleId(rid);
+                            node.getRoles().add(role);
+                            roleIds.add(rid);
+                        }
+                    }
+                }
+            }
+            if (!roleIds.isEmpty()) {
+                List<SysRole> roleList = sysRoleMapper.selectBatchIds(
+                        roleIds.stream().map(String::valueOf).collect(Collectors.toList()));
+                Map<Long, String> roleNameMap = roleList.stream()
+                        .collect(Collectors.toMap(r -> Long.valueOf(r.getId()), SysRole::getRoleName));
+                for (Map<Long, CurrentNodeVO> nodeMap : taskNodeMap.values()) {
+                    for (CurrentNodeVO node : nodeMap.values()) {
+                        for (NodeRoleDto role : node.getRoles()) {
+                            String name = roleNameMap.get(role.getRoleId());
+                            if (name != null) {
+                                role.setRoleName(name);
+                            }
+                        }
+                    }
+                }
+            }
+            for (TaskManagerListItemVO vo : vos) {
+                Map<Long, CurrentNodeVO> nodeMap = taskNodeMap.get(vo.getTaskId());
+                if (nodeMap != null) {
+                    vo.setCurrentNodes(new ArrayList<>(nodeMap.values()));
+                } else {
+                    vo.setCurrentNodes(new ArrayList<>());
+                }
+            }
+        }
         long total = tcTaskManagerMapper.countTaskList(query);
         return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
     }
