@@ -431,7 +431,7 @@ WHERE t.del_flag=0
 #### 2.2.6 Swagger 调试：Mock 登录（Shiro）
 
 SecurityUtils.getSubject().getPrincipal() 在 Swagger 下为空时，启用开发环境 Mock。
-通过请求头注入：X-Mock-UserId, X-Mock-Username, X-Mock-Roles（逗号分隔）。
+通过请求头注入：X-Mock-UserId。
 ```java
 @Profile({"dev","swagger"})
 @Component
@@ -445,14 +445,11 @@ public class MockLoginFilter extends OncePerRequestFilter {
             chain.doFilter(req, res); return;
         }
         String uid = req.getHeader("X-Mock-UserId");
-        String uname = req.getHeader("X-Mock-Username");
-        String rolesCsv = req.getHeader("X-Mock-Roles");
         if (uid != null && securityManager != null) {
             LoginUser mock = new LoginUser();
             mock.setId(uid);
-            mock.setUsername(uname != null ? uname : "swagger");
-            mock.setRealname(uname != null ? uname : "swagger");
-            mock.setRoles(rolesCsv);
+            mock.setUsername(uid);
+            mock.setRealname(uid);
             Subject subject = new Subject.Builder(securityManager).buildSubject();
             PrincipalCollection pc = new SimplePrincipalCollection(mock, "mockRealm");
             subject.runAs(pc);
@@ -466,8 +463,6 @@ public class MockLoginFilter extends OncePerRequestFilter {
 **使用方式（Swagger 调试时加请求头）**
 
 * X-Mock-UserId: 10001
-* X-Mock-Username: swagger
-* X-Mock-Roles: 1,3
 
 #### 2.2.7 小结
 
