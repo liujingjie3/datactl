@@ -18,8 +18,9 @@
 
     <sql id="joinCurrentNodes">
         LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
-        LEFT JOIN LATERAL (
+        LEFT JOIN (
             SELECT
+                ni.task_id,
                 JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'nodeInstId', ni.id,
@@ -35,8 +36,9 @@
                 ) AS current_nodes_json
             FROM tc_task_node_inst ni
             JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
-            WHERE ni.del_flag = 0 AND ni.status = 1 AND ni.task_id = t.id
-        ) curN ON TRUE
+            WHERE ni.del_flag = 0 AND ni.status = 1
+            GROUP BY ni.task_id
+        ) curN ON curN.task_id = t.id
     </sql>
 
     <sql id="whereCommon">
