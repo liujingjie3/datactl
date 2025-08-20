@@ -6,39 +6,11 @@
         t.id AS taskId,
         t.task_name AS taskName,
         t.task_code AS taskCode,
-        JSON_OBJECT(
-            'templateId', t.template_id,
-            'templateName', tt.template_name
-        ) AS template,
+        t.template_id AS templateId,
+        tt.template_name AS templateName,
         t.satellites AS satellites,
         t.create_time AS createTime,
-        t.status AS status,
-        COALESCE(curN.current_nodes_json, JSON_ARRAY()) AS currentNodes
-    </sql>
-
-    <sql id="joinCurrentNodes">
-        LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
-        LEFT JOIN (
-            SELECT
-                ni.task_id,
-                JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'nodeInstId', ni.id,
-                        'nodeName', ninfo.name,
-                        'roles',
-                        (
-                            SELECT JSON_ARRAYAGG(JSON_OBJECT('roleId', r.id, 'roleName', r.role_name))
-                            FROM JSON_TABLE(ni.handler_role_ids, '$[*]' COLUMNS (role_id VARCHAR(64) PATH '$')) jt
-                            JOIN sys_role r ON r.id = jt.role_id
-                        )
-                    )
-                    ORDER BY ni.order_no, ni.id
-                ) AS current_nodes_json
-            FROM tc_task_node_inst ni
-            JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
-            WHERE ni.del_flag = 0 AND ni.status = 1
-            GROUP BY ni.task_id
-        ) curN ON curN.task_id = t.id
+        t.status AS status
     </sql>
 
     <sql id="whereCommon">
@@ -84,7 +56,7 @@
             ORDER BY t.create_time DESC
             LIMIT #{query.offset}, #{query.pageSize}
         ) t
-        <include refid="joinCurrentNodes"/>
+        LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
     </select>
 
     <select id="countTaskList" resultType="long">
@@ -116,6 +88,22 @@
             AND wi.del_flag = 0 AND wi.assignee_id = #{query.userId}
             AND wi.phase_status IN (2,4)
         </if>
+    </select>
+
+    <select id="selectCurrentNodes" resultType="com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow">
+        SELECT
+            ni.task_id AS taskId,
+            ni.id AS nodeInstId,
+            ninfo.name AS nodeName,
+            ni.handler_role_ids AS handlerRoleIds
+        FROM tc_task_node_inst ni
+        JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
+        WHERE ni.del_flag = 0 AND ni.status = 1
+          AND ni.task_id IN
+            <foreach collection="taskIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        ORDER BY ni.task_id, ni.order_no, ni.id
     </select>
 
 </mapper>
