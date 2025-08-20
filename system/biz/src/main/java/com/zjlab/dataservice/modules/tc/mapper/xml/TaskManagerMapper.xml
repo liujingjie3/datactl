@@ -80,14 +80,8 @@
             AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
         </if>
         <if test="query.tab == 'handled'">
-            AND wi.del_flag = 0 AND wi.phase_status = 2
-            AND wi.assignee_id IN (
-                SELECT DISTINCT sur.user_id
-                FROM sys_user_role sur
-                WHERE sur.role_id IN (
-                    SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
-                )
-            )
+            AND wi.del_flag = 0 AND wi.assignee_id = #{query.userId}
+            AND wi.phase_status IN (2,4)
         </if>
         ORDER BY t.create_time DESC
         LIMIT #{query.offset}, #{query.pageSize}
@@ -122,14 +116,8 @@
             AND w.del_flag = 0 AND w.assignee_id = #{query.userId} AND w.phase_status = 0
         </if>
         <if test="query.tab == 'handled'">
-            AND wi.del_flag = 0 AND wi.phase_status = 2
-            AND wi.assignee_id IN (
-                SELECT DISTINCT sur.user_id
-                FROM sys_user_role sur
-                WHERE sur.role_id IN (
-                    SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = #{query.userId}
-                )
-            )
+            AND wi.del_flag = 0 AND wi.assignee_id = #{query.userId}
+            AND wi.phase_status IN (2,4)
         </if>
     </select>
 
