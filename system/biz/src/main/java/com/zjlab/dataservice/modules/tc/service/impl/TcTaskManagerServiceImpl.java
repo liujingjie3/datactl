@@ -7,6 +7,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import org.apache.shiro.SecurityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -18,7 +19,7 @@ import java.util.List;
 @Service
 public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
-    @Resource
+    @Autowired
     private TcTaskManagerMapper taskManagerMapper;
 
     @Override
