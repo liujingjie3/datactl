@@ -124,9 +124,7 @@ CREATE TABLE `tc_task_template_node` (
   `update_by` BIGINT,
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (`prev_keys` IS NULL OR JSON_VALID(`prev_keys`)),
-  CHECK (`next_keys` IS NULL OR JSON_VALID(`next_keys`)),
-  INDEX `idx_template_node` (`template_id`, `node_id`),
-  INDEX `idx_template_order` (`template_id`, `order_no`)
+  CHECK (`next_keys` IS NULL OR JSON_VALID(`next_keys`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务模板-节点定义表';
 ```
 
