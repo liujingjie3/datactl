@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.tc.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerStatusEnum;
 import com.zjlab.dataservice.modules.tc.mapper.TaskManagerMapper;
@@ -8,7 +9,6 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.po.TaskManagerListItemPO;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
-import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListPageVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateVO;
 import com.zjlab.dataservice.modules.tc.service.TaskManagerService;
 import org.apache.shiro.SecurityUtils;
@@ -28,7 +28,7 @@ public class TaskManagerServiceImpl implements TaskManagerService {
     private TaskManagerMapper taskManagerMapper;
 
     @Override
-    public TaskManagerListPageVO listTasks(TaskManagerListQuery query) {
+    public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
         Object principal = SecurityUtils.getSubject().getPrincipal();
         if (principal instanceof LoginUser) {
             query.setUserId(((LoginUser) principal).getId());
@@ -62,6 +62,6 @@ public class TaskManagerServiceImpl implements TaskManagerService {
             vos.add(vo);
         }
         long total = taskManagerMapper.countTaskList(query);
-        return new TaskManagerListPageVO(vos, total);
+        return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
     }
 }

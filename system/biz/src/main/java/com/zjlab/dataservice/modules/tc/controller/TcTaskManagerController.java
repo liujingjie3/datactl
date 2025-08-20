@@ -1,8 +1,9 @@
 package com.zjlab.dataservice.modules.tc.controller;
 
+import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
-import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListPageVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TaskManagerService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,8 +25,7 @@ public class TcTaskManagerController {
 
     @GetMapping("/list")
     @ApiOperation(value="任务列表", notes="分页查询任务列表")
-    public Result<TaskManagerListPageVO> list(TaskManagerListQuery query) {
-        TaskManagerListPageVO page = taskManagerService.listTasks(query);
-        return Result.ok(page);
+    public Result<PageResult<TaskManagerListItemVO>> list(TaskManagerListQuery query) {
+        return Result.ok(taskManagerService.listTasks(query));
     }
 }
