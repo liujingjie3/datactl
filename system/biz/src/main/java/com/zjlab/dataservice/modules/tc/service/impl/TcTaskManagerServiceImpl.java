@@ -2,10 +2,10 @@ package com.zjlab.dataservice.modules.tc.service.impl;
 
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
-import com.zjlab.dataservice.modules.tc.mapper.TaskManagerMapper;
+import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
-import com.zjlab.dataservice.modules.tc.service.TaskManagerService;
+import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +16,10 @@ import java.util.List;
  * 任务相关服务实现
  */
 @Service
-public class TaskManagerServiceImpl implements TaskManagerService {
+public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Resource
-    private TaskManagerMapper taskManagerMapper;
+    private TcTaskManagerMapper taskManagerMapper;
 
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {

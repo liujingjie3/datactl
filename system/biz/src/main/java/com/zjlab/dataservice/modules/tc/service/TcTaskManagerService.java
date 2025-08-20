@@ -7,7 +7,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 /**
  * 任务相关服务
  */
-public interface TaskManagerService {
+public interface TcTaskManagerService {
     /**
      * 分页查询任务列表
      */

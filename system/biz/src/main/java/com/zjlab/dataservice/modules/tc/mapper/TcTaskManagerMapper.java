@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 任务列表相关查询
  */
-public interface TaskManagerMapper {
+public interface TcTaskManagerMapper {
     /** 查询列表 */
     List<TaskManagerListItemVO> selectTaskList(@Param("query") TaskManagerListQuery query);
     /** 统计总数 */
