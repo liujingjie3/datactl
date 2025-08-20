@@ -1,6 +1,5 @@
 package com.zjlab.dataservice.modules.tc.model.vo;
 
-import com.zjlab.dataservice.modules.tc.enums.TaskManagerStatusEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -16,6 +15,6 @@ public class TaskManagerListItemVO {
     private String templateName;
     private String satellites;
     private LocalDateTime createTime;
-    private TaskManagerStatusEnum status;
+    private Integer status;
     private List<CurrentNodeVO> currentNodes;
 }
