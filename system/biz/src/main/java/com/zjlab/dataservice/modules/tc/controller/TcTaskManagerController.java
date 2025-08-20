@@ -4,7 +4,7 @@ import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
-import com.zjlab.dataservice.modules.tc.service.TaskManagerService;
+import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +21,7 @@ import javax.annotation.Resource;
 public class TcTaskManagerController {
 
     @Resource
-    private TaskManagerService taskManagerService;
+    private TcTaskManagerService taskManagerService;
 
     @GetMapping("/list")
     @ApiOperation(value="任务列表", notes="分页查询任务列表")
