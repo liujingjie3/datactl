@@ -39,8 +39,8 @@ public class MockLoginFilter extends OncePerRequestFilter {
         if (uid != null && securityManager != null) {
             LoginUser mock = new LoginUser();
             mock.setId(uid);
-            mock.setUsername(uid);
-            mock.setRealname(uid);
+            mock.setUsername("swagger");
+            mock.setRealname("swagger");
             Subject subject = new Subject.Builder(securityManager).buildSubject();
             PrincipalCollection pc = new SimplePrincipalCollection(mock, "mockRealm");
             subject.runAs(pc);
