@@ -404,8 +404,8 @@ LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE t.del_flag=0
   AND wi.del_flag=0
-  AND wi.phase_status = 2
-  AND wi.assignee_id IN (SELECT user_id FROM my_group_users)
+  AND wi.phase_status  IN (2,4)
+  AND w.assignee_id = :userId
   AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
   AND ( :status IS NULL OR t.status = :status )
   AND ( :templateId IS NULL OR t.template_id = :templateId )
@@ -419,12 +419,8 @@ FROM tc_task t
 JOIN tc_task_work_item wi ON wi.task_id=t.id
 WHERE t.del_flag=0
   AND wi.del_flag=0
-  AND wi.phase_status = 2
-  AND wi.assignee_id IN (
-    SELECT DISTINCT sur.user_id
-    FROM sys_user_role sur
-    WHERE sur.role_id IN (SELECT DISTINCT role_id FROM sys_user_role WHERE user_id = :userId)
-  )
+  AND wi.phase_status  IN (2,4)
+  AND w.assignee_id = :userId
   AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
   AND ( :status IS NULL OR t.status = :status )
   AND ( :templateId IS NULL OR t.template_id = :templateId )
