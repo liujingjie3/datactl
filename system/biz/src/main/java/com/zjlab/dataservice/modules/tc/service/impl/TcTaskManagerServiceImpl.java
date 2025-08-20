@@ -20,7 +20,7 @@ import java.util.List;
 public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
-    private TcTaskManagerMapper taskManagerMapper;
+    private TcTaskManagerMapper tcTaskManagerMapper;
 
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
@@ -39,8 +39,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         query.setOffset((query.getPage() - 1) * query.getPageSize());
 
-        List<TaskManagerListItemVO> vos = taskManagerMapper.selectTaskList(query);
-        long total = taskManagerMapper.countTaskList(query);
+        List<TaskManagerListItemVO> vos = tcTaskManagerMapper.selectTaskList(query);
+        long total = tcTaskManagerMapper.countTaskList(query);
         return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
     }
 }

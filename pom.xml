@@ -49,11 +49,11 @@
 		<hutool.version>5.3.8</hutool.version>
 
                 <!-- 持久层 -->
-                <mybatis-plus.version>3.5.3.2</mybatis-plus.version>
-                <dynamic-datasource-spring-boot-starter.version>3.2.0</dynamic-datasource-spring-boot-starter.version>
-                <druid.version>1.1.22</druid.version>
-                <minidao.version>1.9.0</minidao.version>
-                <jsqlparser.version>4.6</jsqlparser.version>
+        <mybatis-plus.version>3.5.3.2</mybatis-plus.version>
+        <dynamic-datasource-spring-boot-starter.version>3.2.0</dynamic-datasource-spring-boot-starter.version>
+        <druid.version>1.1.22</druid.version>
+        <minidao.version>1.9.0</minidao.version>
+        <jsqlparser.version>4.6</jsqlparser.version>
 
 		<!-- 积木报表-->
 		<jimureport-spring-boot-starter.version>1.5.6</jimureport-spring-boot-starter.version>
