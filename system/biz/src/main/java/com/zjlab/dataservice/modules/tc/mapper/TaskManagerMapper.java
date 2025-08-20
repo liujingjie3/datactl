@@ -1,7 +1,7 @@
 package com.zjlab.dataservice.modules.tc.mapper;
 
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
-import com.zjlab.dataservice.modules.tc.model.po.TaskManagerListItemPO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface TaskManagerMapper {
     /** 查询列表 */
-    List<TaskManagerListItemPO> selectTaskList(@Param("query") TaskManagerListQuery query);
+    List<TaskManagerListItemVO> selectTaskList(@Param("query") TaskManagerListQuery query);
     /** 统计总数 */
     Long countTaskList(@Param("query") TaskManagerListQuery query);
 }

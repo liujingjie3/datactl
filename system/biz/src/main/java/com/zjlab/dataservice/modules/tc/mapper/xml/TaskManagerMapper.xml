@@ -57,7 +57,7 @@
         </if>
     </sql>
 
-    <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.po.TaskManagerListItemPO">
+    <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO">
         SELECT
         <include refid="selectFields"/>
         FROM tc_task t
