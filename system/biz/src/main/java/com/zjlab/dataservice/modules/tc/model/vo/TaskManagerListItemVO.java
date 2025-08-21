@@ -2,12 +2,14 @@ package com.zjlab.dataservice.modules.tc.model.vo;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /** 任务列表的返回对象 */
 @Data
-public class TaskManagerListItemVO {
+public class TaskManagerListItemVO implements Serializable {
+    private static final long serialVersionUID = -3510477925167338638L;
     private Long taskId;
     private String taskName;
     private String taskCode;

@@ -3,12 +3,15 @@ package com.zjlab.dataservice.modules.tc.model.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * 节点信息表
  */
 @TableName("tc_node_info")
 @Data
-public class NodeInfo extends TcBaseEntity {
+public class NodeInfo extends TcBaseEntity implements Serializable {
+    private static final long serialVersionUID = -1094847598098194308L;
     private String name;
     private String description;
     private Integer expectedDuration;

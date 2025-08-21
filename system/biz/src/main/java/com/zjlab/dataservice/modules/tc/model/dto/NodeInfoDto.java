@@ -2,6 +2,7 @@ package com.zjlab.dataservice.modules.tc.model.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,7 +10,8 @@ import java.util.List;
  * 新建或编辑节点请求
  */
 @Data
-public class NodeInfoDto {
+public class NodeInfoDto implements Serializable {
+    private static final long serialVersionUID = 4626255581973570903L;
     private Long id;
     /** 节点名称 */
     private String name;

@@ -6,13 +6,15 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * 查询任务列表的参数
  */
 @Data
-public class TaskManagerListQuery {
+public class TaskManagerListQuery implements Serializable {
+    private static final long serialVersionUID = 73115360324038625L;
     /** Tab类型：all/startedByMe/todo/handled/participated */
     @NotBlank(message = "tab不能为空")
     @Pattern(regexp = "all|startedByMe|todo|handled|participated", message = "tab必须为all/startedByMe/todo/handled/participated")
