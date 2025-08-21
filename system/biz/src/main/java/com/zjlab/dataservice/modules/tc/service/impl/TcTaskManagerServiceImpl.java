@@ -67,7 +67,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             List<Long> taskIds = vos.stream().map(TaskManagerListItemVO::getTaskId).collect(Collectors.toList());
             List<CurrentNodeRow> rows = tcTaskManagerMapper.selectCurrentNodes(taskIds);
             Map<Long, Map<Long, CurrentNodeVO>> taskNodeMap = new HashMap<>();
-            Set<Long> roleIds = new HashSet<>();
+            Set<String> roleIds = new HashSet<>();
             for (CurrentNodeRow row : rows) {
                 Map<Long, CurrentNodeVO> nodeMap = taskNodeMap.computeIfAbsent(row.getTaskId(), k -> new LinkedHashMap<>());
                 CurrentNodeVO node = nodeMap.computeIfAbsent(row.getNodeInstId(), k -> {
@@ -78,9 +78,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     return cn;
                 });
                 if (StringUtils.isNotBlank(row.getHandlerRoleIds())) {
-                    List<Long> ids = JSON.parseArray(row.getHandlerRoleIds(), Long.class);
+                    List<String> ids = JSON.parseArray(row.getHandlerRoleIds(), String.class);
                     if (ids != null) {
-                        for (Long rid : ids) {
+                        for (String rid : ids) {
                             NodeRoleDto role = new NodeRoleDto();
                             role.setRoleId(rid);
                             node.getRoles().add(role);
@@ -90,10 +90,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 }
             }
             if (!roleIds.isEmpty()) {
-                List<SysRole> roleList = sysRoleMapper.selectBatchIds(
-                        roleIds.stream().map(String::valueOf).collect(Collectors.toList()));
-                Map<Long, String> roleNameMap = roleList.stream()
-                        .collect(Collectors.toMap(r -> Long.valueOf(r.getId()), SysRole::getRoleName));
+                List<SysRole> roleList = sysRoleMapper.selectBatchIds(roleIds);
+                Map<String, String> roleNameMap = roleList.stream()
+                        .collect(Collectors.toMap(SysRole::getId, SysRole::getRoleName));
                 for (Map<Long, CurrentNodeVO> nodeMap : taskNodeMap.values()) {
                     for (CurrentNodeVO node : nodeMap.values()) {
                         for (NodeRoleDto role : node.getRoles()) {
