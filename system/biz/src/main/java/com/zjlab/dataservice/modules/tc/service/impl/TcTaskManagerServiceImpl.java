@@ -3,7 +3,7 @@ package com.zjlab.dataservice.modules.tc.service.impl;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.constant.enums.ResultCode;
 import com.zjlab.dataservice.common.exception.BaseException;
-import com.zjlab.dataservice.common.system.vo.LoginUser;
+import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.alibaba.fastjson.JSON;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
@@ -14,8 +14,9 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
+import com.zjlab.dataservice.modules.system.entity.SysUser;
+import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,17 +41,21 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Autowired
     private SysRoleMapper sysRoleMapper;
 
+    @Autowired
+    private SysUserMapper sysUserMapper;
+
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
         //todo ,对于管理员看所有任务，因为还没有确认如何判断管理员账号，这里暂时还没有做筛选，就是都能看到所有任务
 
-        Object principal = SecurityUtils.getSubject().getPrincipal();
-        if (principal instanceof LoginUser) {
-            query.setUserId(((LoginUser) principal).getId());
-        }
-
-        if (StringUtils.isBlank(query.getUserId())) {
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        SysUser user = sysUserMapper.selectById(userId);
+        query.setUserId(userId);
+        if (user != null) {
+            query.setUserName(user.getUsername());
         }
 
         if (query.getPage() == null || query.getPage() < 1) {
