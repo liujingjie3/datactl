@@ -119,9 +119,9 @@ CREATE TABLE `tc_task_template_node` (
   `next_keys` JSON COMMENT '后继节点键数组',
   `max_duration` INT COMMENT '最大时长（分钟）',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
-  `create_by` BIGINT,
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_by` BIGINT,
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (`prev_keys` IS NULL OR JSON_VALID(`prev_keys`)),
   CHECK (`next_keys` IS NULL OR JSON_VALID(`next_keys`))
@@ -149,9 +149,9 @@ CREATE TABLE `tc_task` (
   `orbit_plans` JSON COMMENT '轨道计划JSON数组',
   `status` TINYINT NOT NULL DEFAULT 0 COMMENT '任务状态(0运行中,1结束,2异常结束,3取消)',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
-  `create_by` BIGINT,
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_by` BIGINT,
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (`imaging_area` IS NULL OR JSON_VALID(`imaging_area`)),
   CHECK (`satellites` IS NULL OR JSON_VALID(`satellites`)),
@@ -179,9 +179,9 @@ CREATE TABLE `tc_task_node_inst` (
   `max_duration` INT COMMENT '最大时长（分钟）',
   `completed_by` BIGINT COMMENT '最终完成该节点的用户ID',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
-  `create_by` BIGINT,
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_by` BIGINT,
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (`prev_node_ids` IS NULL OR JSON_VALID(`prev_node_ids`)),
   CHECK (`next_node_ids` IS NULL OR JSON_VALID(`next_node_ids`)),
@@ -199,9 +199,9 @@ CREATE TABLE `tc_task_work_item` (
   `assignee_id` BIGINT NOT NULL COMMENT '用户ID',
   `phase_status` TINYINT NOT NULL DEFAULT 0 COMMENT '阶段(0候选未到达,1待办,2我已处理,3任务取消撤销,4他人已完成失效)',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
-  `create_by` BIGINT,
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_by` BIGINT,
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务工作项';
 ```
@@ -216,9 +216,9 @@ CREATE TABLE `tc_task_node_action_record` (
   `action_type` TINYINT NOT NULL COMMENT '操作类型(0上传,1选择计划,2决策,3文本等)',
   `action_payload` JSON COMMENT '提交内容JSON',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
-  `create_by` BIGINT COMMENT '提交人ID',
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
-  `update_by` BIGINT,
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (`action_payload` IS NULL OR JSON_VALID(`action_payload`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点操作记录';
@@ -240,9 +240,9 @@ CREATE TABLE `tc_node_info` (
   `status` TINYINT DEFAULT 1 COMMENT '节点状态(1活跃,0禁用)',
   `actions` JSON NOT NULL COMMENT '操作控制项数组：[{type,name,config}]',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记(0正常,1删除)',
-  `create_by` BIGINT COMMENT '创建人ID',
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` BIGINT COMMENT '更新人ID',
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点信息表';
 ```
@@ -255,9 +255,9 @@ CREATE TABLE `tc_node_role_rel` (
   `node_id` BIGINT NOT NULL COMMENT '节点ID',
   `role_id` BIGINT NOT NULL COMMENT '角色ID',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记(0正常,1删除)',
-  `create_by` BIGINT COMMENT '创建人ID',
+  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` BIGINT COMMENT '更新人ID',
+  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点与角色关联表（多对多）';
 ```

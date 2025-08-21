@@ -28,14 +28,14 @@ public class NodeInfoDto {
     private List<NodeActionDto> actions;
 
     /** 创建人ID */
-    private Long creatorId;
+    private String creatorId;
     /** 创建人名称 */
     private String creatorName;
     /** 创建时间 */
     private LocalDateTime createTime;
 
     /** 更新人ID */
-    private Long updaterId;
+    private String updaterId;
     /** 更新人名称 */
     private String updaterName;
     /** 更新时间 */

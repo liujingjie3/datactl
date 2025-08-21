@@ -1,7 +1,7 @@
 # 任务管理模块（Spec v1.2）
 
 运行环境：MySQL 8+；不使用外键；所有删除均为逻辑删除 del\_flag。
-公共审计字段：create\_by / create\_time / update\_by / update\_time（BIGINT / DATETIME）。
+公共审计字段：create\_by / create\_time / update\_by / update\_time（VARCHAR(32) / DATETIME）。
 身份与权限：依赖 sys\_user / sys\_role / sys\_user\_role。
 关键约定：模板连边用模板节点ID；tc\_task\_node\_inst 包含 handler\_role\_ids（JSON 数组）。
 
