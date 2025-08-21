@@ -28,7 +28,7 @@ DDL 已在总文档（画布）中，这里只列编码相关字段与含义。
 * **tc\_task\_template\_node**：模板节点（不含办理角色）
 
   * id：模板节点ID（唯一，用于前驱/后继连边键）
-  * template\_id：模板ID（string）
+  * template\_id：模板ID（string，必填）
   * node\_id：节点定义ID（tc\_node\_info.id）
   * order\_no：层序（可空）
   * prev\_keys / next\_keys：数组，存放模板节点ID
@@ -42,13 +42,13 @@ DDL 已在总文档（画布）中，这里只列编码相关字段与含义。
 ### 1.3 任务运行域（运行态）
 
 * **tc\_task**
-  task\_code, task\_name, task\_requirement(<=255), template\_id(string)
+  task\_code, task\_name, task\_requirement(<=255), template\_id(string，必填)
   need\_imaging, imaging\_area(JSON|null), result\_display\_needed
   satellites(JSON 二级结构), remote\_cmds(JSON), orbit\_plans(JSON)
   status：0运行中 / 1结束 / 2异常结束 / 3取消
 
 * **tc\_task\_node\_inst**
-  task\_id, template\_id(string), node\_id
+  task\_id, template\_id(string，必填), node\_id
   prev\_node\_ids(JSON) / next\_node\_ids(JSON)：实例ID数组
   arrived\_count：到达前驱计数
   handler\_role\_ids(JSON)：办理角色ID数组快照

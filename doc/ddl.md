@@ -112,7 +112,7 @@ CREATE TABLE `tc_todo_template` (
 ```sql
 CREATE TABLE `tc_task_template_node` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模板节点记录ID',
-  `template_id` varchar(128) DEFAULT NULL COMMENT '任务模板ID',
+  `template_id` varchar(128) NOT NULL COMMENT '任务模板ID',
   `node_id` BIGINT NOT NULL COMMENT '节点ID',
   `order_no` INT COMMENT '层级序号',
   `prev_keys` JSON COMMENT '前驱节点键数组',
@@ -140,7 +140,7 @@ CREATE TABLE `tc_task` (
   `task_code` VARCHAR(50) NOT NULL COMMENT '任务编码',
   `task_name` VARCHAR(50) NOT NULL COMMENT '任务名称',
   `task_requirement` VARCHAR(255) COMMENT '任务需求',
-  `template_id` varchar(128) DEFAULT NULL COMMENT '任务模板ID',
+  `template_id` varchar(128) NOT NULL COMMENT '任务模板ID',
   `need_imaging` TINYINT DEFAULT 0 COMMENT '是否需要成像(0否,1是)',
   `imaging_area` JSON NULL COMMENT '成像区域JSON',
   `result_display_needed` TINYINT DEFAULT 0 COMMENT '结果是否展示(0否,1是)',
@@ -166,7 +166,7 @@ CREATE TABLE `tc_task` (
 CREATE TABLE `tc_task_node_inst` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '节点实例ID',
   `task_id` BIGINT NOT NULL COMMENT '任务ID',
-  `template_id` varchar(128) DEFAULT NULL COMMENT '任务模板ID',
+  `template_id` varchar(128) NOT NULL COMMENT '任务模板ID',
   `node_id` BIGINT NOT NULL COMMENT '节点ID',
   `prev_node_ids` JSON COMMENT '前驱节点实例ID数组',
   `next_node_ids` JSON COMMENT '后继节点实例ID数组',
