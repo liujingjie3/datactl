@@ -2,7 +2,10 @@ package com.zjlab.dataservice.modules.tc.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import java.time.LocalDateTime;
 
 /**
@@ -10,7 +13,9 @@ import java.time.LocalDateTime;
  */
 @Data
 public class TaskManagerListQuery {
-    /** Tab类型：all/startedByMe/todo/participated/handled */
+    /** Tab类型：all/startedByMe/todo/handled/participated */
+    @NotBlank(message = "tab不能为空")
+    @Pattern(regexp = "all|startedByMe|todo|handled|participated", message = "tab必须为all/startedByMe/todo/handled/participated")
     private String tab;
     /** 模糊搜索：任务名称或编码 */
     private String q;
@@ -19,6 +24,7 @@ public class TaskManagerListQuery {
     /** 模板ID */
     private Long templateId;
     /** 创建时间起 */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startTimeFrom;
     /** 页码，默认1 */

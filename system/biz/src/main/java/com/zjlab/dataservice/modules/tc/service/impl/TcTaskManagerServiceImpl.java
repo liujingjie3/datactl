@@ -1,6 +1,8 @@
 package com.zjlab.dataservice.modules.tc.service.impl;
 
 import com.zjlab.dataservice.common.api.page.PageResult;
+import com.zjlab.dataservice.common.constant.enums.ResultCode;
+import com.zjlab.dataservice.common.exception.BaseException;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.alibaba.fastjson.JSON;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
@@ -45,6 +47,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         Object principal = SecurityUtils.getSubject().getPrincipal();
         if (principal instanceof LoginUser) {
             query.setUserId(((LoginUser) principal).getId());
+        }
+
+        if (StringUtils.isBlank(query.getUserId())) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
         }
 
         if (query.getPage() == null || query.getPage() < 1) {
