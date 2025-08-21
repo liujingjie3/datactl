@@ -9,7 +9,7 @@ import lombok.Data;
 public class NodeQueryDto {
     private Integer status;
     private String name;
-    private Long roleId;
+    private String roleId;
 
     private Integer page = 1;
     private Integer pageSize = 20;

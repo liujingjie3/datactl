@@ -10,6 +10,6 @@ import lombok.Data;
 @Data
 public class NodeRoleRel extends TcBaseEntity {
     private Long nodeId;
-    private Long roleId;
+    private String roleId;
 }
 

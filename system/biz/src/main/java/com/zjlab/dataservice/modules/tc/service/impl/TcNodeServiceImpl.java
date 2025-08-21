@@ -65,7 +65,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (StringUtils.isNotBlank(queryDto.getName())) {
             wrapper.like(NodeInfo::getName, queryDto.getName());
         }
-        if (queryDto.getRoleId() != null) {
+        if (StringUtils.isNotBlank(queryDto.getRoleId())) {
             List<Long> nodeIds = nodeRoleRelMapper.selectList(Wrappers.<NodeRoleRel>lambdaQuery()
                             .eq(NodeRoleRel::getDelFlag, 0)
                             .eq(NodeRoleRel::getRoleId, queryDto.getRoleId()))
@@ -184,8 +184,8 @@ public class TcNodeServiceImpl implements TcNodeService {
 
         // 更新角色信息，只有变化时才调整
         List<NodeRoleRel> existing = nodeRoleRelMapper.selectByNodeId(id);
-        Set<Long> oldIds = existing.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toSet());
-        Set<Long> newIds = dto.getRoles() == null ? Collections.emptySet() :
+        Set<String> oldIds = existing.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toSet());
+        Set<String> newIds = dto.getRoles() == null ? Collections.emptySet() :
                 dto.getRoles().stream().map(NodeRoleDto::getRoleId).collect(Collectors.toSet());
         if (!oldIds.equals(newIds)) {
             nodeRoleRelMapper.deleteByNodeId(id);
