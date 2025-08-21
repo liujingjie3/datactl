@@ -22,7 +22,7 @@ public class TaskManagerListQuery {
     /** 任务状态 */
     private Integer status;
     /** 模板ID */
-    private Long templateId;
+    private String templateId;
     /** 创建时间起 */
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
