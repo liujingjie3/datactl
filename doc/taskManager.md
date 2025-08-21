@@ -230,7 +230,7 @@ Query 参数：见 §2.2.2。
 
 ```sql
 /* 模板对象：{templateId, templateName} */
-LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 
 /* 当前激活节点对象数组： */
 LEFT JOIN (
@@ -288,7 +288,7 @@ SELECT
 ```sql
 SELECT_FIELDS
 FROM tc_task t
-LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE_CONDITIONS
 ORDER BY t.create_time DESC
@@ -304,7 +304,7 @@ WHERE_CONDITIONS;
 ```sql
 SELECT_FIELDS
 FROM tc_task t
-LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE_CONDITIONS
   AND t.create_by = :userId
@@ -324,7 +324,7 @@ SELECT_FIELDS
 FROM tc_task t
 JOIN tc_task_work_item w
   ON w.task_id = t.id
-LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE t.del_flag=0
   AND w.del_flag=0
@@ -358,7 +358,7 @@ SELECT_FIELDS
 FROM tc_task t
 JOIN tc_task_work_item w
   ON w.task_id = t.id
-LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE t.del_flag=0
   AND w.del_flag=0
@@ -400,7 +400,7 @@ my_group_users AS (
 SELECT_FIELDS
 FROM tc_task t
 JOIN tc_task_work_item wi ON wi.task_id = t.id
-LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE t.del_flag=0
   AND wi.del_flag=0

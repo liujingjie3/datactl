@@ -56,7 +56,7 @@
             ORDER BY t.create_time DESC
             LIMIT #{query.offset}, #{query.pageSize}
         ) t
-        LEFT JOIN tc_todo_template tt ON tt.id = t.template_id
+        LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
     </select>
 
     <select id="countTaskList" resultType="long">
