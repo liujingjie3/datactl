@@ -9,7 +9,9 @@ import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -34,5 +36,13 @@ public class TcTaskManagerController {
     @ApiOperation(value="任务列表", notes="分页查询任务列表")
     public Result<PageResult<TaskManagerListItemVO>> list(@Valid TaskManagerListQuery query) {
         return Result.ok(taskManagerService.listTasks(query));
+    }
+
+    @PostMapping("/cancel")
+    @ApiOperationSupport(order = 2)
+    @ApiOperation(value="取消任务", notes="取消指定任务")
+    public Result<Void> cancel(@RequestParam Long taskId) {
+        taskManagerService.cancelTask(taskId);
+        return Result.ok();
     }
 }

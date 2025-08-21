@@ -19,6 +19,7 @@ import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,5 +123,39 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         long total = tcTaskManagerMapper.countTaskList(query);
         return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelTask(Long taskId) {
+        if (taskId == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+
+        Integer status = tcTaskManagerMapper.selectTaskStatus(taskId);
+        if (status == null) {
+            throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
+        }
+        if (status != 0) {
+            throw new BaseException(ResultCode.TASK_CANNOT_CANCEL);
+        }
+
+        Long doneCnt = tcTaskManagerMapper.countDoneNodeInst(taskId);
+        if (doneCnt != null && doneCnt > 0) {
+            throw new BaseException(ResultCode.TASK_CANNOT_CANCEL);
+        }
+
+        String userId = UserThreadLocal.getUserId();
+        String userName = null;
+        if (userId != null) {
+            SysUser user = sysUserMapper.selectById(userId);
+            if (user != null) {
+                userName = user.getUsername();
+            }
+        }
+
+        tcTaskManagerMapper.updateTaskCancel(taskId, userName);
+        tcTaskManagerMapper.updateNodeInstCancel(taskId, userName);
+        tcTaskManagerMapper.updateWorkItemCancel(taskId, userName);
     }
 }

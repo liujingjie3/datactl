@@ -75,6 +75,7 @@ public enum ResultCode {
     TASK_IS_NOT_EXISTS(200002, "待办任务不存在"),
     INSTANCE_IS_EXISTS(200003, "实例已经存在"),
     INSTANCE_IS_NOT_EXISTS(200004, "实例对象不存在"),
+    TASK_CANNOT_CANCEL(200005, "已有节点完成，不能取消"),
 
 
     ;

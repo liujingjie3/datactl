@@ -106,4 +106,37 @@
         ORDER BY ni.task_id, ni.order_no, ni.id
     </select>
 
+    <select id="selectTaskStatus" resultType="int">
+        SELECT status FROM tc_task WHERE id = #{taskId} AND del_flag = 0 FOR UPDATE
+    </select>
+
+    <select id="countDoneNodeInst" resultType="long">
+        SELECT COUNT(*) FROM tc_task_node_inst
+        WHERE task_id = #{taskId} AND del_flag = 0 AND status = 2 FOR UPDATE
+    </select>
+
+    <update id="updateTaskCancel">
+        UPDATE tc_task
+        SET status = 3,
+            update_by = #{userName},
+            update_time = NOW()
+        WHERE id = #{taskId} AND del_flag = 0
+    </update>
+
+    <update id="updateNodeInstCancel">
+        UPDATE tc_task_node_inst
+        SET status = 3,
+            update_by = #{userName},
+            update_time = NOW()
+        WHERE task_id = #{taskId} AND del_flag = 0 AND status IN (0,1)
+    </update>
+
+    <update id="updateWorkItemCancel">
+        UPDATE tc_task_work_item
+        SET phase_status = 3,
+            update_by = #{userName},
+            update_time = NOW()
+        WHERE task_id = #{taskId} AND del_flag = 0 AND phase_status IN (0,1)
+    </update>
+
 </mapper>
