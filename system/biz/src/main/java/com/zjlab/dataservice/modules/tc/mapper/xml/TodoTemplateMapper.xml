@@ -78,7 +78,7 @@
     <insert id="insert" parameterType="com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate">
         INSERT INTO tc_todo_template
         (code, template_id, template_name, template_type, template_attr, remark,
-         corp_id, agent_id, flag, tenant_id, del_flag, create_by, create_time, update_by, update_time, ext)
+         corp_id, agent_id, flag, tenant_id, del_flag, create_by, create_time, update_by, update_time, ext,file_path)
         VALUES
             (#{code},
              #{templateId},
@@ -95,7 +95,8 @@
              #{createTime},
              #{updateBy},
              #{updateTime},
-             #{ext});
+             #{ext},
+             #{filePath});
     </insert>
 
 

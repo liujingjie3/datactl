@@ -1,10 +1,9 @@
 package com.zjlab.dataservice.modules.tc.controller;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
-import com.zjlab.dataservice.modules.bench.model.dto.BenchDatasetListDto;
-import com.zjlab.dataservice.modules.bench.model.entity.BenchDataset;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
@@ -59,6 +58,20 @@ public class TcTemplateController {
         try {
             TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
             TodoTemplateDto todoTemplate = tcTemplateService.submit(file,dto);
+            return Result.OK("新增模版成功", todoTemplate);
+        } catch (Exception e) {
+            return Result.error("新增模版失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value ="/update",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiOperationSupport(order = 4)
+    @ApiOperation(value = "新增或修改", notes = "传入templateVO")
+    public Result<TodoTemplateDto> update(@RequestParam(value = "file", required = false) MultipartFile file,
+                                        @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
+        try {
+            TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
+            TodoTemplateDto todoTemplate = tcTemplateService.update(file,dto);
             return Result.OK("新增模版成功", todoTemplate);
         } catch (Exception e) {
             return Result.error("新增模版失败: " + e.getMessage());

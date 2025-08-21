@@ -28,7 +28,10 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
      * @param templateVO
      * @return
      */
-    TodoTemplateDto submit(MultipartFile file, TodoTemplateDto templateVO);
+    TodoTemplateDto submit(MultipartFile file, TodoTemplateDto templateVO) throws Exception;
+
+    TodoTemplateDto update(MultipartFile file, TodoTemplateDto templateVO);
+
 
     /**
      * 通过名称查询模板实例

@@ -17,6 +17,7 @@ public interface ObjectService extends IService<FilePo> {
 
     void upload(MultipartFile[] files, String bucketName, String folder) throws Exception;
 
+    String uploadReturnObjectName (MultipartFile file, String bucketName, String folder) throws Exception;
     void download(ObjectDownloadDto downloadDto, HttpServletResponse response) throws Exception;
     void downloadZip(ObjectDownloadZipDto downloadZipDto, HttpServletResponse response) throws Exception;
 

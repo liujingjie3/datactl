@@ -14,6 +14,7 @@ import com.zjlab.dataservice.common.exception.BaseException;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.common.util.Func;
+import com.zjlab.dataservice.modules.storage.service.impl.MinioFileServiceImpl;
 import com.zjlab.dataservice.modules.taskplan.mapper.MetadataMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcCommandMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper;
@@ -57,6 +58,8 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Resource
     private TcCommandMapper tcCommandMapper;
 
+    @Resource
+    private MinioFileServiceImpl minioFileService;
 
     @Override
     public PageResult<TodoTemplateDto> qryTemplateList(TodoTemplateQueryDto todoTemplateQueryDto) {
@@ -105,33 +108,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public TodoTemplateDto submit(MultipartFile file, TodoTemplateDto todoTemplateDto) {
-        // 统一code处理
-//        if (Func.isBlank(todoTemplateDto.getCode())) {
-//            todoTemplateDto.setCode(Func.randomUUID());
-//        }
-
+    public TodoTemplateDto submit(MultipartFile file, TodoTemplateDto todoTemplateDto) throws Exception {
         // 将 DTO 转为实体
         TodoTemplate template = new TodoTemplate();
         BeanUtil.copyProperties(todoTemplateDto, template);
         template.setTemplateAttr(todoTemplateDto.getAttrs());
         template.setFlag(1);
-
-        // 查询是否存在同code + agentId 模板
-//        TodoTemplate query = new TodoTemplate();
-//        query.setCode(template.getCode());
-//        query.setAgentId(template.getAgentId());
-//        query.setTemplateId(template.getTemplateId());
-//        TodoTemplate existing = baseMapper.selectOneByTemplate(query);
-//
-//        if (Func.notNull(existing)
-//                && existing.getTemplateName().equals(todoTemplateDto.getTemplateName())) {
-//            throw new BaseException(ResultCode.DUPLICATE_TEMPLATE_NAME);
-//        }
-//
-//        if (Func.isBlank(template.getCode()) && Func.isNull(existing)) {
-//            throw new BaseException(ResultCode.QUERY_TEMPLATE_FAIL);
-//        }
 
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
@@ -151,31 +133,62 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             template.setUpdateBy(user.getUsername());
         }
         log.info("before insert template info: {}", template);
+
+        if (file != null && !file.isEmpty()) {
+            String objectName = minioFileService.uploadReturnObjectName(file, "a", "b");
+            template.setFilePath(objectName);
+        }
         todoTemplateMapper.insert(template);
 
-//            // 更新
-//            templateId = existing.getTemplateId();
-//            BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
-//            existing.setTemplateAttr(template.getTemplateAttr());
-//            existing.setUpdateTime(LocalDateTime.now());
-//            if (Func.notNull(user)) {
-//                existing.setUpdateBy(user.getUsername());
-//            }
-//
-//            UpdateWrapper<TodoTemplate> updateWrapper = new UpdateWrapper<>();
-//            updateWrapper.eq("code", template.getCode());
-//            log.info("before update template info: {}", existing);
-//            update(existing, updateWrapper);
-
-
         // ====== 5. 解析 Excel 并批量插入 tc_commands ======
+//        if (file != null && !file.isEmpty()) {
+//            List<TcCommand> commands = parseExcel(user,file, templateId);
+//            if (!commands.isEmpty()) {
+//                tcCommandMapper.batchInsert(commands); // 批量插入
+//            }
+//        }
+
+        return todoTemplateDto;
+    }
+
+    @Override
+    public TodoTemplateDto update(MultipartFile file, TodoTemplateDto todoTemplateDto) {
+
+        TodoTemplate query = new TodoTemplate();
+        query.setId(todoTemplateDto.getId());
+        TodoTemplate existing = baseMapper.selectOneByTemplate(query);
+
+        TodoTemplate template = new TodoTemplate();
+        BeanUtil.copyProperties(todoTemplateDto, template);
+        template.setTemplateAttr(todoTemplateDto.getAttrs());
+
+
+        String  templateId = existing.getTemplateId();
+        BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
+        existing.setTemplateAttr(template.getTemplateAttr());
+        existing.setUpdateTime(LocalDateTime.now());
+
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        LoginUser user = userService.getUserById(userId);
+
+        if (Func.notNull(user)) {
+            existing.setUpdateBy(user.getUsername());
+        }
+
+        UpdateWrapper<TodoTemplate> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("code", template.getCode());
+        log.info("before update template info: {}", existing);
+        update(existing, updateWrapper);
         if (file != null && !file.isEmpty()) {
             List<TcCommand> commands = parseExcel(user,file, templateId);
             if (!commands.isEmpty()) {
+//                先清空原来的指令单
                 tcCommandMapper.batchInsert(commands); // 批量插入
             }
         }
-
         return todoTemplateDto;
     }
 

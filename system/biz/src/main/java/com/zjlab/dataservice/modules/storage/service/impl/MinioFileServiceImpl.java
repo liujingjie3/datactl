@@ -133,6 +133,39 @@ public class MinioFileServiceImpl extends ServiceImpl<FileMapper, FilePo> implem
 	}
 
 	@Override
+	public String uploadReturnObjectName(MultipartFile file, String bucketName, String folder) throws Exception {
+		// 原文件名
+		String originalName = file.getOriginalFilename();
+		String contentType = file.getContentType();
+		String md5 = DigestUtils.md5Hex(file.getInputStream());
+
+		// 生成新文件名（保留原扩展名）
+		String ext = "";
+		if (originalName != null && originalName.contains(".")) {
+			ext = originalName.substring(originalName.lastIndexOf("."));
+		}
+		String newFileName = UUID.randomUUID().toString().replace("-", "") + ext;
+
+		// 构造对象路径
+		String objectName = folder + "/" + newFileName;
+
+		// 上传文件
+		MinioUtil.uploadFile(bucketName, file, objectName, contentType);
+
+		// 获取上传后的文件信息
+		ObjectVo objectInfo = getObjectInfo(bucketName, objectName);
+
+		// 文件完整性校验
+		if (!StringUtils.equals(md5, objectInfo.getMd5())) {
+			throw new JeecgBootException("上传文件的md5值不同");
+		}
+
+		// 返回新文件名
+		return objectName;
+	}
+
+
+	@Override
 	public void download(ObjectDownloadDto downloadDto, HttpServletResponse response) throws Exception {
 		String path = downloadDto.getPath();
 		String fileName = downloadDto.getFileName();
