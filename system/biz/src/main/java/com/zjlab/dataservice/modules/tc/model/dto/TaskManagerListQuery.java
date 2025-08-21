@@ -35,6 +35,8 @@ public class TaskManagerListQuery implements Serializable {
     private Integer pageSize;
     /** 当前登录用户ID */
     private String userId;
+    /** 当前登录用户名 */
+    private String userName;
     /** 偏移量，内部计算 */
     private Integer offset;
 }

@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zjlab.dataservice.common.api.page.PageResult;
+import com.zjlab.dataservice.common.constant.enums.ResultCode;
+import com.zjlab.dataservice.common.exception.BaseException;
+import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.entity.SysUser;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
@@ -15,9 +18,7 @@ import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.*;
 import com.zjlab.dataservice.modules.tc.service.TcNodeService;
-import com.zjlab.dataservice.common.system.vo.LoginUser;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -111,14 +112,14 @@ public class TcNodeServiceImpl implements TcNodeService {
             }
             // creator
             dto.setCreatorId(node.getCreateBy());
-            SysUser user = sysUserMapper.selectById(node.getCreateBy());
+            SysUser user = sysUserMapper.getUserByName(node.getCreateBy());
             if (user != null) {
                 dto.setCreatorName(user.getRealname());
             }
             dto.setCreateTime(node.getCreateTime());
             // updater
             dto.setUpdaterId(node.getUpdateBy());
-            SysUser upUser = sysUserMapper.selectById(node.getUpdateBy());
+            SysUser upUser = sysUserMapper.getUserByName(node.getUpdateBy());
             if (upUser != null) {
                 dto.setUpdaterName(upUser.getRealname());
             }
@@ -137,13 +138,17 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public Long createNode(NodeInfoDto dto) {
-        LoginUser loginUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        SysUser loginUser = sysUserMapper.selectById(userId);
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
         if (loginUser != null) {
-            node.setCreateBy(loginUser.getId());
-            node.setUpdateBy(loginUser.getId());
+            node.setCreateBy(loginUser.getUsername());
+            node.setUpdateBy(loginUser.getUsername());
         }
         if (dto.getActions() != null) {
             node.setActions(JSON.toJSONString(dto.getActions()));
@@ -157,8 +162,8 @@ public class TcNodeServiceImpl implements TcNodeService {
                 rel.setRoleId(roleDto.getRoleId());
                 rel.setDelFlag(0);
                 if (loginUser != null) {
-                    rel.setCreateBy(loginUser.getId());
-                    rel.setUpdateBy(loginUser.getId());
+                    rel.setCreateBy(loginUser.getUsername());
+                    rel.setUpdateBy(loginUser.getUsername());
                 }
                 nodeRoleRelMapper.insert(rel);
             }
@@ -170,12 +175,16 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public void updateNode(Long id, NodeInfoDto dto) {
-        LoginUser loginUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        SysUser loginUser = sysUserMapper.selectById(userId);
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setId(id);
         if (loginUser != null) {
-            node.setUpdateBy(loginUser.getId());
+            node.setUpdateBy(loginUser.getUsername());
         }
         if (dto.getActions() != null) {
             node.setActions(JSON.toJSONString(dto.getActions()));
@@ -196,8 +205,8 @@ public class TcNodeServiceImpl implements TcNodeService {
                     rel.setRoleId(roleDto.getRoleId());
                     rel.setDelFlag(0);
                     if (loginUser != null) {
-                        rel.setCreateBy(loginUser.getId());
-                        rel.setUpdateBy(loginUser.getId());
+                        rel.setCreateBy(loginUser.getUsername());
+                        rel.setUpdateBy(loginUser.getUsername());
                     }
                     nodeRoleRelMapper.insert(rel);
                 }
@@ -247,12 +256,12 @@ public class TcNodeServiceImpl implements TcNodeService {
             dto.setActions(actions);
         }
         dto.setCreatorId(node.getCreateBy());
-        SysUser creator = sysUserMapper.selectById(node.getCreateBy());
+        SysUser creator = sysUserMapper.getUserByName(node.getCreateBy());
         if (creator != null) {
             dto.setCreatorName(creator.getRealname());
         }
         dto.setUpdaterId(node.getUpdateBy());
-        SysUser upUser = sysUserMapper.selectById(node.getUpdateBy());
+        SysUser upUser = sysUserMapper.getUserByName(node.getUpdateBy());
         if (upUser != null) {
             dto.setUpdaterName(upUser.getRealname());
         }

@@ -307,14 +307,14 @@ FROM tc_task t
 LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE_CONDITIONS
-  AND t.create_by = :userId
+  AND t.create_by = :userName
 ORDER BY t.create_time DESC
 LIMIT :offset, :pageSize;
 
 SELECT COUNT(1)
 FROM tc_task t
 WHERE_CONDITIONS
-  AND t.create_by = :userId;
+  AND t.create_by = :userName;
 
 ```
 **C) tab = todo（我的待办）**
@@ -600,7 +600,7 @@ Resp：任务主信息 + 当前激活节点ID集合（可选）
 
 列表（四个 Tab）
 
-* 发起的：`GET /task/list/startedByMe?userId&page&pageSize`
+* 发起的：`GET /task/list/startedByMe?userName&page&pageSize`
 * 待办： `GET /task/list/todo?userId&page&pageSize`
 * 参与： `GET /task/list/participated?userId&page&pageSize`
 * 已处理：`GET /task/list/handledByMyGroup?userId&page&pageSize`

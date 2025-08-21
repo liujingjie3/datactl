@@ -41,7 +41,7 @@
             WHERE
             <include refid="whereCommon"/>
             <if test="query.tab == 'startedByMe'">
-                AND t.create_by = #{query.userId}
+                AND t.create_by = #{query.userName}
             </if>
             <if test="query.tab == 'todo'">
                 AND wi.del_flag = 0 AND wi.assignee_id = #{query.userId} AND wi.phase_status = 1
@@ -76,7 +76,7 @@
         WHERE
         <include refid="whereCommon"/>
         <if test="query.tab == 'startedByMe'">
-            AND t.create_by = #{query.userId}
+            AND t.create_by = #{query.userName}
         </if>
         <if test="query.tab == 'todo'">
             AND wi.del_flag = 0 AND wi.assignee_id = #{query.userId} AND wi.phase_status = 1
