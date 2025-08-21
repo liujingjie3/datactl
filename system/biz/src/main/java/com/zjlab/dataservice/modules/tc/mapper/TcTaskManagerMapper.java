@@ -17,4 +17,19 @@ public interface TcTaskManagerMapper {
     Long countTaskList(@Param("query") TaskManagerListQuery query);
     /** 查询当前节点 */
     List<CurrentNodeRow> selectCurrentNodes(@Param("taskIds") List<Long> taskIds);
+
+    /** 查询任务状态 */
+    Integer selectTaskStatus(@Param("taskId") Long taskId);
+
+    /** 已完成节点数量 */
+    Long countDoneNodeInst(@Param("taskId") Long taskId);
+
+    /** 更新任务为取消 */
+    int updateTaskCancel(@Param("taskId") Long taskId, @Param("userName") String userName);
+
+    /** 取消节点实例 */
+    int updateNodeInstCancel(@Param("taskId") Long taskId, @Param("userName") String userName);
+
+    /** 取消工作项 */
+    int updateWorkItemCancel(@Param("taskId") Long taskId, @Param("userName") String userName);
 }

@@ -12,4 +12,10 @@ public interface TcTaskManagerService {
      * 分页查询任务列表
      */
     PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query);
+
+    /**
+     * 取消任务
+     * @param taskId 任务ID
+     */
+    void cancelTask(Long taskId);
 }
