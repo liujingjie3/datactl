@@ -11,7 +11,7 @@ public class TaskManagerListItemVO {
     private Long taskId;
     private String taskName;
     private String taskCode;
-    private Long templateId;
+    private String templateId;
     private String templateName;
     private String satellites;
     private LocalDateTime createTime;
