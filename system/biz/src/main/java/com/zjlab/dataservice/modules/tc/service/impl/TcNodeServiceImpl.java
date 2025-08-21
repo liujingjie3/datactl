@@ -111,14 +111,14 @@ public class TcNodeServiceImpl implements TcNodeService {
             }
             // creator
             dto.setCreatorId(node.getCreateBy());
-            SysUser user = sysUserMapper.selectById(String.valueOf(node.getCreateBy()));
+            SysUser user = sysUserMapper.selectById(node.getCreateBy());
             if (user != null) {
                 dto.setCreatorName(user.getRealname());
             }
             dto.setCreateTime(node.getCreateTime());
             // updater
             dto.setUpdaterId(node.getUpdateBy());
-            SysUser upUser = sysUserMapper.selectById(String.valueOf(node.getUpdateBy()));
+            SysUser upUser = sysUserMapper.selectById(node.getUpdateBy());
             if (upUser != null) {
                 dto.setUpdaterName(upUser.getRealname());
             }
@@ -142,8 +142,8 @@ public class TcNodeServiceImpl implements TcNodeService {
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
         if (loginUser != null) {
-            node.setCreateBy(Long.valueOf(loginUser.getId()));
-            node.setUpdateBy(Long.valueOf(loginUser.getId()));
+            node.setCreateBy(loginUser.getId());
+            node.setUpdateBy(loginUser.getId());
         }
         if (dto.getActions() != null) {
             node.setActions(JSON.toJSONString(dto.getActions()));
@@ -157,8 +157,8 @@ public class TcNodeServiceImpl implements TcNodeService {
                 rel.setRoleId(roleDto.getRoleId());
                 rel.setDelFlag(0);
                 if (loginUser != null) {
-                    rel.setCreateBy(Long.valueOf(loginUser.getId()));
-                    rel.setUpdateBy(Long.valueOf(loginUser.getId()));
+                    rel.setCreateBy(loginUser.getId());
+                    rel.setUpdateBy(loginUser.getId());
                 }
                 nodeRoleRelMapper.insert(rel);
             }
@@ -175,7 +175,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         BeanUtil.copyProperties(dto, node);
         node.setId(id);
         if (loginUser != null) {
-            node.setUpdateBy(Long.valueOf(loginUser.getId()));
+            node.setUpdateBy(loginUser.getId());
         }
         if (dto.getActions() != null) {
             node.setActions(JSON.toJSONString(dto.getActions()));
@@ -196,8 +196,8 @@ public class TcNodeServiceImpl implements TcNodeService {
                     rel.setRoleId(roleDto.getRoleId());
                     rel.setDelFlag(0);
                     if (loginUser != null) {
-                        rel.setCreateBy(Long.valueOf(loginUser.getId()));
-                        rel.setUpdateBy(Long.valueOf(loginUser.getId()));
+                        rel.setCreateBy(loginUser.getId());
+                        rel.setUpdateBy(loginUser.getId());
                     }
                     nodeRoleRelMapper.insert(rel);
                 }
@@ -247,12 +247,12 @@ public class TcNodeServiceImpl implements TcNodeService {
             dto.setActions(actions);
         }
         dto.setCreatorId(node.getCreateBy());
-        SysUser creator = sysUserMapper.selectById(String.valueOf(node.getCreateBy()));
+        SysUser creator = sysUserMapper.selectById(node.getCreateBy());
         if (creator != null) {
             dto.setCreatorName(creator.getRealname());
         }
         dto.setUpdaterId(node.getUpdateBy());
-        SysUser upUser = sysUserMapper.selectById(String.valueOf(node.getUpdateBy()));
+        SysUser upUser = sysUserMapper.selectById(node.getUpdateBy());
         if (upUser != null) {
             dto.setUpdaterName(upUser.getRealname());
         }

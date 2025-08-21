@@ -19,11 +19,11 @@ public class TcBaseEntity {
     @TableLogic(value = "0", delval = "1")
     private Integer delFlag; // 0=未删, 1=已删
 
-    private Long createBy;
+    private String createBy;
 
     private LocalDateTime createTime;
 
-    private Long updateBy;
+    private String updateBy;
 
     private LocalDateTime updateTime;
 }
