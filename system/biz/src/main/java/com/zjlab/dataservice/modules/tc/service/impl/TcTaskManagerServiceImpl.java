@@ -49,11 +49,13 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         //todo ,对于管理员看所有任务，因为还没有确认如何判断管理员账号，这里暂时还没有做筛选，就是都能看到所有任务
 
         String userId = UserThreadLocal.getUserId();
-        if (userId == null) {
-            throw new BaseException(ResultCode.USERID_IS_NULL);
-        }
-        SysUser user = sysUserMapper.selectById(userId);
-        query.setUserId(userId);
+        //todo 后续放开
+//        if (userId == null) {
+//            throw new BaseException(ResultCode.USERID_IS_NULL);
+//        }
+//        query.setUserId(userId);
+        SysUser user = sysUserMapper.selectById(query.getUserId());
+
         if (user != null) {
             query.setUserName(user.getUsername());
         }
