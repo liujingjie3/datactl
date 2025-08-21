@@ -552,15 +552,15 @@ FOR UPDATE;
 
 IF done_cnt = 0 THEN
   UPDATE tc_task
-  SET status=3, update_by=:uid, update_time=NOW()
+  SET status=3, update_by=:userName, update_time=NOW()
   WHERE id=:taskId AND del_flag=0;
 
   UPDATE tc_task_node_inst
-  SET status=3, update_by=:uid, update_time=NOW()
+  SET status=3, update_by=:userName, update_time=NOW()
   WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1);
 
   UPDATE tc_task_work_item
-  SET phase_status=3, update_by=:uid, update_time=NOW()
+  SET phase_status=3, update_by=:userName, update_time=NOW()
   WHERE task_id=:taskId AND del_flag=0 AND phase_status IN (0,1);
 END IF;
 
