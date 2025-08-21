@@ -52,13 +52,13 @@ DDL 已在总文档（画布）中，这里只列编码相关字段与含义。
   prev\_node\_ids(JSON) / next\_node\_ids(JSON)：实例ID数组
   arrived\_count：到达前驱计数
   handler\_role\_ids(JSON)：办理角色ID数组快照
-  order\_no、status(0待处理/1处理中/2已完成/3已取消)
+  order\_no、status(0待处理/1处理中/2已完成/3已取消/4异常结束)
   started\_at, completed\_at, completed\_by, max\_duration
 
 * **tc\_task\_work\_item**
   task\_id, node\_inst\_id, assignee\_id
   phase\_status：
-  0候选未到达 / 1待办 / 2我已处理 / 3任务取消撤销 / 4他人已完成失效
+  0候选未到达 / 1待办 / 2我已处理 / 3任务取消撤销 / 4他人已完成失效 / 5异常结束
 
 * **tc\_task\_node\_action\_record**
   task\_id, node\_inst\_id, action\_type, action\_payload(JSON), create\_by, create\_time
@@ -404,7 +404,7 @@ LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE t.del_flag=0
   AND wi.del_flag=0
-  AND wi.phase_status  IN (2,4)
+  AND wi.phase_status  IN (2,4,5)
   AND w.assignee_id = :userId
   AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
   AND ( :status IS NULL OR t.status = :status )
@@ -419,7 +419,7 @@ FROM tc_task t
 JOIN tc_task_work_item wi ON wi.task_id=t.id
 WHERE t.del_flag=0
   AND wi.del_flag=0
-  AND wi.phase_status  IN (2,4)
+  AND wi.phase_status  IN (2,4,5)
   AND w.assignee_id = :userId
   AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
   AND ( :status IS NULL OR t.status = :status )
@@ -569,7 +569,33 @@ COMMIT;
 
 ---
 
-### 2.6 超时提醒（定时任务）
+### 2.6 异常结束任务（用户中断工作流）
+
+当用户在处理中途选择终止（例如在决策节点点击“不执行”）时，任务应标记为异常结束，同时更新未完成的节点和工作项状态。
+
+**事务脚本**
+
+```sql
+BEGIN;
+
+UPDATE tc_task
+SET status=2, update_by=:uid, update_time=NOW()
+WHERE id=:taskId AND del_flag=0;
+
+UPDATE tc_task_node_inst
+SET status=4, update_by=:uid, update_time=NOW()
+WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1);
+
+UPDATE tc_task_work_item
+SET phase_status=5, update_by=:uid, update_time=NOW()
+WHERE task_id=:taskId AND del_flag=0 AND phase_status IN (0,1);
+
+COMMIT;
+```
+
+---
+
+### 2.7 超时提醒（定时任务）
 
 目标：status=1 且 max\_duration 不空
 判定：NOW() > started\_at + INTERVAL max\_duration MINUTE
@@ -594,6 +620,9 @@ Resp：`{ id, taskCode }`
 
 取消任务 `POST /task/cancel?taskId=...`
 Resp：`{ success: true }`（不满足条件报 TASK\_CANNOT\_CANCEL）
+
+异常结束任务 `POST /task/abort?taskId=...`
+Resp：`{ success: true }`
 
 任务详情 `GET /task/detail?taskId=...`
 Resp：任务主信息 + 当前激活节点ID集合（可选）
@@ -703,7 +732,7 @@ ORDER BY r.create_time DESC;
 
 **校验器**：JSON 校验、实例角色权限校验
 
-**Scheduler**：超时提醒扫描（§2.6）
+  **Scheduler**：超时提醒扫描（§2.7）
 
 **API**：按 §3 暴露
 
