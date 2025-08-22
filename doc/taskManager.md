@@ -163,9 +163,8 @@ COMMIT;
 Tab 值：
 - **all** — 所有任务（TODO：后续加管理员判定）
 - **startedByMe** — 发起的任务（创建人为我）
-- **todo** — 待办任务（我的办理项，phase_status=1）
-- **participated** — 参与任务（候选未到达，phase_status=0）
-- **handled** — 已处理任务（我本人或我所属角色组有人处理过，phase_status=2）
+- **todo** — 待办任务（我的办理项及参与任务，phase_status∈(0,1)）
+- **handled** — 已处理任务（我本人或我所属角色组有人处理过，phase_status∈(2,4,5)）
 
 TODO：当管理员判定规则明确后，在 tab=all 的入口做权限校验。
 
@@ -173,7 +172,7 @@ TODO：当管理员判定规则明确后，在 tab=all 的入口做权限校验�
 
 | 参数名        | 类型     | 必填 | 说明                                   |
 |---------------|----------|------|--------------------------------------|
-| tab           | string   | 是   | 枚举：all / startedByMe / todo / participated / handled |
+| tab           | string   | 是   | 枚举：all / startedByMe / todo / handled |
 | q             | string   | 否   | 模糊搜索：任务名称或任务编码          |
 | status        | int      | 否   | 任务状态：0运行中，1结束，2异常结束，3取消 |
 | templateId    | string   | 否   | 任务类型（模板ID）                    |
@@ -329,7 +328,7 @@ LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE t.del_flag=0
   AND w.del_flag=0
   AND w.assignee_id = :userId
-  AND w.phase_status = 1
+  AND w.phase_status IN (0,1)
   AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
   AND ( :status IS NULL OR t.status = :status )
   AND ( :templateId IS NULL OR t.template_id = :templateId )
@@ -343,48 +342,14 @@ JOIN tc_task_work_item w ON w.task_id=t.id
 WHERE t.del_flag=0
   AND w.del_flag=0
   AND w.assignee_id = :userId
-  AND w.phase_status = 1
+  AND w.phase_status IN (0,1)
   AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
   AND ( :status IS NULL OR t.status = :status )
   AND ( :templateId IS NULL OR t.template_id = :templateId )
   AND ( :startTimeFrom IS NULL OR t.create_time >= :startTimeFrom );
 
 ```
-
-**D) tab = participated（候选未到达）**
-
-```sql
-SELECT_FIELDS
-FROM tc_task t
-JOIN tc_task_work_item w
-  ON w.task_id = t.id
-LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
-LEFT JOIN curN_subquery curN ON curN.task_id = t.id
-WHERE t.del_flag=0
-  AND w.del_flag=0
-  AND w.assignee_id = :userId
-  AND w.phase_status = 0
-  AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
-  AND ( :status IS NULL OR t.status = :status )
-  AND ( :templateId IS NULL OR t.template_id = :templateId )
-  AND ( :startTimeFrom IS NULL OR t.create_time >= :startTimeFrom )
-ORDER BY t.create_time DESC
-LIMIT :offset, :pageSize;
-
-SELECT COUNT(DISTINCT t.id)
-FROM tc_task t
-JOIN tc_task_work_item w ON w.task_id=t.id
-WHERE t.del_flag=0
-  AND w.del_flag=0
-  AND w.assignee_id = :userId
-  AND w.phase_status = 0
-  AND ( :q IS NULL OR (t.task_name LIKE CONCAT('%', :q, '%') OR t.task_code LIKE CONCAT('%', :q, '%')) )
-  AND ( :status IS NULL OR t.status = :status )
-  AND ( :templateId IS NULL OR t.template_id = :templateId )
-  AND ( :startTimeFrom IS NULL OR t.create_time >= :startTimeFrom );
-
-```
-**E) tab = handled（我或我组里的人处理过）**
+**D) tab = handled（我或我组里的人处理过）**
 
 ```sql
 WITH my_roles AS (
@@ -430,7 +395,7 @@ WHERE t.del_flag=0
 注：上面 SELECT_FIELDS / WHERE_CONDITIONS / curN_subquery 为示意占位，实际写 SQL 时请替换成完整片段。
 #### 2.2.6 小结
 
-* 单接口 GET /task/list 支持五个 Tab。
+* 单接口 GET /task/list 支持四个 Tab。
 * 筛选项全可选，时间仅“起”。
 * 返回结构对象化：模板对象、当前激活节点对象（含实例ID、名称、角色数组）。
 * tab=all 暂不做管理员限制（已标注 TODO）。
@@ -627,11 +592,10 @@ Resp：`{ success: true }`
 任务详情 `GET /task/detail?taskId=...`
 Resp：任务主信息 + 当前激活节点ID集合（可选）
 
-列表（四个 Tab）
+列表（三个 Tab）
 
 * 发起的：`GET /task/list/startedByMe?userName&page&pageSize`
 * 待办： `GET /task/list/todo?userId&page&pageSize`
-* 参与： `GET /task/list/participated?userId&page&pageSize`
 * 已处理：`GET /task/list/handledByMyGroup?userId&page&pageSize`
 
 Resp（统一分页）：`{ list: [...], total: number }`
