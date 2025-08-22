@@ -28,7 +28,11 @@ public class TcNodeController {
     @ApiOperationSupport(order = 1)
     @ApiOperation(value = "获取节点统计数据")
     public Result<NodeStatsVo> stats() {
-        return Result.ok(tcNodeService.getStats());
+        try {
+            return Result.ok(tcNodeService.getStats());
+        } catch (Exception e) {
+            return Result.error("获取节点统计数据失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -38,7 +42,11 @@ public class TcNodeController {
     @ApiOperationSupport(order = 2)
     @ApiOperation(value = "查询节点列表")
     public Result<PageResult<NodeInfoDto>> list(NodeQueryDto queryDto) {
-        return Result.ok(tcNodeService.listNodes(queryDto));
+        try {
+            return Result.ok(tcNodeService.listNodes(queryDto));
+        } catch (Exception e) {
+            return Result.error("查询节点列表失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -48,7 +56,11 @@ public class TcNodeController {
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "新建节点")
     public Result<Long> create(@RequestBody NodeInfoDto dto) {
-        return Result.ok(tcNodeService.createNode(dto));
+        try {
+            return Result.ok(tcNodeService.createNode(dto));
+        } catch (Exception e) {
+            return Result.error("新建节点失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -58,8 +70,12 @@ public class TcNodeController {
     @ApiOperationSupport(order = 4)
     @ApiOperation(value = "编辑节点")
     public Result<Void> update(@PathVariable Long id, @RequestBody NodeInfoDto dto) {
-        tcNodeService.updateNode(id, dto);
-        return Result.ok();
+        try {
+            tcNodeService.updateNode(id, dto);
+            return Result.ok();
+        } catch (Exception e) {
+            return Result.error("编辑节点失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -69,8 +85,12 @@ public class TcNodeController {
     @ApiOperationSupport(order = 5)
     @ApiOperation(value = "更新节点状态")
     public Result<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
-        tcNodeService.updateStatus(id, status);
-        return Result.ok();
+        try {
+            tcNodeService.updateStatus(id, status);
+            return Result.ok();
+        } catch (Exception e) {
+            return Result.error("更新节点状态失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -80,8 +100,12 @@ public class TcNodeController {
     @ApiOperationSupport(order = 6)
     @ApiOperation(value = "删除节点")
     public Result<Void> delete(@PathVariable Long id) {
-        tcNodeService.deleteNode(id);
-        return Result.ok();
+        try {
+            tcNodeService.deleteNode(id);
+            return Result.ok();
+        } catch (Exception e) {
+            return Result.error("删除节点失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -91,6 +115,10 @@ public class TcNodeController {
     @ApiOperationSupport(order = 7)
     @ApiOperation(value = "获取节点详情")
     public Result<NodeInfoDto> detail(@PathVariable Long id) {
-        return Result.ok(tcNodeService.getDetail(id));
+        try {
+            return Result.ok(tcNodeService.getDetail(id));
+        } catch (Exception e) {
+            return Result.error("获取节点详情失败: " + e.getMessage());
+        }
     }
 }
