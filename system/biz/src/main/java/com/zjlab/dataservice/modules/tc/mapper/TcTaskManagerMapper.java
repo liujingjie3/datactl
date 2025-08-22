@@ -25,11 +25,11 @@ public interface TcTaskManagerMapper {
     Long countDoneNodeInst(@Param("taskId") Long taskId);
 
     /** 更新任务为取消 */
-    int updateTaskCancel(@Param("taskId") Long taskId, @Param("userName") String userName);
+    int updateTaskCancel(@Param("taskId") Long taskId, @Param("userId") String userId);
 
     /** 取消节点实例 */
-    int updateNodeInstCancel(@Param("taskId") Long taskId, @Param("userName") String userName);
+    int updateNodeInstCancel(@Param("taskId") Long taskId, @Param("userId") String userId);
 
     /** 取消工作项 */
-    int updateWorkItemCancel(@Param("taskId") Long taskId, @Param("userName") String userName);
+    int updateWorkItemCancel(@Param("taskId") Long taskId, @Param("userId") String userId);
 }

@@ -14,8 +14,6 @@ import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
-import com.zjlab.dataservice.modules.system.entity.SysUser;
-import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
 import com.zjlab.dataservice.modules.system.service.ISysUserService;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import org.apache.commons.lang3.StringUtils;
@@ -45,9 +43,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     private SysRoleMapper sysRoleMapper;
 
     @Autowired
-    private SysUserMapper sysUserMapper;
-
-    @Autowired
     private ISysUserService sysUserService;
 
     @Override
@@ -66,12 +61,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
         } else if (tab == TaskManagerTabEnum.ALL) {
             throw new BaseException(ResultCode.TASKMANAGE_ONLY_ADMIN_ALL);
-        }
-
-        SysUser user = sysUserMapper.selectById(userId);
-
-        if (user != null) {
-            query.setUserName(user.getUsername());
         }
 
         if (query.getPage() == null || query.getPage() < 1) {
@@ -162,14 +151,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-        String userName = null;
-        SysUser user = sysUserMapper.selectById(userId);
-        if (user != null) {
-            userName = user.getUsername();
-        }
 
-        tcTaskManagerMapper.updateTaskCancel(taskId, userName);
-        tcTaskManagerMapper.updateNodeInstCancel(taskId, userName);
-        tcTaskManagerMapper.updateWorkItemCancel(taskId, userName);
+        tcTaskManagerMapper.updateTaskCancel(taskId, userId);
+        tcTaskManagerMapper.updateNodeInstCancel(taskId, userId);
+        tcTaskManagerMapper.updateWorkItemCancel(taskId, userId);
     }
 }
