@@ -34,22 +34,14 @@ public class TcTaskManagerController {
     @ApiOperationSupport(order = 1)
     @ApiOperation(value="任务列表", notes="分页查询任务列表")
     public Result<PageResult<TaskManagerListItemVO>> list(@Valid TaskManagerListQuery query) {
-        try {
-            return Result.ok(taskManagerService.listTasks(query));
-        } catch (Exception e) {
-            return Result.error("任务列表查询失败: " + e.getMessage());
-        }
+        return Result.ok(taskManagerService.listTasks(query));
     }
 
     @PostMapping("/cancel")
     @ApiOperationSupport(order = 2)
     @ApiOperation(value="取消任务", notes="取消指定任务")
     public Result<Void> cancel(@RequestParam Long taskId) {
-        try {
-            taskManagerService.cancelTask(taskId);
-            return Result.ok();
-        }  catch (Exception e) {
-            return Result.error("取消任务失败: " + e.getMessage());
-        }
+        taskManagerService.cancelTask(taskId);
+        return Result.ok();
     }
 }
