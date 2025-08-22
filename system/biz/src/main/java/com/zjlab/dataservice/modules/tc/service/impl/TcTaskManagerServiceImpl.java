@@ -11,6 +11,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
+import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.entity.SysUser;
@@ -58,9 +59,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         query.setUserId(userId);
 
         boolean isAdmin = sysUserService.isAdmin(userId);
+        TaskManagerTabEnum tab = TaskManagerTabEnum.fromValue(query.getTab());
         if (isAdmin) {
-            query.setTab("all");
-        } else if ("all".equals(query.getTab())) {
+            if (tab != TaskManagerTabEnum.ALL) {
+                throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ.getCode(), "管理员只能查看所有任务");
+            }
+        } else if (tab == TaskManagerTabEnum.ALL) {
             throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ.getCode(), "只有管理员可以查看所有任务");
         }
 
