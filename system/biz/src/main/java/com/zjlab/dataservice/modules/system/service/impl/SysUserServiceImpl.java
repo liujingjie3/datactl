@@ -1319,4 +1319,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             }
         }
     }
+
+    @Override
+    public boolean isAdmin(String userId) {
+        if (oConvertUtils.isEmpty(userId)) {
+            return false;
+        }
+        SysUser user = userMapper.selectById(userId);
+        if (user == null) {
+            return false;
+        }
+        List<String> roleCodes = sysUserRoleMapper.getRoleByUserName(user.getUsername());
+        if (roleCodes != null && roleCodes.contains("admin")) {
+            return true;
+        }
+        List<String> roleIds = sysUserRoleMapper.getRoleIdByUserName(user.getUsername());
+        return roleIds != null && roleIds.contains("f6817f48af4fb3af11b9e8bf182f618b");
+    }
 }

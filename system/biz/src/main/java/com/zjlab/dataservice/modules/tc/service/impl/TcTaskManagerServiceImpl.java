@@ -3,7 +3,6 @@ package com.zjlab.dataservice.modules.tc.service.impl;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.constant.enums.ResultCode;
 import com.zjlab.dataservice.common.exception.BaseException;
-import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.alibaba.fastjson.JSON;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
@@ -16,6 +15,8 @@ import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.entity.SysUser;
 import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
+import com.zjlab.dataservice.modules.system.service.ISysUserService;
+import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,17 +46,25 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Autowired
     private SysUserMapper sysUserMapper;
 
+    @Autowired
+    private ISysUserService sysUserService;
+
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
-        //todo ,对于管理员看所有任务，因为还没有确认如何判断管理员账号，这里暂时还没有做筛选，就是都能看到所有任务
-
         String userId = UserThreadLocal.getUserId();
-        //todo 后续放开
-//        if (userId == null) {
-//            throw new BaseException(ResultCode.USERID_IS_NULL);
-//        }
-//        query.setUserId(userId);
-        SysUser user = sysUserMapper.selectById(query.getUserId());
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        query.setUserId(userId);
+
+        boolean isAdmin = sysUserService.isAdmin(userId);
+        if (isAdmin) {
+            query.setTab("all");
+        } else if ("all".equals(query.getTab())) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ.getCode(), "只有管理员可以查看所有任务");
+        }
+
+        SysUser user = sysUserMapper.selectById(userId);
 
         if (user != null) {
             query.setUserName(user.getUsername());
@@ -146,12 +155,13 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
         String userName = null;
-        if (userId != null) {
-            SysUser user = sysUserMapper.selectById(userId);
-            if (user != null) {
-                userName = user.getUsername();
-            }
+        SysUser user = sysUserMapper.selectById(userId);
+        if (user != null) {
+            userName = user.getUsername();
         }
 
         tcTaskManagerMapper.updateTaskCancel(taskId, userName);

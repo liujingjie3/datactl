@@ -139,10 +139,9 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Transactional(rollbackFor = RuntimeException.class)
     public Long createNode(NodeInfoDto dto) {
         String userId = UserThreadLocal.getUserId();
-        //todo 后续放开
-//        if (userId == null) {
-//            throw new BaseException(ResultCode.USERID_IS_NULL);
-//        }
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
         SysUser loginUser = sysUserMapper.selectById(userId);
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
@@ -177,10 +176,9 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Transactional(rollbackFor = RuntimeException.class)
     public void updateNode(Long id, NodeInfoDto dto) {
         String userId = UserThreadLocal.getUserId();
-        //todo 后续放开
-//        if (userId == null) {
-//            throw new BaseException(ResultCode.USERID_IS_NULL);
-//        }
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
         SysUser loginUser = sysUserMapper.selectById(userId);
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
