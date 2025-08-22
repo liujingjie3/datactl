@@ -4,15 +4,10 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.FlowTypeDto;
-import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
-import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.service.TcFlowTypeService;
-import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/tc/flowtype")

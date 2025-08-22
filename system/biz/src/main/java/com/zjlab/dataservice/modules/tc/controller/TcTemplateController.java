@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
+import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +29,8 @@ public class TcTemplateController {
     @PostMapping("/list")
     @ApiOperationSupport(order = 1)
     @ApiOperation(value = "分页", notes = "传入basePage")
-    public Result<PageResult<TodoTemplateDto>> page(@Valid @RequestBody TodoTemplateQueryDto basePage) {
-        PageResult<TodoTemplateDto> result = tcTemplateService.qryTemplateList(basePage);
+    public Result<PageResult<TemplateQueryListVo>> page(@Valid @RequestBody QueryListDto basePage) {
+        PageResult<TemplateQueryListVo> result = tcTemplateService.qryTemplateList(basePage);
         return Result.ok(result);
     }
 

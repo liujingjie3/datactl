@@ -1,13 +1,12 @@
 package com.zjlab.dataservice.modules.tc.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
+import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
 import org.apache.ibatis.annotations.Param;
-
-import java.util.List;
 
 public interface TodoTemplateMapper extends BaseMapper<TodoTemplate> {
     /**
@@ -15,7 +14,7 @@ public interface TodoTemplateMapper extends BaseMapper<TodoTemplate> {
      *
      * @return
      */
-    IPage<TodoTemplateDto> selectTodoTemplatePage(IPage<TodoTemplateQueryDto> page, @Param("request") TodoTemplateQueryDto request);
+    IPage<TodoTemplate> selectTodoTemplatePage(IPage<TodoTemplate> page, @Param("request") QueryListDto queryListDto);
 
 
     /**

@@ -1,18 +1,13 @@
 package com.zjlab.dataservice.modules.tc.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zjlab.dataservice.common.api.page.PageResult;
-import com.zjlab.dataservice.modules.bench.model.dto.BenchModelListDto;
-import com.zjlab.dataservice.modules.bench.model.po.BenchModelPo;
-import com.zjlab.dataservice.modules.tc.model.dto.FlowTypeDto;
+import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
-import org.apache.ibatis.annotations.Param;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 public interface TcTemplateService  extends IService<TodoTemplate> {
 
@@ -20,7 +15,7 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
      * 自定义分页
      *
      */
-    PageResult<TodoTemplateDto> qryTemplateList(TodoTemplateQueryDto todoTemplateQueryDto);
+    PageResult<TemplateQueryListVo> qryTemplateList(QueryListDto queryListDto);
 
 
     /**
@@ -30,7 +25,7 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
      */
     TodoTemplateDto submit(MultipartFile file, TodoTemplateDto templateVO) throws Exception;
 
-    TodoTemplateDto update(MultipartFile file, TodoTemplateDto templateVO);
+    TodoTemplateDto update(MultipartFile file, TodoTemplateDto templateVO) throws Exception;
 
 
     /**

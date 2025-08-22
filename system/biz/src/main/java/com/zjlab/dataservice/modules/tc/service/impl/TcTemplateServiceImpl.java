@@ -14,21 +14,22 @@ import com.zjlab.dataservice.common.exception.BaseException;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.common.util.Func;
+import com.zjlab.dataservice.modules.myspace.model.vo.MyspaceOrderVo;
 import com.zjlab.dataservice.modules.storage.service.impl.MinioFileServiceImpl;
-import com.zjlab.dataservice.modules.taskplan.mapper.MetadataMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcCommandMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper;
+import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TcCommand;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.zjlab.dataservice.common.system.api.ISysBaseAPI;
-import com.zjlab.dataservice.modules.tc.model.entity.TodoTask;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -39,7 +40,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -61,33 +61,66 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Resource
     private MinioFileServiceImpl minioFileService;
 
+    private static final String BUCKET_NAME = "dspp";
+    private static final String FOLDER_NAME = "/TJEOS/WORKDIR/FILE/command";
+
     @Override
-    public PageResult<TodoTemplateDto> qryTemplateList(TodoTemplateQueryDto todoTemplateQueryDto) {
+    public PageResult<TemplateQueryListVo> qryTemplateList(QueryListDto queryListDto) {
         // 参数校验
-        checkParam(todoTemplateQueryDto);
-        IPage<TodoTemplateQueryDto> page = new Page<>(todoTemplateQueryDto.getPageNo(), todoTemplateQueryDto.getPageSize());
+        checkParam(queryListDto);
+        IPage<TodoTemplate> page = new Page<>(queryListDto.getPageNo(), queryListDto.getPageSize());
 
+        //模糊搜索
+        QueryWrapper<TodoTemplate> wrapper = new QueryWrapper<>();
+        if (StringUtils.isNotBlank(queryListDto.getKeyword())) {
+            wrapper.lambda().and(w -> w
+                    .like(TodoTemplate::getTemplateName, queryListDto.getKeyword())
+                    .or()
+                    .like(TodoTemplate::getRemark, queryListDto.getKeyword())
+            );
+        }
         // 查询数据
-        IPage<TodoTemplateDto> resultPage = baseMapper.selectTodoTemplatePage(page, todoTemplateQueryDto);
+        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto);
 
-        List<TodoTemplateDto> listRecords = resultPage.getRecords();
+        List<TodoTemplate> listRecords = resultPage.getRecords();
         if (CollectionUtils.isEmpty(listRecords)) {
             return new PageResult<>();
         }
 
-        //整理返回结果格式
-        PageResult<TodoTemplateDto> result = new PageResult<>();
+        List<TemplateQueryListVo> collect = listRecords.stream().map(TodoTemplate -> {
+            TemplateQueryListVo templateQueryListVo = TemplateQueryListVo.builder()
+                    .id(TodoTemplate.getId())
+                    .flag(TodoTemplate.getFlag())
+                    .templateName(TodoTemplate.getTemplateName())
+                    .updateTime(TodoTemplate.getUpdateTime())
+                    .build();
+
+            // 获取创建人 ID
+            String createBy = TodoTemplate.getCreateBy();
+            // 查用户名（需要考虑 null）
+            if (StringUtils.isNotBlank(createBy)) {
+                LoginUser user = userService.getUserById(createBy);
+                if (user != null) {
+                    templateQueryListVo.setUserName(user.getRealname()); // 这里假设 LoginUser 有 getUsername()
+                }
+            }
+            return templateQueryListVo;
+        }).collect(Collectors.toList());
+
+
+        PageResult<TemplateQueryListVo> result = new PageResult<>();
         result.setPageNo((int) page.getCurrent());
         result.setPageSize((int) page.getSize());
         result.setTotal((int) page.getTotal());
-        result.setData(listRecords);
+        result.setData(collect);
         return result;
+
     }
 
     /**
      * 校验参数
      */
-    private void checkParam(TodoTemplateQueryDto todoTemplateQueryDto) {
+    private void checkParam(QueryListDto todoTemplateQueryDto) {
         todoTemplateQueryDto.setPageNo(Optional.ofNullable(todoTemplateQueryDto.getPageNo()).orElse(1));
         todoTemplateQueryDto.setPageSize(Optional.ofNullable(todoTemplateQueryDto.getPageSize()).orElse(50));
         String field = todoTemplateQueryDto.getOrderByField();
@@ -119,7 +152,6 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-
         LoginUser user = userService.getUserById(userId);
         String templateId;
 
@@ -129,30 +161,22 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         template.setCreateTime(LocalDateTime.now());
         template.setUpdateTime(LocalDateTime.now());
         if (Func.notNull(user)) {
-            template.setCreateBy(user.getUsername());
-            template.setUpdateBy(user.getUsername());
+            template.setCreateBy(userId);
+            template.setUpdateBy(userId);
         }
         log.info("before insert template info: {}", template);
 
         if (file != null && !file.isEmpty()) {
-            String objectName = minioFileService.uploadReturnObjectName(file, "a", "b");
+            String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, FOLDER_NAME);
             template.setFilePath(objectName);
         }
         todoTemplateMapper.insert(template);
-
-        // ====== 5. 解析 Excel 并批量插入 tc_commands ======
-//        if (file != null && !file.isEmpty()) {
-//            List<TcCommand> commands = parseExcel(user,file, templateId);
-//            if (!commands.isEmpty()) {
-//                tcCommandMapper.batchInsert(commands); // 批量插入
-//            }
-//        }
 
         return todoTemplateDto;
     }
 
     @Override
-    public TodoTemplateDto update(MultipartFile file, TodoTemplateDto todoTemplateDto) {
+    public TodoTemplateDto update(MultipartFile file, TodoTemplateDto todoTemplateDto) throws Exception {
 
         TodoTemplate query = new TodoTemplate();
         query.setId(todoTemplateDto.getId());
@@ -162,8 +186,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         BeanUtil.copyProperties(todoTemplateDto, template);
         template.setTemplateAttr(todoTemplateDto.getAttrs());
 
-
-        String  templateId = existing.getTemplateId();
+        String templateId = existing.getTemplateId();
         BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
         existing.setTemplateAttr(template.getTemplateAttr());
         existing.setUpdateTime(LocalDateTime.now());
@@ -175,20 +198,18 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         LoginUser user = userService.getUserById(userId);
 
         if (Func.notNull(user)) {
-            existing.setUpdateBy(user.getUsername());
+            existing.setUpdateBy(userId);
         }
-
+        if (file != null && !file.isEmpty()) {
+            if (file != null && !file.isEmpty()) {
+                String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, FOLDER_NAME);
+                template.setFilePath(objectName);
+            }
+        }
         UpdateWrapper<TodoTemplate> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("code", template.getCode());
         log.info("before update template info: {}", existing);
         update(existing, updateWrapper);
-        if (file != null && !file.isEmpty()) {
-            List<TcCommand> commands = parseExcel(user,file, templateId);
-            if (!commands.isEmpty()) {
-//                先清空原来的指令单
-                tcCommandMapper.batchInsert(commands); // 批量插入
-            }
-        }
         return todoTemplateDto;
     }
 
@@ -329,7 +350,15 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         return result;
     }
 
-    private List<TcCommand> parseExcel(LoginUser user,MultipartFile file, String templateId) {
+
+    // ====== 5. 解析 Excel 并批量插入 tc_commands ======
+//        if (file != null && !file.isEmpty()) {
+//            List<TcCommand> commands = parseExcel(user,file, templateId);
+//            if (!commands.isEmpty()) {
+//                tcCommandMapper.batchInsert(commands); // 批量插入
+//            }
+//        }
+    private List<TcCommand> parseExcel(LoginUser user, MultipartFile file, String templateId) {
         List<TcCommand> list = new ArrayList<>();
         try (InputStream is = file.getInputStream()) {
             Workbook workbook = new XSSFWorkbook(is);
