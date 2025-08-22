@@ -3,9 +3,12 @@ package com.zjlab.dataservice.modules.tc.controller;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
+import com.zjlab.dataservice.common.exception.BaseException;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 
 /** 任务列表接口 */
 @RestController
@@ -35,6 +36,8 @@ public class TcTaskManagerController {
     public Result<PageResult<TaskManagerListItemVO>> list(@Valid TaskManagerListQuery query) {
         try {
             return Result.ok(taskManagerService.listTasks(query));
+        } catch (BaseException e) {
+            return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
             return Result.error("任务列表查询失败: " + e.getMessage());
         }
@@ -47,6 +50,8 @@ public class TcTaskManagerController {
         try {
             taskManagerService.cancelTask(taskId);
             return Result.ok();
+        } catch (BaseException e) {
+            return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
             return Result.error("取消任务失败: " + e.getMessage());
         }
