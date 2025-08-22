@@ -306,14 +306,14 @@ FROM tc_task t
 LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
 LEFT JOIN curN_subquery curN ON curN.task_id = t.id
 WHERE_CONDITIONS
-  AND t.create_by = :userName
+  AND t.create_by = :userId
 ORDER BY t.create_time DESC
 LIMIT :offset, :pageSize;
 
 SELECT COUNT(1)
 FROM tc_task t
 WHERE_CONDITIONS
-  AND t.create_by = :userName;
+  AND t.create_by = :userId;
 
 ```
 **C) tab = todo（我的待办）**
@@ -517,15 +517,15 @@ FOR UPDATE;
 
 IF done_cnt = 0 THEN
   UPDATE tc_task
-  SET status=3, update_by=:userName, update_time=NOW()
+  SET status=3, update_by=:userId, update_time=NOW()
   WHERE id=:taskId AND del_flag=0;
 
   UPDATE tc_task_node_inst
-  SET status=3, update_by=:userName, update_time=NOW()
+  SET status=3, update_by=:userId, update_time=NOW()
   WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1);
 
   UPDATE tc_task_work_item
-  SET phase_status=3, update_by=:userName, update_time=NOW()
+  SET phase_status=3, update_by=:userId, update_time=NOW()
   WHERE task_id=:taskId AND del_flag=0 AND phase_status IN (0,1);
 END IF;
 
@@ -594,7 +594,7 @@ Resp：任务主信息 + 当前激活节点ID集合（可选）
 
 列表（三个 Tab）
 
-* 发起的：`GET /task/list/startedByMe?userName&page&pageSize`
+* 发起的：`GET /task/list/startedByMe?userId&page&pageSize`
 * 待办： `GET /task/list/todo?userId&page&pageSize`
 * 已处理：`GET /task/list/handledByMyGroup?userId&page&pageSize`
 
