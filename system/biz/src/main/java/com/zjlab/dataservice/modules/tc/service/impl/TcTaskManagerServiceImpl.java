@@ -62,10 +62,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         TaskManagerTabEnum tab = TaskManagerTabEnum.fromValue(query.getTab());
         if (isAdmin) {
             if (tab != TaskManagerTabEnum.ALL) {
-                throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ.getCode(), "管理员只能查看所有任务");
+                throw new BaseException(ResultCode.TASKMANAGE_ADMIN_ONLY_ALL);
             }
         } else if (tab == TaskManagerTabEnum.ALL) {
-            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ.getCode(), "只有管理员可以查看所有任务");
+            throw new BaseException(ResultCode.TASKMANAGE_ONLY_ADMIN_ALL);
         }
 
         SysUser user = sysUserMapper.selectById(userId);
@@ -150,12 +150,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
         }
         if (status != 0) {
-            throw new BaseException(ResultCode.TASK_CANNOT_CANCEL);
+            throw new BaseException(ResultCode.TASKMANAGE_CANNOT_CANCEL);
         }
 
         Long doneCnt = tcTaskManagerMapper.countDoneNodeInst(taskId);
         if (doneCnt != null && doneCnt > 0) {
-            throw new BaseException(ResultCode.TASK_CANNOT_CANCEL);
+            throw new BaseException(ResultCode.TASKMANAGE_CANNOT_CANCEL);
         }
 
         String userId = UserThreadLocal.getUserId();

@@ -36,8 +36,6 @@ public class TcTaskManagerController {
     public Result<PageResult<TaskManagerListItemVO>> list(@Valid TaskManagerListQuery query) {
         try {
             return Result.ok(taskManagerService.listTasks(query));
-        } catch (BaseException e) {
-            return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
             return Result.error("任务列表查询失败: " + e.getMessage());
         }
@@ -50,9 +48,7 @@ public class TcTaskManagerController {
         try {
             taskManagerService.cancelTask(taskId);
             return Result.ok();
-        } catch (BaseException e) {
-            return Result.error(e.getCode(), e.getMessage());
-        } catch (Exception e) {
+        }  catch (Exception e) {
             return Result.error("取消任务失败: " + e.getMessage());
         }
     }
