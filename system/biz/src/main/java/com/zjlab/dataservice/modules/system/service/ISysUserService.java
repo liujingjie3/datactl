@@ -313,15 +313,22 @@ public interface ISysUserService extends IService<SysUser> {
      * @param userIdList
      * @return List<String>
      */
-	List<String> userIdToUsername(Collection<String> userIdList);
+        List<String> userIdToUsername(Collection<String> userIdList);
 
 
-	/**
-	 * 获取用户信息 字段信息是加密后的 【加密用户信息】
-	 * @param username
-	 * @return
-	 */
-	LoginUser getEncodeUserInfo(String username);
+        /**
+         * 获取用户信息 字段信息是加密后的 【加密用户信息】
+         * @param username
+         * @return
+         */
+        LoginUser getEncodeUserInfo(String username);
+
+        /**
+         * 判断用户是否为管理员
+         * @param userId 用户ID
+         * @return boolean 是否管理员
+         */
+        boolean isAdmin(String userId);
 
     /**
      * 用户离职
