@@ -41,7 +41,7 @@ public class TodoTemplate extends BasePo implements Serializable {
     /**
      * 标识
      */
-    @ApiModelProperty(value = "标识")
+    @ApiModelProperty(value = "标识  0待上线，1上线")
     private Integer flag;
     /**
      * 备注

@@ -8,12 +8,11 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @ApiModel(value = "TodoTemplateVO对象", description = "实例模板信息表")
 @Builder
-public class TemplateQueryListVo extends PageRequest implements Serializable{
+public class TemplateQueryListVO extends PageRequest implements Serializable{
 
     private static final long serialVersionUID = -5228671930306828376L;
     @ApiModelProperty(value = "id")

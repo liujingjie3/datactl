@@ -7,7 +7,9 @@ import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
-import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
+import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,21 +31,21 @@ public class TcTemplateController {
     @PostMapping("/list")
     @ApiOperationSupport(order = 1)
     @ApiOperation(value = "分页", notes = "传入basePage")
-    public Result<PageResult<TemplateQueryListVo>> page(@Valid @RequestBody QueryListDto basePage) {
-        PageResult<TemplateQueryListVo> result = tcTemplateService.qryTemplateList(basePage);
+    public Result<PageResult<TemplateQueryListVO>> page(@Valid @RequestBody QueryListDto basePage) {
+        PageResult<TemplateQueryListVO> result = tcTemplateService.qryTemplateList(basePage);
         return Result.ok(result);
     }
 
     /**
      * 详情
      */
-    @PostMapping("/detail")
+    @GetMapping("/detail/{id}")
     @ApiOperationSupport(order = 2)
     @ApiOperation(value = "详情", notes = "传入todoTemplateQueryVO")
-    public Result<TodoTemplateDto> detail(@Valid @RequestBody TodoTemplateQueryDto todoTemplateQueryVO) {
+    public Result<TodoTemplate> detail(@PathVariable Long id) {
         try {
-            TodoTemplateDto todoTemplateDto = tcTemplateService.findOne(todoTemplateQueryVO);
-            return Result.ok(todoTemplateDto);
+            TodoTemplate todoTemplate = tcTemplateService.getDetail(id);
+            return Result.ok(todoTemplate);
         } catch (Exception e) {
             return Result.error("查询失败: " + e.getMessage());
         }
@@ -52,28 +54,28 @@ public class TcTemplateController {
     /**
      * 新增 实例模板信息表
      */
-    @PostMapping(value ="/submit",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "新增或修改", notes = "传入templateVO")
     public Result<TodoTemplateDto> save(@RequestParam(value = "file", required = false) MultipartFile file,
                                         @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
         try {
             TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
-            TodoTemplateDto todoTemplate = tcTemplateService.submit(file,dto);
+            TodoTemplateDto todoTemplate = tcTemplateService.submit(file, dto);
             return Result.OK("新增模版成功", todoTemplate);
         } catch (Exception e) {
             return Result.error("新增模版失败: " + e.getMessage());
         }
     }
 
-    @PostMapping(value ="/update",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 4)
     @ApiOperation(value = "新增或修改", notes = "传入templateVO")
     public Result<TodoTemplateDto> update(@RequestParam(value = "file", required = false) MultipartFile file,
-                                        @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
+                                          @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
         try {
             TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
-            TodoTemplateDto todoTemplate = tcTemplateService.update(file,dto);
+            TodoTemplateDto todoTemplate = tcTemplateService.update(file, dto);
             return Result.OK("新增模版成功", todoTemplate);
         } catch (Exception e) {
             return Result.error("新增模版失败: " + e.getMessage());
@@ -84,15 +86,36 @@ public class TcTemplateController {
     /**
      * 删除 实例模板信息表
      */
-    @PostMapping("/delete")
+    @DeleteMapping("/delete/{id}")
     @ApiOperationSupport(order = 8)
-    @ApiOperation(value = "删除", notes = "传入todoTemplateQueryVO")
-    public Result<TodoTemplateQueryDto> remove(@Valid @RequestBody TodoTemplateQueryDto todoTemplateQueryDto) {
+    @ApiOperation(value = "删除")
+    public Result<TodoTemplateQueryDto> remove(@PathVariable Long id) {
+        tcTemplateService.deleteById(id);
+        return Result.ok();
+    }
+    /**
+     * 发布
+     */
+    @PutMapping("/pubilsh/{id}")
+    @ApiOperationSupport(order = 4)
+    @ApiOperation(value = "编辑节点")
+    public Result<Void> publish(@PathVariable Long id) {
+        tcTemplateService.publish(id);
+        return Result.ok();
+    }
+
+    /**
+     * 详情
+     */
+    @GetMapping("/static")
+    @ApiOperationSupport(order = 9)
+    @ApiOperation(value = "统计")
+    public Result<TemplateCountVO> count() {
         try {
-            TodoTemplateQueryDto todoTemplateDto = tcTemplateService.deleteByCode(todoTemplateQueryDto);
-            return Result.OK("删除成功", todoTemplateDto);
+            TemplateCountVO templateCountVO = tcTemplateService.getCount();
+            return Result.ok(templateCountVO);
         } catch (Exception e) {
-            return Result.error("删除失败: " + e.getMessage());
+            return Result.error("查询失败: " + e.getMessage());
         }
     }
 

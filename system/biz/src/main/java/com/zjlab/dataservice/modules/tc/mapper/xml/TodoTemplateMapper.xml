@@ -99,6 +99,27 @@
              #{filePath});
     </insert>
 
+    <update id="updateTodoTemplate" parameterType="com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate">
+        UPDATE tc_todo_template
+        SET code = #{code},
+            template_id = #{templateId},
+            template_name = #{templateName},
+            template_type = #{templateType},
+            template_attr = #{attrsJson,jdbcType=VARCHAR},
+            remark = #{remark},
+            corp_id = #{corpId},
+            agent_id = #{agentId},
+            flag = #{flag,jdbcType=INTEGER},
+            tenant_id = #{tenantId,jdbcType=INTEGER},
+            del_flag = #{delFlag,jdbcType=BOOLEAN},
+            create_by = #{createBy},
+            create_time = #{createTime},
+            update_by = #{updateBy},
+            update_time = #{updateTime},
+            ext = #{ext},
+            file_path = #{filePath}
+        WHERE id = #{id}
+    </update>
 
 
 </mapper>

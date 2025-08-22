@@ -6,7 +6,8 @@ import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
-import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface TcTemplateService  extends IService<TodoTemplate> {
@@ -15,7 +16,7 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
      * 自定义分页
      *
      */
-    PageResult<TemplateQueryListVo> qryTemplateList(QueryListDto queryListDto);
+    PageResult<TemplateQueryListVO> qryTemplateList(QueryListDto queryListDto);
 
 
     /**
@@ -57,4 +58,11 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
      */
     PageResult<TodoTemplateDto> findByUserIdPage(TodoTemplateQueryDto basePage);
 
+    TodoTemplate getDetail(Long id);
+
+    void deleteById(Long id);
+
+    void publish(Long id);
+
+    TemplateCountVO getCount();
 }

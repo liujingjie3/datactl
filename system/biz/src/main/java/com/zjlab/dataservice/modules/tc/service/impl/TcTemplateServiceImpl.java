@@ -2,7 +2,6 @@ package com.zjlab.dataservice.modules.tc.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -14,16 +13,15 @@ import com.zjlab.dataservice.common.exception.BaseException;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.common.util.Func;
-import com.zjlab.dataservice.modules.myspace.model.vo.MyspaceOrderVo;
 import com.zjlab.dataservice.modules.storage.service.impl.MinioFileServiceImpl;
-import com.zjlab.dataservice.modules.tc.mapper.TcCommandMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TcCommand;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
-import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVo;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,8 +53,8 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Autowired
     private TodoTemplateMapper todoTemplateMapper;
-    @Resource
-    private TcCommandMapper tcCommandMapper;
+//    @Resource
+//    private TcCommandMapper tcCommandMapper;
 
     @Resource
     private MinioFileServiceImpl minioFileService;
@@ -65,7 +63,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     private static final String FOLDER_NAME = "/TJEOS/WORKDIR/FILE/command";
 
     @Override
-    public PageResult<TemplateQueryListVo> qryTemplateList(QueryListDto queryListDto) {
+    public PageResult<TemplateQueryListVO> qryTemplateList(QueryListDto queryListDto) {
         // 参数校验
         checkParam(queryListDto);
         IPage<TodoTemplate> page = new Page<>(queryListDto.getPageNo(), queryListDto.getPageSize());
@@ -87,15 +85,15 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             return new PageResult<>();
         }
 
-        List<TemplateQueryListVo> collect = listRecords.stream().map(TodoTemplate -> {
-            TemplateQueryListVo templateQueryListVo = TemplateQueryListVo.builder()
+        List<TemplateQueryListVO> collect = listRecords.stream().map(TodoTemplate -> {
+            TemplateQueryListVO templateQueryListVo = TemplateQueryListVO.builder()
                     .id(TodoTemplate.getId())
                     .flag(TodoTemplate.getFlag())
                     .templateName(TodoTemplate.getTemplateName())
                     .updateTime(TodoTemplate.getUpdateTime())
                     .build();
 
-            // 获取创建人 ID
+            //todo 节点数量统计
             String createBy = TodoTemplate.getCreateBy();
             // 查用户名（需要考虑 null）
             if (StringUtils.isNotBlank(createBy)) {
@@ -108,13 +106,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         }).collect(Collectors.toList());
 
 
-        PageResult<TemplateQueryListVo> result = new PageResult<>();
+        PageResult<TemplateQueryListVO> result = new PageResult<>();
         result.setPageNo((int) page.getCurrent());
         result.setPageSize((int) page.getSize());
         result.setTotal((int) page.getTotal());
         result.setData(collect);
         return result;
-
     }
 
     /**
@@ -186,7 +183,6 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         BeanUtil.copyProperties(todoTemplateDto, template);
         template.setTemplateAttr(todoTemplateDto.getAttrs());
 
-        String templateId = existing.getTemplateId();
         BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
         existing.setTemplateAttr(template.getTemplateAttr());
         existing.setUpdateTime(LocalDateTime.now());
@@ -206,10 +202,9 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
                 template.setFilePath(objectName);
             }
         }
-        UpdateWrapper<TodoTemplate> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("code", template.getCode());
+
         log.info("before update template info: {}", existing);
-        update(existing, updateWrapper);
+        todoTemplateMapper.updateTodoTemplate(existing);
         return todoTemplateDto;
     }
 
@@ -338,6 +333,55 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
         // 构造返回结果
         return buildPageResult(resultPage, dtoList);
+    }
+
+    @Override
+    public TodoTemplate getDetail(Long id) {
+        TodoTemplate todoTemplate = todoTemplateMapper.selectById(id);
+        return todoTemplate;
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        TodoTemplate todoTemplate = todoTemplateMapper.selectById(id);
+        LocalDateTime now = LocalDateTime.now();
+        String userId = UserThreadLocal.getUserId();
+
+        if (Func.notNull(todoTemplate)) {
+            todoTemplate.setDelFlag(true);
+            todoTemplate.setUpdateTime(now);
+            todoTemplate.setUpdateBy(userId);
+            log.info("before update template info: {}", todoTemplate);
+            todoTemplateMapper.updateTodoTemplate(todoTemplate);
+        }
+    }
+
+    @Override
+    public void publish(Long id) {
+        TodoTemplate todoTemplate = todoTemplateMapper.selectById(id);
+        if (todoTemplate != null) {
+            Integer currentFlag = todoTemplate.getFlag();
+            // 如果为0则改为1，如果为1则改为0
+            todoTemplate.setFlag(currentFlag != null && currentFlag == 1 ? 0 : 1);
+            // 更新保存
+            todoTemplateMapper.updateTodoTemplate(todoTemplate);
+        }
+    }
+
+    @Override
+    public TemplateCountVO getCount() {
+        // === 模板数量统计 ===
+        long totalCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>()
+                .eq("del_flag", false));
+
+        long publishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>()
+                .eq("del_flag", false)
+                .eq("flag", 1));
+
+        long unpublishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>()
+                .eq("del_flag", false)
+                .eq("flag", 0));
+        return new TemplateCountVO(totalCount, publishedCount, unpublishedCount);
     }
 
     // 封装分页结果

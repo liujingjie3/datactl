@@ -87,6 +87,10 @@ public class PreplanDataServiceImpl extends ServiceImpl<PreplanDataMapper, Prepl
     @Override
     public QueryDateVo queryDate() {
         QueryDateVo vo = baseMapper.queryDate();
+        if (vo == null) {
+            // 如果为空，可以直接返回空对象或者抛异常，看你的业务需求
+            return new QueryDateVo();
+        }
         LocalDateTime now = LocalDateTime.now(); // 当前时间
         List<String> existingIds = baseMapper.queryExistingSatelliteIds(now,vo.getEndTime());
 
