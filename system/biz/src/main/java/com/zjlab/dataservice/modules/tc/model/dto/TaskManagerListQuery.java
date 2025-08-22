@@ -15,9 +15,9 @@ import java.time.LocalDateTime;
 @Data
 public class TaskManagerListQuery implements Serializable {
     private static final long serialVersionUID = 73115360324038625L;
-    /** Tab类型：all/startedByMe/todo/handled/participated */
+    /** Tab类型：all/startedByMe/todo/handled */
     @NotBlank(message = "tab不能为空")
-    @Pattern(regexp = "all|startedByMe|todo|handled|participated", message = "tab必须为all/startedByMe/todo/handled/participated")
+    @Pattern(regexp = "all|startedByMe|todo|handled", message = "tab必须为all/startedByMe/todo/handled")
     private String tab;
     /** 模糊搜索：任务名称或编码 */
     private String q;
