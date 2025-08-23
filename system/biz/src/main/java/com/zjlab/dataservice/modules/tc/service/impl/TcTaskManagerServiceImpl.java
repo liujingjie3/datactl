@@ -9,9 +9,11 @@ import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.dto.TemplateNode;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
@@ -28,12 +30,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +60,93 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private NodeRoleRelMapper nodeRoleRelMapper;
+
+    @Override
+    @Transactional
+    public Long createTask(TaskManagerCreateDto dto) {
+        if (dto == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        if (dto.getNeedImaging() != null) {
+            if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
+                throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
+            }
+            if (dto.getNeedImaging() == 0) {
+                dto.setImagingArea(null);
+            }
+        }
+
+        String taskCode = UUID.randomUUID().toString().replace("-", "");
+        tcTaskManagerMapper.insertTask(taskCode, dto, userId);
+        Long taskId = tcTaskManagerMapper.selectLastInsertId();
+
+        String attr = tcTaskManagerMapper.selectTemplateAttr(dto.getTemplateId());
+        List<TemplateNode> nodes = new ArrayList<>();
+        if (StringUtils.isNotBlank(attr)) {
+            nodes = JSON.parseArray(attr, TemplateNode.class);
+        }
+        if (nodes.isEmpty()) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+
+        Map<String, Long> map = new HashMap<>();
+        for (TemplateNode n : nodes) {
+            String rolesJson = JSON.toJSONString(n.getRoleIds());
+            tcTaskManagerMapper.insertNodeInst(taskId, dto.getTemplateId(), n.getNodeId(), rolesJson, n.getOrderNo(), n.getMaxDuration(), userId);
+            Long instId = tcTaskManagerMapper.selectLastInsertId();
+            map.put(n.getKey(), instId);
+        }
+        for (TemplateNode n : nodes) {
+            Long instId = map.get(n.getKey());
+            List<Long> prevIds = n.getPrev() == null ? Collections.emptyList() : n.getPrev().stream().map(map::get).collect(Collectors.toList());
+            List<Long> nextIds = n.getNext() == null ? Collections.emptyList() : n.getNext().stream().map(map::get).collect(Collectors.toList());
+            tcTaskManagerMapper.updateNodeInstPrevNext(instId, JSON.toJSONString(prevIds), JSON.toJSONString(nextIds), userId);
+        }
+
+        if (dto.getResultDisplayNeeded() != null && dto.getResultDisplayNeeded() == 1) {
+            List<Long> endIds = tcTaskManagerMapper.selectEndNodeInstIds(taskId);
+            if (!endIds.isEmpty()) {
+                NodeInfo viewNode = nodeInfoMapper.selectByName("查看影像结果");
+                if (viewNode != null) {
+                    List<NodeRoleRel> rels = nodeRoleRelMapper.selectByNodeId(viewNode.getId());
+                    List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
+                    String prevNodeIds = JSON.toJSONString(endIds);
+                    String handlerRoleIds = JSON.toJSONString(roleIds);
+                    tcTaskManagerMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, userId);
+                    Long viewInstId = tcTaskManagerMapper.selectLastInsertId();
+                    if (viewInstId != null) {
+                        tcTaskManagerMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
+                        List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+                        for (String uid : userIds) {
+                            tcTaskManagerMapper.insertWorkItem(taskId, viewInstId, uid, 0, userId);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (TemplateNode n : nodes) {
+            Long instId = map.get(n.getKey());
+            boolean isStart = n.getPrev() == null || n.getPrev().isEmpty();
+            if (isStart) {
+                tcTaskManagerMapper.activateNodeInst(instId, userId);
+            }
+            List<String> roleIds = n.getRoleIds();
+            if (roleIds != null && !roleIds.isEmpty()) {
+                List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+                int phaseStatus = isStart ? 1 : 0;
+                for (String uid : userIds) {
+                    tcTaskManagerMapper.insertWorkItem(taskId, instId, uid, phaseStatus, userId);
+                }
+            }
+        }
+
+        return taskId;
+    }
 
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
@@ -206,8 +297,13 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_EDIT);
         }
 
-        if (dto.getNeedImaging() != null && dto.getNeedImaging() == 0) {
-            dto.setImagingArea(null);
+        if (dto.getNeedImaging() != null) {
+            if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
+                throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
+            }
+            if (dto.getNeedImaging() == 0) {
+                dto.setImagingArea(null);
+            }
         }
         tcTaskManagerMapper.updateTask(dto, userId);
 

@@ -83,6 +83,7 @@ public enum ResultCode {
     TASKMANAGE_CANNOT_CANCEL(210003, "已有节点完成，不能取消"),
     TASKMANAGE_NO_PERMISSION(210004, "只有发起人或管理员可以编辑或取消任务"),
     TASKMANAGE_CANNOT_EDIT(210005, "已有节点处理，不能编辑"),
+    TASKMANAGE_IMAGING_AREA_REQUIRED(210006, "成像区域不能为空"),
 
     ;
     //返回码
