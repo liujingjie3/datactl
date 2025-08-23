@@ -61,6 +61,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Autowired
     private NodeRoleRelMapper nodeRoleRelMapper;
 
+    /**
+     * 创建任务并初始化节点实例
+     *
+     * @param dto 创建参数
+     * @return 生成的任务ID
+     */
     @Override
     @Transactional
     public Long createTask(TaskManagerCreateDto dto) {
@@ -148,6 +154,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         return taskId;
     }
 
+    /**
+     * 分页查询当前用户相关的任务
+     *
+     * @param query 查询条件
+     * @return 任务分页结果
+     */
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
         String userId = UserThreadLocal.getUserId();
@@ -230,6 +242,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
     }
 
+    /**
+     * 取消任务及其工作项
+     *
+     * @param taskId 任务ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelTask(Long taskId) {
@@ -266,6 +283,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         tcTaskManagerMapper.updateWorkItemCancel(taskId, userId);
     }
 
+    /**
+     * 编辑任务基本信息
+     *
+     * @param dto 编辑参数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void editTask(TaskManagerEditDto dto) {
@@ -348,4 +370,5 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
         }
     }
+
 }
