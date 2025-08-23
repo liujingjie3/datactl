@@ -463,7 +463,53 @@ EXISTS (SELECT 1 FROM sys_user_role ur WHERE ur.user_id=:uid AND JSON_CONTAINS(n
 
 ---
 
-### 2.4 附件负荷示例
+### 2.4 编辑任务
+
+**入参（JSON）**
+
+taskId\*, taskName\*, taskRequirement,
+needImaging(0/1), imagingArea(JSON|null), resultDisplayNeeded(0/1)
+
+**事务流程（伪代码）**
+
+```sql
+BEGIN;
+
+-- A. 权限 & 状态校验（服务层）
+-- 仅发起人或管理员；任务 status=0 且无节点已完成
+
+-- B. 更新任务主表（根据成像需求同步成像区域）
+IF :needImaging = 0 THEN
+  UPDATE tc_task
+  SET task_name=:taskName, task_requirement=:taskRequirement,
+      need_imaging=0, imaging_area=NULL,
+      result_display_needed=:display,
+      update_by=:uid, update_time=NOW()
+  WHERE id=:taskId AND del_flag=0;
+ELSE
+  UPDATE tc_task
+  SET task_name=:taskName, task_requirement=:taskRequirement,
+      need_imaging=1, imaging_area=:imagingArea,
+      result_display_needed=:display,
+      update_by=:uid, update_time=NOW()
+  WHERE id=:taskId AND del_flag=0;
+END IF;
+
+-- C. result_display_needed 变化时增删“查看影像结果”节点及工作项
+IF oldDisplay = 0 AND :display = 1 THEN
+  endIds := SELECT id FROM tc_task_node_inst
+            WHERE task_id=:taskId AND del_flag=0 AND JSON_LENGTH(next_node_ids)=0;
+  -- 插入并连接查看节点（参见 §2.1E），并为其办理角色预生成 phase_status=0 的 tc_task_work_item
+ELSEIF oldDisplay = 1 AND :display = 0 THEN
+  -- 删除查看节点并清理末端指向，同时逻辑删除该节点的 tc_task_work_item
+END IF;
+
+COMMIT;
+```
+
+---
+
+### 2.5 附件负荷示例
 
 上传：
 
@@ -490,10 +536,10 @@ EXISTS (SELECT 1 FROM sys_user_role ur WHERE ur.user_id=:uid AND JSON_CONTAINS(n
 
 ---
 
-### 2.5 取消任务（只要“尚无人完成任何节点”）
+### 2.6 取消任务（只要“尚无人完成任何节点”）
 
 允许起点在创建时即激活为“处理中(1)”（形成待办并开始计时）。
-取消条件：任务 status=0 且不存在任何节点 status=2。
+取消条件：任务 status=0 且不存在任何节点 status=2，且只有发起人或管理员可以执行取消。
 
 **事务脚本**
 
@@ -526,7 +572,7 @@ COMMIT;
 
 ---
 
-### 2.6 异常结束任务（用户中断工作流）
+### 2.7 异常结束任务（用户中断工作流）
 
 当用户在处理中途选择终止（例如在决策节点点击“不执行”）时，任务应标记为异常结束，同时更新未完成的节点和工作项状态。
 
@@ -552,7 +598,7 @@ COMMIT;
 
 ---
 
-### 2.7 超时提醒（定时任务）
+### 2.8 超时提醒（定时任务）
 
 目标：status=1 且 max\_duration 不空
 判定：NOW() > started\_at + INTERVAL max\_duration MINUTE
@@ -576,7 +622,17 @@ satellites, remoteCmds, orbitPlans
 Resp：`{ id, taskCode }`
 
 取消任务 `POST /task/cancel?taskId=...`
-Resp：`{ success: true }`（不满足条件报 TASK\_CANNOT\_CANCEL）
+Resp：`{ success: true }`（仅发起人或管理员且尚无人完成节点时允许；不满足条件报 TASKMANAGE\_NO\_PERMISSION 或 TASKMANAGE\_CANNOT\_CANCEL）
+
+编辑任务 `POST /task/edit`
+Body(JSON)：
+
+```
+taskId*, taskName, taskRequirement,
+needImaging(0|1), imagingArea, resultDisplayNeeded(0|1)
+```
+
+Resp：`{ success: true }`（仅发起人或管理员且首节点未处理时允许；若 needImaging=0 将置空 imagingArea；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
 
 异常结束任务 `POST /task/abort?taskId=...`
 Resp：`{ success: true }`
@@ -656,6 +712,7 @@ ORDER BY r.create_time DESC;
 * **403 NO\_PERMISSION**：提交者不在实例 handler\_role\_ids 对应角色集合中
 * **404 NOT\_FOUND**：任务/节点不存在
 * **409 TASK\_CANNOT\_CANCEL**：已有节点完成，不能取消
+* **403 TASKMANAGE\_NO\_PERMISSION**：只有发起人或管理员可以编辑或取消任务
 * **409 NODE\_NOT\_PROCESSING**：节点不是处理中，不能提交
 * **500 INTERNAL\_ERROR**
 
@@ -663,7 +720,7 @@ ORDER BY r.create_time DESC;
 
 * 创建：templateId 有效；模板节点非空；satellites/remote\_cmds/orbit\_plans 均 JSON\_VALID=1。
 * 提交：权限校验基于实例 handler\_role\_ids。
-* 取消：无 status=2 的节点。
+* 取消：无 status=2 的节点且仅发起人或管理员可操作。
 
 ---
 
@@ -682,13 +739,13 @@ ORDER BY r.create_time DESC;
 **Service**：
 
 * TaskService.createTask(dto)（§2.1）
-* TaskService.cancel(taskId, uid)（§2.5）
+* TaskService.cancel(taskId, uid)（§2.6）
 * TaskService.listTabs(userId, type, page, size)（§2.2）
 * NodeService.submitAction(dto)（§2.3）
 
 **校验器**：JSON 校验、实例角色权限校验
 
-  **Scheduler**：超时提醒扫描（§2.7）
+  **Scheduler**：超时提醒扫描（§2.8）
 
 **API**：按 §3 暴露
 

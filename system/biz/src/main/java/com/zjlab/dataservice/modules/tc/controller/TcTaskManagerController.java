@@ -4,6 +4,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.common.exception.BaseException;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
@@ -14,8 +15,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 
@@ -42,6 +44,14 @@ public class TcTaskManagerController {
     @ApiOperation(value="取消任务", notes="取消指定任务")
     public Result<Void> cancel(@RequestParam Long taskId) {
         taskManagerService.cancelTask(taskId);
+        return Result.ok();
+    }
+
+    @PostMapping("/edit")
+    @ApiOperationSupport(order = 3)
+    @ApiOperation(value = "编辑任务", notes = "编辑指定任务")
+    public Result<Void> edit(@RequestBody @Valid TaskManagerEditDto dto) {
+        taskManagerService.editTask(dto);
         return Result.ok();
     }
 }

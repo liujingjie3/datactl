@@ -81,9 +81,8 @@ public enum ResultCode {
     TASKMANAGE_ADMIN_ONLY_ALL(210001, "管理员只能查看所有任务"),
     TASKMANAGE_ONLY_ADMIN_ALL(210002, "只有管理员可以查看所有任务"),
     TASKMANAGE_CANNOT_CANCEL(210003, "已有节点完成，不能取消"),
-
-
-
+    TASKMANAGE_NO_PERMISSION(210004, "只有发起人或管理员可以编辑或取消任务"),
+    TASKMANAGE_CANNOT_EDIT(210005, "已有节点处理，不能编辑"),
 
     ;
     //返回码

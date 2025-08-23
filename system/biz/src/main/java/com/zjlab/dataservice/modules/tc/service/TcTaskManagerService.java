@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.tc.service;
 
 import com.zjlab.dataservice.common.api.page.PageResult;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 
@@ -18,4 +19,10 @@ public interface TcTaskManagerService {
      * @param taskId 任务ID
      */
     void cancelTask(Long taskId);
+
+    /**
+     * 编辑任务
+     * @param dto 编辑参数
+     */
+    void editTask(TaskManagerEditDto dto);
 }
