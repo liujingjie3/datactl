@@ -4,10 +4,16 @@ import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.constant.enums.ResultCode;
 import com.zjlab.dataservice.common.exception.BaseException;
 import com.alibaba.fastjson.JSON;
+import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
+import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
+import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
@@ -44,6 +50,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private ISysUserService sysUserService;
+
+    @Autowired
+    private NodeInfoMapper nodeInfoMapper;
+
+    @Autowired
+    private NodeRoleRelMapper nodeRoleRelMapper;
 
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
@@ -134,11 +146,22 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
 
-        Integer status = tcTaskManagerMapper.selectTaskStatus(taskId);
-        if (status == null) {
+        TaskManagerEditInfo info = tcTaskManagerMapper.selectTaskForEdit(taskId);
+        if (info == null) {
             throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
         }
-        if (status != 0) {
+
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+
+        boolean isAdmin = sysUserService.isAdmin(userId);
+        if (!isAdmin && !userId.equals(info.getCreateBy())) {
+            throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
+        }
+
+        if (info.getStatus() == null || info.getStatus() != 0) {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_CANCEL);
         }
 
@@ -147,13 +170,86 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_CANCEL);
         }
 
+        tcTaskManagerMapper.updateTaskCancel(taskId, userId);
+        tcTaskManagerMapper.updateNodeInstCancel(taskId, userId);
+        tcTaskManagerMapper.updateWorkItemCancel(taskId, userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void editTask(TaskManagerEditDto dto) {
+        if (dto == null || dto.getTaskId() == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+
+        TaskManagerEditInfo info = tcTaskManagerMapper.selectTaskForEdit(dto.getTaskId());
+        if (info == null) {
+            throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
+        }
+
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
 
-        tcTaskManagerMapper.updateTaskCancel(taskId, userId);
-        tcTaskManagerMapper.updateNodeInstCancel(taskId, userId);
-        tcTaskManagerMapper.updateWorkItemCancel(taskId, userId);
+        boolean isAdmin = sysUserService.isAdmin(userId);
+        if (!isAdmin && !userId.equals(info.getCreateBy())) {
+            throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
+        }
+
+        if (info.getStatus() == null || info.getStatus() != 0) {
+            throw new BaseException(ResultCode.TASKMANAGE_CANNOT_EDIT);
+        }
+
+        Long doneCnt = tcTaskManagerMapper.countDoneNodeInst(dto.getTaskId());
+        if (doneCnt != null && doneCnt > 0) {
+            throw new BaseException(ResultCode.TASKMANAGE_CANNOT_EDIT);
+        }
+
+        if (dto.getNeedImaging() != null && dto.getNeedImaging() == 0) {
+            dto.setImagingArea(null);
+        }
+        tcTaskManagerMapper.updateTask(dto, userId);
+
+        Integer oldDisplay = info.getResultDisplayNeeded();
+        Integer newDisplay = dto.getResultDisplayNeeded();
+        if (oldDisplay == null) {
+            oldDisplay = 0;
+        }
+        if (newDisplay == null) {
+            newDisplay = 0;
+        }
+
+        if (oldDisplay == 0 && newDisplay == 1) {
+            List<Long> endIds = tcTaskManagerMapper.selectEndNodeInstIds(dto.getTaskId());
+            if (!endIds.isEmpty()) {
+                NodeInfo viewNode = nodeInfoMapper.selectByName("查看影像结果");
+                if (viewNode != null) {
+                    List<NodeRoleRel> rels = nodeRoleRelMapper.selectByNodeId(viewNode.getId());
+                    List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
+                    String prevNodeIds = JSON.toJSONString(endIds);
+                    String handlerRoleIds = JSON.toJSONString(roleIds);
+                    tcTaskManagerMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, userId);
+                    Long viewInstId = tcTaskManagerMapper.selectLastInsertId();
+                    if (viewInstId != null) {
+                        tcTaskManagerMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
+                        List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+                        for (String uid : userIds) {
+                            tcTaskManagerMapper.insertWorkItem(dto.getTaskId(), viewInstId, uid, 0, userId);
+                        }
+                    }
+                }
+            }
+        } else if (oldDisplay == 1 && newDisplay == 0) {
+            NodeInfo viewNode = nodeInfoMapper.selectByName("查看影像结果");
+            if (viewNode != null) {
+                Long viewInstId = tcTaskManagerMapper.selectViewNodeInstId(dto.getTaskId(), viewNode.getId());
+                if (viewInstId != null) {
+                    tcTaskManagerMapper.deleteNodeInst(viewInstId, userId);
+                    tcTaskManagerMapper.clearEndNodeNext(dto.getTaskId(), viewInstId, userId);
+                    tcTaskManagerMapper.deleteWorkItemsByNodeInst(viewInstId, userId);
+                }
+            }
+        }
     }
 }

@@ -1,6 +1,8 @@
 package com.zjlab.dataservice.modules.tc.mapper;
 
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import org.apache.ibatis.annotations.Param;
@@ -32,4 +34,54 @@ public interface TcTaskManagerMapper {
 
     /** 取消工作项 */
     int updateWorkItemCancel(@Param("taskId") Long taskId, @Param("userId") String userId);
+
+    /** 查询任务编辑信息 */
+    TaskManagerEditInfo selectTaskForEdit(@Param("taskId") Long taskId);
+
+    /** 更新任务基本信息 */
+    int updateTask(@Param("dto") TaskManagerEditDto dto, @Param("userId") String userId);
+
+    /** 查询末端节点实例ID */
+    List<Long> selectEndNodeInstIds(@Param("taskId") Long taskId);
+
+    /** 插入查看结果节点实例 */
+    int insertViewNodeInst(@Param("taskId") Long taskId,
+                           @Param("templateId") String templateId,
+                           @Param("nodeId") Long nodeId,
+                           @Param("prevNodeIds") String prevNodeIds,
+                           @Param("handlerRoleIds") String handlerRoleIds,
+                           @Param("userId") String userId);
+
+    /** 查询最近插入ID */
+    Long selectLastInsertId();
+
+    /** 末端节点追加指向 */
+    int appendViewNodeToEndNodes(@Param("nodeInstId") Long nodeInstId,
+                                 @Param("endInstIds") List<Long> endInstIds,
+                                 @Param("userId") String userId);
+
+    /** 查询查看结果节点实例ID */
+    Long selectViewNodeInstId(@Param("taskId") Long taskId, @Param("nodeId") Long nodeId);
+
+    /** 删除节点实例 */
+    int deleteNodeInst(@Param("nodeInstId") Long nodeInstId, @Param("userId") String userId);
+
+    /** 清理末端节点指向 */
+    int clearEndNodeNext(@Param("taskId") Long taskId,
+                         @Param("nodeInstId") Long nodeInstId,
+                         @Param("userId") String userId);
+
+    /** 根据角色ID集合查询用户ID */
+    List<String> selectUserIdsByRoleIds(@Param("roleIds") List<String> roleIds);
+
+    /** 插入工作项 */
+    int insertWorkItem(@Param("taskId") Long taskId,
+                       @Param("nodeInstId") Long nodeInstId,
+                       @Param("assigneeId") String assigneeId,
+                       @Param("phaseStatus") int phaseStatus,
+                       @Param("userId") String userId);
+
+    /** 删除节点的工作项 */
+    int deleteWorkItemsByNodeInst(@Param("nodeInstId") Long nodeInstId,
+                                  @Param("userId") String userId);
 }
