@@ -7,6 +7,8 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
+import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
+import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -18,6 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.servlet.ModelAndView;
+import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
+import org.jeecgframework.poi.excel.entity.ExportParams;
+import org.jeecgframework.poi.excel.def.NormalExcelConstants;
+import com.zjlab.dataservice.common.system.vo.LoginUser;
+import org.apache.shiro.SecurityUtils;
+
+import java.util.List;
 
 import javax.validation.Valid;
 
@@ -61,5 +71,33 @@ public class TcTaskManagerController {
     public Result<Void> edit(@RequestBody @Valid TaskManagerEditDto dto) {
         taskManagerService.editTask(dto);
         return Result.ok();
+    }
+
+    @PostMapping("/exportRemoteCmds")
+    @ApiOperationSupport(order = 4)
+    @ApiOperation(value = "导出遥控指令单", notes = "导出前端传来的遥控指令单")
+    public ModelAndView exportRemoteCmds(@RequestBody List<RemoteCmdExportVO> list) {
+        ModelAndView mv = new ModelAndView(new JeecgEntityExcelView());
+        LoginUser user = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+        mv.addObject(NormalExcelConstants.FILE_NAME, "遥控指令单");
+        mv.addObject(NormalExcelConstants.CLASS, RemoteCmdExportVO.class);
+        mv.addObject(NormalExcelConstants.PARAMS,
+                new ExportParams("遥控指令单", "导出人:" + user.getRealname(), "遥控指令单"));
+        mv.addObject(NormalExcelConstants.DATA_LIST, list);
+        return mv;
+    }
+
+    @PostMapping("/exportOrbitPlans")
+    @ApiOperationSupport(order = 5)
+    @ApiOperation(value = "导出仿真轨道计划", notes = "导出前端传来的仿真轨道计划")
+    public ModelAndView exportOrbitPlans(@RequestBody List<OrbitPlanExportVO> list) {
+        ModelAndView mv = new ModelAndView(new JeecgEntityExcelView());
+        LoginUser user = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+        mv.addObject(NormalExcelConstants.FILE_NAME, "测运控仿真轨道计划");
+        mv.addObject(NormalExcelConstants.CLASS, OrbitPlanExportVO.class);
+        mv.addObject(NormalExcelConstants.PARAMS,
+                new ExportParams("测运控仿真轨道计划", "导出人:" + user.getRealname(), "轨道计划"));
+        mv.addObject(NormalExcelConstants.DATA_LIST, list);
+        return mv;
     }
 }

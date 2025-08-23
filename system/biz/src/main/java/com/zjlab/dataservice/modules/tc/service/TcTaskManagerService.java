@@ -12,21 +12,30 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 public interface TcTaskManagerService {
     /**
      * 创建任务
+     *
+     * @param dto 创建参数
+     * @return 新任务的ID
      */
     Long createTask(TaskManagerCreateDto dto);
+
     /**
      * 分页查询任务列表
+     *
+     * @param query 查询条件
+     * @return 分页任务列表
      */
     PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query);
 
     /**
      * 取消任务
+     *
      * @param taskId 任务ID
      */
     void cancelTask(Long taskId);
 
     /**
      * 编辑任务
+     *
      * @param dto 编辑参数
      */
     void editTask(TaskManagerEditDto dto);

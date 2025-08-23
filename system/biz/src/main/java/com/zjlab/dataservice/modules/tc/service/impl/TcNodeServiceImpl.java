@@ -44,6 +44,11 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Autowired
     private SysRoleMapper sysRoleMapper;
 
+    /**
+     * 统计节点数量。
+     *
+     * @return 节点统计信息
+     */
     @Override
     public NodeStatsVo getStats() {
         long active = nodeInfoMapper.selectCount(Wrappers.<NodeInfo>lambdaQuery()
@@ -55,6 +60,12 @@ public class TcNodeServiceImpl implements TcNodeService {
         return new NodeStatsVo((int) active, (int) disabled, (int) total);
     }
 
+    /**
+     * 根据条件分页查询节点。
+     *
+     * @param queryDto 查询条件
+     * @return 节点分页数据
+     */
     @Override
     public PageResult<NodeInfoDto> listNodes(NodeQueryDto queryDto) {
         Page<NodeInfo> page = new Page<>(queryDto.getPage(), queryDto.getPageSize());
@@ -135,6 +146,12 @@ public class TcNodeServiceImpl implements TcNodeService {
 
     }
 
+    /**
+     * 创建节点并保存角色关系。
+     *
+     * @param dto 节点信息
+     * @return 新节点ID
+     */
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public Long createNode(NodeInfoDto dto) {
@@ -167,6 +184,12 @@ public class TcNodeServiceImpl implements TcNodeService {
         return node.getId();
     }
 
+    /**
+     * 更新节点及其角色配置。
+     *
+     * @param id  节点ID
+     * @param dto 节点信息
+     */
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public void updateNode(Long id, NodeInfoDto dto) {
@@ -204,6 +227,12 @@ public class TcNodeServiceImpl implements TcNodeService {
         }
     }
 
+    /**
+     * 修改节点状态。
+     *
+     * @param id 节点ID
+     * @param status 状态值
+     */
     @Override
     public void updateStatus(Long id, Integer status) {
         NodeInfo node = new NodeInfo();
@@ -212,12 +241,23 @@ public class TcNodeServiceImpl implements TcNodeService {
         nodeInfoMapper.updateById(node);
     }
 
+    /**
+     * 删除节点及其角色关系。
+     *
+     * @param id 节点ID
+     */
     @Override
     public void deleteNode(Long id) {
         nodeInfoMapper.deleteById(id);
         nodeRoleRelMapper.deleteByNodeId(id);
     }
 
+    /**
+     * 查询节点详情。
+     *
+     * @param id 节点ID
+     * @return 节点详细信息
+     */
     @Override
     public NodeInfoDto getDetail(Long id) {
         NodeInfo node = nodeInfoMapper.selectById(id);
