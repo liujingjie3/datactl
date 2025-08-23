@@ -1,26 +1,25 @@
-# 任务管理模块（Spec v1.2）
+# 任务管理模块（Spec v1.0）
 
-运行环境：MySQL 8+；不使用外键；所有删除均为逻辑删除 del\_flag。
+运行环境：MySQL 8+；所有删除均为逻辑删除 del\_flag。
 公共审计字段：create\_by / create\_time / update\_by / update\_time（VARCHAR(32) / DATETIME，存储用户ID）。
 身份与权限：依赖 sys\_user / sys\_role / sys\_user\_role。
-关键约定：模板连边用模板节点ID；tc\_task\_node\_inst 包含 handler\_role\_ids（JSON 数组）。
 
 ---
 
 ## 0. 业务概述
 
-任务管理支持：创建任务 → 查看四个 Tab → 处理节点 → 完成/取消任务 → 记录操作。
+任务管理支持：创建任务 → 查看四个 Tab → 处理节点 → 完成/取消任务 → 记录操作->事件通知。
 工作流来源于模板：tc\_todo\_template（外部） + tc\_task\_template\_node（仅结构与时限）。
 实例化产物：tc\_task（任务）、tc\_task\_node\_inst（节点实例，含办理角色快照）、tc\_task\_work\_item（本地工作项）、tc\_task\_node\_action\_record（操作记录）。
 
-四个 Tab（非管理员）：发起的 / 待办 / 参与 / 已处理（我所属角色组有人处理过）。
+四个 Tab（非管理员）：发起的 / 待办  / 已处理（我处理或者我所属角色组有人处理过或者该工作流异常）。
 管理员视图：全量任务。
 
 ---
 
 ## 1. 数据模型（实现关键字段）
 
-DDL 已在总文档（画布）中，这里只列编码相关字段与含义。
+DDL 详见ddl.md。
 
 ### 1.1 模板域（只读）
 
@@ -66,7 +65,7 @@ DDL 已在总文档（画布）中，这里只列编码相关字段与含义。
 
 ---
 
-## 2. 核心流程与算法（可编程）
+## 2. 核心流程与算法
 
 ### 2.1 新建任务（实例化工作流）
 
@@ -152,11 +151,11 @@ for each n in startNodes:
 COMMIT;
 ```
 
-备注：handler\_role\_ids 为办理角色的快照，避免后续定义域变化影响已生成任务。
+备注：handler\_role\_ids 为办理角色的快照，后续定义域变化不影响已生成任务。
 
 ---
 
-### 2.2 任务列表（五个 Tab，更新版）
+### 2.2 任务列表
 
 #### 2.2.1 Tab & 访问控制
 
@@ -215,7 +214,7 @@ TODO：当管理员判定规则明确后，在 tab=all 的入口做权限校验�
 
 * **GET /task/list**
 
-说明：统一入口；通过 tab 区分五种列表；tab=all 暂不做权限拦截（TODO）。
+说明：统一入口；通过 tab 区分四种列表；
 Query 参数：见 §2.2.2。
 返回：`{ list: [...如上对象...], total: number }`
 
@@ -393,13 +392,6 @@ WHERE t.del_flag=0
 
 ```
 注：上面 SELECT_FIELDS / WHERE_CONDITIONS / curN_subquery 为示意占位，实际写 SQL 时请替换成完整片段。
-#### 2.2.6 小结
-
-* 单接口 GET /task/list 支持四个 Tab。
-* 筛选项全可选，时间仅“起”。
-* 返回结构对象化：模板对象、当前激活节点对象（含实例ID、名称、角色数组）。
-* tab=all 暂不做管理员限制（已标注 TODO）。
-* SQL 使用 JSON 聚合，后端直接返回最终结构，前端零拼装。
 
 
 ### 2.3 节点办理（提交动作 → 完成 → 推进后继）
