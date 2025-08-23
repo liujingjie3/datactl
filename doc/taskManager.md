@@ -9,7 +9,7 @@
 ## 0. 业务概述
 
 任务管理支持：创建任务 → 查看四个 Tab → 处理节点 → 完成/取消任务 → 记录操作->事件通知。
-工作流来源于模板：tc\_todo\_template（外部） + tc\_task\_template\_node（仅结构与时限）。
+工作流来源于模板：tc\_todo\_template.template\_attr（外部维护，包含节点结构、角色与时限）。
 实例化产物：tc\_task（任务）、tc\_task\_node\_inst（节点实例，含办理角色快照）、tc\_task\_work\_item（本地工作项）、tc\_task\_node\_action\_record（操作记录）。
 
 四个 Tab（非管理员）：发起的 / 待办  / 已处理（我处理或者我所属角色组有人处理过或者该工作流异常）。
@@ -71,7 +71,7 @@ DDL 详见ddl.md。
 
 **入参（JSON）**
 
-taskCode\*, taskName\*, taskRequirement, templateId\*,
+taskName\*, taskRequirement, templateId\*,
 needImaging(0/1), imagingArea(JSON|null), resultDisplayNeeded(0/1),
 satellites(JSON), remoteCmds(JSON), orbitPlans(JSON)。
 
@@ -84,30 +84,28 @@ BEGIN;
 INSERT INTO tc_task(..., status=0, create_by=:uid) VALUES(...);
 taskId := LAST_INSERT_ID();
 
--- B. 读模板节点（含模板节点ID）
-tplNodes := SELECT * FROM tc_task_template_node WHERE template_id=:templateId AND del_flag=0;
+attr := SELECT template_attr FROM tc_todo_template WHERE template_id=:templateId AND del_flag=0;
+tplNodes := JSON_PARSE(attr);  -- 每个元素包含 key/nodeId/prev/next/roleIds/maxDuration/orderNo
 
 -- C. 第1遍：创建实例，建立 “模板节点ID → 实例ID” 映射
 for each tpl in tplNodes:
-  -- 从定义域生成办理角色快照
-  roles := SELECT role_id FROM tc_node_role_rel WHERE node_id=tpl.node_id AND del_flag=0;
   INSERT INTO tc_task_node_inst(
     task_id, template_id, node_id,
     prev_node_ids='[]', next_node_ids='[]',
     arrived_count=0,
-    handler_role_ids = JSON_ARRAY(roles...),
+    handler_role_ids = JSON_ARRAY(tpl.roleIds...),
     order_no=tpl.order_no,
     status=0,
     max_duration=tpl.max_duration,
     create_by=:uid
   );
-  mapTplToInst[tpl.id] = LAST_INSERT_ID();
+  mapTplToInst[tpl.key] = LAST_INSERT_ID();
 
 -- D. 第2遍：用模板节点ID映射回填 prev/next 为实例ID数组
 for each tpl in tplNodes:
-  instId   := mapTplToInst[tpl.id];
-  prevInst := [ mapTplToInst[x] for x in (tpl.prev_keys or []) ];
-  nextInst := [ mapTplToInst[x] for x in (tpl.next_keys or []) ];
+  instId   := mapTplToInst[tpl.key];
+  prevInst := [ mapTplToInst[x] for x in (tpl.prev or []) ];
+  nextInst := [ mapTplToInst[x] for x in (tpl.next or []) ];
   UPDATE tc_task_node_inst
   SET prev_node_ids=JSON_ARRAY(prevInst...), next_node_ids=JSON_ARRAY(nextInst...)
   WHERE id=instId;
@@ -132,21 +130,19 @@ if result_display_needed == 1:
     SET next_node_ids = JSON_ARRAY_APPEND(next_node_ids, '$', viewInstId)
     WHERE id=id;
 
--- F. 激活起点（prev 为空 → 置处理中）并生成“待办”
-startNodes := SELECT * FROM tc_task_node_inst
-              WHERE task_id=:taskId AND del_flag=0 AND JSON_LENGTH(prev_node_ids)=0;
-
-for each n in startNodes:
-  UPDATE tc_task_node_inst SET status=1, started_at=NOW()
-  WHERE id=n.id AND status=0 AND del_flag=0;
-
-  -- 用实例快照的 handler_role_ids → 找用户 → 生成待办
-  roleIds := JSON_EXTRACT(n.handler_role_ids, '$');
+-- F. 生成工作项并激活起点
+for each tpl in tplNodes:
+  instId := mapTplToInst[tpl.key];
+  roleIds := tpl.roleIds or [];
   users := SELECT DISTINCT ur.user_id FROM sys_user_role ur
-           WHERE JSON_CONTAINS(roleIds, CAST(ur.role_id AS JSON), '$');
+           WHERE JSON_CONTAINS(JSON_ARRAY(roleIds...), CAST(ur.role_id AS JSON), '$');
+  phase := (tpl.prev is empty) ? 1 : 0;  -- 1=待办, 0=候选未到达
   for u in users:
     INSERT INTO tc_task_work_item(task_id, node_inst_id, assignee_id, phase_status, create_by)
-    VALUES (:taskId, n.id, u, 1, :uid);  -- 1=待办
+    VALUES (:taskId, instId, u, phase, :uid);
+  if tpl.prev is empty:
+    UPDATE tc_task_node_inst SET status=1, started_at=NOW()
+    WHERE id=instId AND status=0 AND del_flag=0;
 
 COMMIT;
 ```
@@ -495,6 +491,8 @@ ELSE
   WHERE id=:taskId AND del_flag=0;
 END IF;
 
+-- 若 :needImaging = 1 且 imagingArea 为空，服务层返回 TASKMANAGE_IMAGING_AREA_REQUIRED
+
 -- C. result_display_needed 变化时增删“查看影像结果”节点及工作项
 IF oldDisplay = 0 AND :display = 1 THEN
   endIds := SELECT id FROM tc_task_node_inst
@@ -614,12 +612,12 @@ COMMIT;
 Body(JSON)：
 
 ```
-taskCode*, taskName*, taskRequirement, templateId*,
+taskName*, taskRequirement, templateId*,
 needImaging(0|1), imagingArea, resultDisplayNeeded(0|1),
 satellites, remoteCmds, orbitPlans
 ```
 
-Resp：`{ id, taskCode }`
+Resp：`{ id }`（needImaging=1 时 imagingArea 必填）
 
 取消任务 `POST /task/cancel?taskId=...`
 Resp：`{ success: true }`（仅发起人或管理员且尚无人完成节点时允许；不满足条件报 TASKMANAGE\_NO\_PERMISSION 或 TASKMANAGE\_CANNOT\_CANCEL）
@@ -713,12 +711,13 @@ ORDER BY r.create_time DESC;
 * **404 NOT\_FOUND**：任务/节点不存在
 * **409 TASK\_CANNOT\_CANCEL**：已有节点完成，不能取消
 * **403 TASKMANAGE\_NO\_PERMISSION**：只有发起人或管理员可以编辑或取消任务
+* **400 TASKMANAGE\_IMAGING\_AREA\_REQUIRED**：成像区域不能为空
 * **409 NODE\_NOT\_PROCESSING**：节点不是处理中，不能提交
 * **500 INTERNAL\_ERROR**
 
 **校验点：**
 
-* 创建：templateId 有效；模板节点非空；satellites/remote\_cmds/orbit\_plans 均 JSON\_VALID=1。
+* 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填；satellites/remote\_cmds/orbit\_plans 均 JSON\_VALID=1。
 * 提交：权限校验基于实例 handler\_role\_ids。
 * 取消：无 status=2 的节点且仅发起人或管理员可操作。
 

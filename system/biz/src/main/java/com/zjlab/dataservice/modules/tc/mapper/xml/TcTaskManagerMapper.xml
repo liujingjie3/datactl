@@ -29,6 +29,55 @@
         </if>
     </sql>
 
+    <insert id="insertTask">
+        INSERT INTO tc_task(
+            task_code, task_name, task_requirement, template_id,
+            need_imaging, imaging_area, result_display_needed,
+            satellites, remote_cmds, orbit_plans, status,
+            create_by, create_time, update_by, update_time
+        ) VALUES (
+            #{taskCode}, #{dto.taskName}, #{dto.taskRequirement}, #{dto.templateId},
+            #{dto.needImaging}, #{dto.imagingArea}, #{dto.resultDisplayNeeded},
+            #{dto.satellites}, #{dto.remoteCmds}, #{dto.orbitPlans}, 0,
+            #{userId}, NOW(), #{userId}, NOW()
+        )
+    </insert>
+
+    <select id="selectTemplateAttr" resultType="string">
+        SELECT template_attr FROM tc_todo_template
+        WHERE template_id = #{templateId} AND del_flag = 0
+    </select>
+
+    <insert id="insertNodeInst">
+        INSERT INTO tc_task_node_inst(
+            task_id, template_id, node_id, prev_node_ids, next_node_ids,
+            arrived_count, handler_role_ids, order_no, status, max_duration,
+            create_by, create_time, update_by, update_time
+        ) VALUES (
+            #{taskId}, #{templateId}, #{nodeId}, '[]', '[]',
+            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration},
+            #{userId}, NOW(), #{userId}, NOW()
+        )
+    </insert>
+
+    <update id="updateNodeInstPrevNext">
+        UPDATE tc_task_node_inst
+        SET prev_node_ids = #{prevNodeIds},
+            next_node_ids = #{nextNodeIds},
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE id = #{nodeInstId} AND del_flag = 0
+    </update>
+
+    <update id="activateNodeInst">
+        UPDATE tc_task_node_inst
+        SET status = 1,
+            started_at = NOW(),
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE id = #{nodeInstId} AND status = 0 AND del_flag = 0
+    </update>
+
     <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO">
         SELECT
         <include refid="selectFields"/>

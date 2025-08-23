@@ -3,7 +3,7 @@ package com.zjlab.dataservice.modules.tc.controller;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
-import com.zjlab.dataservice.common.exception.BaseException;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
@@ -37,6 +37,14 @@ public class TcTaskManagerController {
     @ApiOperation(value="任务列表", notes="分页查询任务列表")
     public Result<PageResult<TaskManagerListItemVO>> list(@Valid TaskManagerListQuery query) {
         return Result.ok(taskManagerService.listTasks(query));
+    }
+
+    @PostMapping("/create")
+    @ApiOperationSupport(order = 0)
+    @ApiOperation(value = "创建任务", notes = "创建新的任务")
+    public Result<Long> create(@RequestBody @Valid TaskManagerCreateDto dto) {
+        Long id = taskManagerService.createTask(dto);
+        return Result.ok(id);
     }
 
     @PostMapping("/cancel")

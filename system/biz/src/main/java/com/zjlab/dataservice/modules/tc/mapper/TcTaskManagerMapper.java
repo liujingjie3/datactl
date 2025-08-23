@@ -5,6 +5,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -13,6 +14,32 @@ import java.util.List;
  * 任务列表相关查询
  */
 public interface TcTaskManagerMapper {
+    /** 插入任务 */
+    int insertTask(@Param("taskCode") String taskCode,
+                   @Param("dto") TaskManagerCreateDto dto,
+                   @Param("userId") String userId);
+
+    /** 查询模板属性 */
+    String selectTemplateAttr(@Param("templateId") String templateId);
+
+    /** 插入节点实例 */
+    int insertNodeInst(@Param("taskId") Long taskId,
+                       @Param("templateId") String templateId,
+                       @Param("nodeId") Long nodeId,
+                       @Param("handlerRoleIds") String handlerRoleIds,
+                       @Param("orderNo") Integer orderNo,
+                       @Param("maxDuration") Integer maxDuration,
+                       @Param("userId") String userId);
+
+    /** 更新节点实例前后驱 */
+    int updateNodeInstPrevNext(@Param("nodeInstId") Long nodeInstId,
+                               @Param("prevNodeIds") String prevNodeIds,
+                               @Param("nextNodeIds") String nextNodeIds,
+                               @Param("userId") String userId);
+
+    /** 激活节点实例 */
+    int activateNodeInst(@Param("nodeInstId") Long nodeInstId,
+                         @Param("userId") String userId);
     /** 查询列表 */
     List<TaskManagerListItemVO> selectTaskList(@Param("query") TaskManagerListQuery query);
     /** 统计总数 */
