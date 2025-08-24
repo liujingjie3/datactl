@@ -9,6 +9,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -16,22 +17,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
-import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import org.jeecgframework.poi.excel.entity.ExportParams;
 import org.jeecgframework.poi.excel.def.NormalExcelConstants;
+import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import org.apache.shiro.SecurityUtils;
 
 import java.util.List;
 
 import javax.validation.Valid;
-
-
 /** 任务列表接口 */
 @RestController
 @RequestMapping("/tc/taskManager")
@@ -99,5 +98,13 @@ public class TcTaskManagerController {
                 new ExportParams("测运控仿真轨道计划", "导出人:" + user.getRealname(), "轨道计划"));
         mv.addObject(NormalExcelConstants.DATA_LIST, list);
         return mv;
+    }
+
+    @GetMapping("/nodeFlows")
+    @ApiOperationSupport(order = 6)
+    @ApiOperation(value = "查询模板节点流", notes = "根据模板ID获取节点流列表")
+    public Result<List<TemplateNodeFlowVO>> nodeFlows(@RequestParam String templateId) {
+        List<TemplateNodeFlowVO> flows = taskManagerService.listNodeFlows(templateId);
+        return Result.ok(flows);
     }
 }

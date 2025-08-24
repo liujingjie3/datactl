@@ -6,6 +6,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -111,5 +112,8 @@ public interface TcTaskManagerMapper {
     /** 删除节点的工作项 */
     int deleteWorkItemsByNodeInst(@Param("nodeInstId") Long nodeInstId,
                                   @Param("userId") String userId);
+
+    /** 根据模板ID查询节点流 */
+    List<TemplateNodeFlowVO> selectTemplateNodeFlows(@Param("templateId") String templateId);
 
 }

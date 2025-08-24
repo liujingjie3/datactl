@@ -18,6 +18,7 @@ import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
@@ -60,6 +61,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private NodeRoleRelMapper nodeRoleRelMapper;
+
 
     /**
      * 创建任务并初始化节点实例
@@ -371,4 +373,17 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
     }
 
+    /**
+     * 根据任务模板ID查询节点流
+     *
+     * @param templateId 模板ID
+     * @return 节点流列表
+     */
+    @Override
+    public List<TemplateNodeFlowVO> listNodeFlows(String templateId) {
+        if (StringUtils.isBlank(templateId)) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        return tcTaskManagerMapper.selectTemplateNodeFlows(templateId);
+    }
 }
