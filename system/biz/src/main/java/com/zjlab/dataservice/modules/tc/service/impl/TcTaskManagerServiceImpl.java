@@ -7,7 +7,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
-import com.zjlab.dataservice.modules.tc.mapper.TaskNodeActionRecordMapper;
+import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeActionRecordMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskWorkItemMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
@@ -68,7 +68,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     private NodeRoleRelMapper nodeRoleRelMapper;
 
     @Autowired
-    private TaskNodeActionRecordMapper actionRecordMapper;
+    private TcTaskNodeActionRecordMapper actionRecordMapper;
 
     @Autowired
     private TcTaskWorkItemMapper taskWorkItemMapper;

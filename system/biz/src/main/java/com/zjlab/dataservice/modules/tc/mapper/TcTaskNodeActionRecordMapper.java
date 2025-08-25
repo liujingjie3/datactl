@@ -6,6 +6,6 @@ import com.zjlab.dataservice.modules.tc.model.entity.TaskNodeActionRecord;
 /**
  * 节点操作记录 Mapper
  */
-public interface TaskNodeActionRecordMapper extends BaseMapper<TaskNodeActionRecord> {
+public interface TcTaskNodeActionRecordMapper extends BaseMapper<TaskNodeActionRecord> {
 }
 
