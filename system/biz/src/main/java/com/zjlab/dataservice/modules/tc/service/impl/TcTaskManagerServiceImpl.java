@@ -528,8 +528,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
             // 5.3 若所有节点均已完成，则结束任务
             Long ongoing = taskNodeInstMapper.countOngoingNodeInst(dto.getTaskId());
-        if (ongoing != null && ongoing == 0) {
-            tcTaskManagerMapper.updateTaskComplete(dto.getTaskId(), userId);
+            if (ongoing != null && ongoing == 0) {
+                tcTaskManagerMapper.updateTaskComplete(dto.getTaskId(), userId);
+            }
         }
     }
 
