@@ -6,6 +6,7 @@ import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
@@ -106,5 +107,13 @@ public class TcTaskManagerController {
     public Result<List<TemplateNodeFlowVO>> nodeFlows(@RequestParam String templateId) {
         List<TemplateNodeFlowVO> flows = taskManagerService.listNodeFlows(templateId);
         return Result.ok(flows);
+    }
+
+    @PostMapping("/node/submit")
+    @ApiOperationSupport(order = 7)
+    @ApiOperation(value = "提交节点操作", notes = "节点办理操作提交")
+    public Result<Void> submitNodeAction(@RequestBody @Valid NodeActionSubmitDto dto) {
+        taskManagerService.submitAction(dto);
+        return Result.ok();
     }
 }

@@ -51,6 +51,7 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public NodeStatsVo getStats() {
+        // 统计启用、停用及总数量
         long active = nodeInfoMapper.selectCount(Wrappers.<NodeInfo>lambdaQuery()
                 .eq(NodeInfo::getDelFlag, 0).eq(NodeInfo::getStatus, 1));
         long disabled = nodeInfoMapper.selectCount(Wrappers.<NodeInfo>lambdaQuery()
@@ -68,6 +69,7 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public PageResult<NodeInfoDto> listNodes(NodeQueryDto queryDto) {
+        // 1. 构建分页与查询条件
         Page<NodeInfo> page = new Page<>(queryDto.getPage(), queryDto.getPageSize());
         LambdaQueryWrapper<NodeInfo> wrapper = Wrappers.<NodeInfo>lambdaQuery()
                 .eq(NodeInfo::getDelFlag, 0);
@@ -88,12 +90,13 @@ public class TcNodeServiceImpl implements TcNodeService {
             wrapper.in(NodeInfo::getId, nodeIds);
         }
 
+        // 2. 执行查询并转换为DTO
         IPage<NodeInfo> nodePage = nodeInfoMapper.selectPage(page, wrapper);
         List<NodeInfoDto> dtoList = nodePage.getRecords().stream().map(node -> {
             NodeInfoDto dto = new NodeInfoDto();
             BeanUtil.copyProperties(node, dto);
 
-            // roles
+            // 2.1 填充角色列表
             List<NodeRoleRel> roleRels = nodeRoleRelMapper.selectByNodeId(node.getId());
             if (roleRels != null && !roleRels.isEmpty()) {
                 List<NodeRoleDto> roles = roleRels.stream().map(rel -> {
@@ -108,7 +111,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                 dto.setRoles(roles);
 
             }
-            // actions
+            // 2.2 简化并设置操作列表
             if (StringUtils.isNotBlank(node.getActions())) {
                 List<NodeActionDto> actions = JSON.parseArray(node.getActions(), NodeActionDto.class);
                 if (actions != null) {
@@ -121,14 +124,13 @@ public class TcNodeServiceImpl implements TcNodeService {
                     dto.setActions(simple);
                 }
             }
-            // creator
+            // 2.3 填充创建者和更新者信息
             dto.setCreatorId(node.getCreateBy());
             SysUser user = sysUserMapper.selectById(node.getCreateBy());
             if (user != null) {
                 dto.setCreatorName(user.getRealname());
             }
             dto.setCreateTime(node.getCreateTime());
-            // updater
             dto.setUpdaterId(node.getUpdateBy());
             SysUser upUser = sysUserMapper.selectById(node.getUpdateBy());
             if (upUser != null) {
@@ -138,6 +140,7 @@ public class TcNodeServiceImpl implements TcNodeService {
             return dto;
         }).collect(Collectors.toList());
 
+        // 3. 返回分页结果
         return new PageResult<NodeInfoDto>(
                 (int) nodePage.getCurrent(),
                 (int) nodePage.getSize(),
@@ -155,10 +158,13 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public Long createNode(NodeInfoDto dto) {
+        // 1. 获取当前用户并校验
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
+
+        // 2. 转换DTO为实体并补充通用字段
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setDelFlag(0);
@@ -169,6 +175,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         }
         nodeInfoMapper.insert(node);
 
+        // 3. 保存节点与角色的关联关系
         if (dto.getRoles() != null) {
             for (NodeRoleDto roleDto : dto.getRoles()) {
                 NodeRoleRel rel = new NodeRoleRel();
@@ -181,6 +188,7 @@ public class TcNodeServiceImpl implements TcNodeService {
             }
         }
 
+        // 4. 返回新节点ID
         return node.getId();
     }
 
@@ -193,10 +201,13 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
     public void updateNode(Long id, NodeInfoDto dto) {
+        // 1. 获取当前用户并校验
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
+
+        // 2. 更新节点基本信息
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
         node.setId(id);
@@ -206,7 +217,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         }
         nodeInfoMapper.updateById(node);
 
-        // 更新角色信息，只有变化时才调整
+        // 3. 更新角色关系，只有在变更时才调整
         List<NodeRoleRel> existing = nodeRoleRelMapper.selectByNodeId(id);
         Set<String> oldIds = existing.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toSet());
         Set<String> newIds = dto.getRoles() == null ? Collections.emptySet() :
@@ -235,6 +246,7 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public void updateStatus(Long id, Integer status) {
+        // 简单更新状态字段
         NodeInfo node = new NodeInfo();
         node.setId(id);
         node.setStatus(status);
@@ -248,6 +260,7 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public void deleteNode(Long id) {
+        // 删除节点及关联的角色关系
         nodeInfoMapper.deleteById(id);
         nodeRoleRelMapper.deleteByNodeId(id);
     }
@@ -260,6 +273,7 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public NodeInfoDto getDetail(Long id) {
+        // 1. 查询节点实体
         NodeInfo node = nodeInfoMapper.selectById(id);
         if (node == null || node.getDelFlag() == 1) {
             return null;
@@ -267,6 +281,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         NodeInfoDto dto = new NodeInfoDto();
         BeanUtil.copyProperties(node, dto);
 
+        // 2. 填充角色列表
         List<NodeRoleRel> roleRels = nodeRoleRelMapper.selectByNodeId(id);
         if (roleRels != null && !roleRels.isEmpty()) {
             List<NodeRoleDto> roles = roleRels.stream().map(rel -> {
@@ -281,10 +296,12 @@ public class TcNodeServiceImpl implements TcNodeService {
             dto.setRoles(roles);
 
         }
+        // 3. 设置操作列表
         if (StringUtils.isNotBlank(node.getActions())) {
             List<NodeActionDto> actions = JSON.parseArray(node.getActions(), NodeActionDto.class);
             dto.setActions(actions);
         }
+        // 4. 填充创建者和更新者信息
         dto.setCreatorId(node.getCreateBy());
         SysUser creator = sysUserMapper.selectById(node.getCreateBy());
         if (creator != null) {

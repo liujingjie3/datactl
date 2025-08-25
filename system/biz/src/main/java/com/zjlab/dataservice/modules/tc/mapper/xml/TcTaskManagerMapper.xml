@@ -76,7 +76,18 @@
             update_by = #{userId},
             update_time = NOW()
         WHERE id = #{nodeInstId} AND status = 0 AND del_flag = 0
+          AND arrived_count &gt;= JSON_LENGTH(prev_node_ids)
     </update>
+    <update id="completeNodeInst">
+        UPDATE tc_task_node_inst
+        SET status = 2,
+            completed_at = NOW(),
+            completed_by = #{userId},
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE id = #{nodeInstId} AND status = 1 AND del_flag = 0
+    </update>
+
 
     <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO">
         SELECT
@@ -174,14 +185,6 @@
         WHERE task_id = #{taskId} AND del_flag = 0 AND status IN (0,1)
     </update>
 
-    <update id="updateWorkItemCancel">
-        UPDATE tc_task_work_item
-        SET phase_status = 3,
-            update_by = #{userId},
-            update_time = NOW()
-        WHERE task_id = #{taskId} AND del_flag = 0 AND phase_status IN (0,1)
-    </update>
-
     <select id="selectTaskForEdit" resultType="com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo">
         SELECT status, create_by AS createBy, template_id AS templateId, result_display_needed AS resultDisplayNeeded
         FROM tc_task
@@ -263,23 +266,57 @@
         </foreach>
     </select>
 
-    <insert id="insertWorkItem">
-        INSERT INTO tc_task_work_item(
-            task_id, node_inst_id, assignee_id, phase_status,
-            create_by, create_time, update_by, update_time
-        ) VALUES (
-            #{taskId}, #{nodeInstId}, #{assigneeId}, #{phaseStatus},
-            #{userId}, NOW(), #{userId}, NOW()
-        )
-    </insert>
+    <select id="selectNextNodeIds" resultType="string">
+        SELECT next_node_ids FROM tc_task_node_inst
+        WHERE id = #{nodeInstId} AND del_flag = 0
+    </select>
 
-    <update id="deleteWorkItemsByNodeInst">
-        UPDATE tc_task_work_item
-        SET del_flag = 1,
+    <update id="increaseArrivedCount">
+        UPDATE tc_task_node_inst
+        SET arrived_count = arrived_count + 1,
             update_by = #{userId},
             update_time = NOW()
-        WHERE node_inst_id = #{nodeInstId} AND del_flag = 0
+        WHERE id = #{nodeInstId} AND del_flag = 0
     </update>
+
+    <select id="selectHandlerRoleIds" resultType="string">
+        SELECT handler_role_ids FROM tc_task_node_inst
+        WHERE id = #{nodeInstId} AND del_flag = 0
+    </select>
+
+    <select id="countOngoingNodeInst" resultType="long">
+        SELECT COUNT(*) FROM tc_task_node_inst
+        WHERE task_id = #{taskId} AND del_flag = 0 AND status IN (0,1)
+    </select>
+
+    <update id="updateTaskComplete">
+        UPDATE tc_task
+        SET status = 1,
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE id = #{taskId} AND del_flag = 0
+    </update>
+
+    <update id="updateTaskAbort">
+        UPDATE tc_task
+        SET status = 2,
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE id = #{taskId} AND del_flag = 0
+    </update>
+
+    <update id="updateNodeInstAbort">
+        UPDATE tc_task_node_inst
+        SET status = 4,
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE task_id = #{taskId} AND del_flag = 0 AND status IN (0,1)
+    </update>
+
+    <select id="selectNodeInstStatus" resultType="int">
+        SELECT status FROM tc_task_node_inst
+        WHERE id = #{nodeInstId} AND del_flag = 0
+    </select>
 
     <select id="selectTemplateNodeFlows" resultType="com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO">
         SELECT

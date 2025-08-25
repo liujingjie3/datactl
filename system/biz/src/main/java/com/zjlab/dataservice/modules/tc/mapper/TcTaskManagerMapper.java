@@ -41,6 +41,9 @@ public interface TcTaskManagerMapper {
     /** 激活节点实例 */
     int activateNodeInst(@Param("nodeInstId") Long nodeInstId,
                          @Param("userId") String userId);
+    /** 完成节点实例 */
+    int completeNodeInst(@Param("nodeInstId") Long nodeInstId,
+                         @Param("userId") String userId);
     /** 查询列表 */
     List<TaskManagerListItemVO> selectTaskList(@Param("query") TaskManagerListQuery query);
     /** 统计总数 */
@@ -59,9 +62,6 @@ public interface TcTaskManagerMapper {
 
     /** 取消节点实例 */
     int updateNodeInstCancel(@Param("taskId") Long taskId, @Param("userId") String userId);
-
-    /** 取消工作项 */
-    int updateWorkItemCancel(@Param("taskId") Long taskId, @Param("userId") String userId);
 
     /** 查询任务编辑信息 */
     TaskManagerEditInfo selectTaskForEdit(@Param("taskId") Long taskId);
@@ -102,18 +102,31 @@ public interface TcTaskManagerMapper {
     /** 根据角色ID集合查询用户ID */
     List<String> selectUserIdsByRoleIds(@Param("roleIds") List<String> roleIds);
 
-    /** 插入工作项 */
-    int insertWorkItem(@Param("taskId") Long taskId,
-                       @Param("nodeInstId") Long nodeInstId,
-                       @Param("assigneeId") String assigneeId,
-                       @Param("phaseStatus") int phaseStatus,
-                       @Param("userId") String userId);
-
-    /** 删除节点的工作项 */
-    int deleteWorkItemsByNodeInst(@Param("nodeInstId") Long nodeInstId,
-                                  @Param("userId") String userId);
-
     /** 根据模板ID查询节点流 */
     List<TemplateNodeFlowVO> selectTemplateNodeFlows(@Param("templateId") String templateId);
+
+    /** 查询节点实例的后继ID JSON */
+    String selectNextNodeIds(@Param("nodeInstId") Long nodeInstId);
+
+    /** 增加节点实例的到达前驱计数 */
+    int increaseArrivedCount(@Param("nodeInstId") Long nodeInstId, @Param("userId") String userId);
+
+    /** 查询节点实例的办理角色ID集合JSON */
+    String selectHandlerRoleIds(@Param("nodeInstId") Long nodeInstId);
+
+    /** 统计任务进行中节点数量 */
+    Long countOngoingNodeInst(@Param("taskId") Long taskId);
+
+    /** 更新任务状态为已完成 */
+    int updateTaskComplete(@Param("taskId") Long taskId, @Param("userId") String userId);
+
+    /** 更新任务状态为异常结束 */
+    int updateTaskAbort(@Param("taskId") Long taskId, @Param("userId") String userId);
+
+    /** 异常结束节点实例 */
+    int updateNodeInstAbort(@Param("taskId") Long taskId, @Param("userId") String userId);
+
+    /** 查询节点实例状态 */
+    Integer selectNodeInstStatus(@Param("nodeInstId") Long nodeInstId);
 
 }

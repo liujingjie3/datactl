@@ -4,10 +4,14 @@ import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.constant.enums.ResultCode;
 import com.zjlab.dataservice.common.exception.BaseException;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
+import com.zjlab.dataservice.modules.tc.mapper.TaskNodeActionRecordMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
+import com.zjlab.dataservice.modules.tc.mapper.TcTaskWorkItemMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
@@ -16,6 +20,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.dto.TemplateNode;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
+import com.zjlab.dataservice.modules.tc.model.entity.TaskNodeActionRecord;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
@@ -62,6 +67,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Autowired
     private NodeRoleRelMapper nodeRoleRelMapper;
 
+    @Autowired
+    private TaskNodeActionRecordMapper actionRecordMapper;
+
+    @Autowired
+    private TcTaskWorkItemMapper taskWorkItemMapper;
+
 
     /**
      * 创建任务并初始化节点实例
@@ -72,6 +83,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Override
     @Transactional
     public Long createTask(TaskManagerCreateDto dto) {
+        // 1. 参数及当前用户校验
         if (dto == null) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
@@ -79,6 +91,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
+        // 2. 校验是否需要成像以及成像区域
         if (dto.getNeedImaging() != null) {
             if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
                 throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
@@ -88,10 +101,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
         }
 
+        // 3. 新建任务记录
         String taskCode = UUID.randomUUID().toString().replace("-", "");
         tcTaskManagerMapper.insertTask(taskCode, dto, userId);
         Long taskId = tcTaskManagerMapper.selectLastInsertId();
 
+        // 4. 解析模板并初始化所有节点实例
         String attr = tcTaskManagerMapper.selectTemplateAttr(dto.getTemplateId());
         List<TemplateNode> nodes = new ArrayList<>();
         if (StringUtils.isNotBlank(attr)) {
@@ -101,6 +116,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
 
+        // 4.1 插入节点实例并记录ID映射
         Map<String, Long> map = new HashMap<>();
         for (TemplateNode n : nodes) {
             String rolesJson = JSON.toJSONString(n.getRoleIds());
@@ -108,6 +124,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             Long instId = tcTaskManagerMapper.selectLastInsertId();
             map.put(n.getKey(), instId);
         }
+        // 4.2 更新前驱、后继关系
         for (TemplateNode n : nodes) {
             Long instId = map.get(n.getKey());
             List<Long> prevIds = n.getPrev() == null ? Collections.emptyList() : n.getPrev().stream().map(map::get).collect(Collectors.toList());
@@ -115,6 +132,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             tcTaskManagerMapper.updateNodeInstPrevNext(instId, JSON.toJSONString(prevIds), JSON.toJSONString(nextIds), userId);
         }
 
+        // 5. 根据需求追加查看影像结果节点
         if (dto.getResultDisplayNeeded() != null && dto.getResultDisplayNeeded() == 1) {
             List<Long> endIds = tcTaskManagerMapper.selectEndNodeInstIds(taskId);
             if (!endIds.isEmpty()) {
@@ -130,13 +148,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         tcTaskManagerMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
                         List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
                         for (String uid : userIds) {
-                            tcTaskManagerMapper.insertWorkItem(taskId, viewInstId, uid, 0, userId);
+                            taskWorkItemMapper.insertWorkItem(taskId, viewInstId, uid, 0, userId);
                         }
                     }
                 }
             }
         }
 
+        // 6. 激活起始节点并生成工作项
         for (TemplateNode n : nodes) {
             Long instId = map.get(n.getKey());
             boolean isStart = n.getPrev() == null || n.getPrev().isEmpty();
@@ -148,11 +167,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
                 int phaseStatus = isStart ? 1 : 0;
                 for (String uid : userIds) {
-                    tcTaskManagerMapper.insertWorkItem(taskId, instId, uid, phaseStatus, userId);
+                    taskWorkItemMapper.insertWorkItem(taskId, instId, uid, phaseStatus, userId);
                 }
             }
         }
 
+        // 7. 返回任务ID
         return taskId;
     }
 
@@ -164,12 +184,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
      */
     @Override
     public PageResult<TaskManagerListItemVO> listTasks(TaskManagerListQuery query) {
+        // 1. 获取当前用户并验证
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
         query.setUserId(userId);
 
+        // 2. 根据用户角色判断可访问的标签
         boolean isAdmin = sysUserService.isAdmin(userId);
         TaskManagerTabEnum tab = TaskManagerTabEnum.fromValue(query.getTab());
         if (isAdmin) {
@@ -180,6 +202,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.TASKMANAGE_ONLY_ADMIN_ALL);
         }
 
+        // 3. 处理分页参数
         if (query.getPage() == null || query.getPage() < 1) {
             query.setPage(1);
         }
@@ -188,9 +211,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         query.setOffset((query.getPage() - 1) * query.getPageSize());
 
+        // 4. 查询任务列表
         List<TaskManagerListItemVO> vos = tcTaskManagerMapper.selectTaskList(query);
         if (!vos.isEmpty()) {
-            // query current nodes
+            // 4.1 查询每个任务的当前节点信息
             List<Long> taskIds = vos.stream().map(TaskManagerListItemVO::getTaskId).collect(Collectors.toList());
             List<CurrentNodeRow> rows = tcTaskManagerMapper.selectCurrentNodes(taskIds);
             Map<Long, Map<Long, CurrentNodeVO>> taskNodeMap = new HashMap<>();
@@ -216,6 +240,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     }
                 }
             }
+            // 4.2 填充角色名称
             if (!roleIds.isEmpty()) {
                 List<SysRole> roleList = sysRoleMapper.selectBatchIds(roleIds);
                 Map<String, String> roleNameMap = roleList.stream()
@@ -231,6 +256,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     }
                 }
             }
+            // 4.3 将节点信息附加到结果中
             for (TaskManagerListItemVO vo : vos) {
                 Map<Long, CurrentNodeVO> nodeMap = taskNodeMap.get(vo.getTaskId());
                 if (nodeMap != null) {
@@ -240,6 +266,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 }
             }
         }
+        // 5. 返回分页结果
         long total = tcTaskManagerMapper.countTaskList(query);
         return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
     }
@@ -252,37 +279,38 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelTask(Long taskId) {
+        // 1. 参数校验并加载任务信息
         if (taskId == null) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
-
         TaskManagerEditInfo info = tcTaskManagerMapper.selectTaskForEdit(taskId);
         if (info == null) {
             throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
         }
 
+        // 2. 获取当前用户并校验权限
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-
         boolean isAdmin = sysUserService.isAdmin(userId);
         if (!isAdmin && !userId.equals(info.getCreateBy())) {
             throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
         }
 
+        // 3. 状态及完成度校验
         if (info.getStatus() == null || info.getStatus() != 0) {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_CANCEL);
         }
-
         Long doneCnt = tcTaskManagerMapper.countDoneNodeInst(taskId);
         if (doneCnt != null && doneCnt > 0) {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_CANCEL);
         }
 
+        // 4. 更新任务、节点实例和工作项状态为取消
         tcTaskManagerMapper.updateTaskCancel(taskId, userId);
         tcTaskManagerMapper.updateNodeInstCancel(taskId, userId);
-        tcTaskManagerMapper.updateWorkItemCancel(taskId, userId);
+        taskWorkItemMapper.updateWorkItemCancel(taskId, userId);
     }
 
     /**
@@ -293,34 +321,35 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void editTask(TaskManagerEditDto dto) {
+        // 1. 参数校验并获取任务信息
         if (dto == null || dto.getTaskId() == null) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
-
         TaskManagerEditInfo info = tcTaskManagerMapper.selectTaskForEdit(dto.getTaskId());
         if (info == null) {
             throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
         }
 
+        // 2. 获取当前用户并校验权限
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-
         boolean isAdmin = sysUserService.isAdmin(userId);
         if (!isAdmin && !userId.equals(info.getCreateBy())) {
             throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
         }
 
+        // 3. 校验任务状态与节点完成情况
         if (info.getStatus() == null || info.getStatus() != 0) {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_EDIT);
         }
-
         Long doneCnt = tcTaskManagerMapper.countDoneNodeInst(dto.getTaskId());
         if (doneCnt != null && doneCnt > 0) {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_EDIT);
         }
 
+        // 4. 校验成像信息并更新任务基础字段
         if (dto.getNeedImaging() != null) {
             if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
                 throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
@@ -331,6 +360,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         tcTaskManagerMapper.updateTask(dto, userId);
 
+        // 5. 处理查看影像结果节点的增删
         Integer oldDisplay = info.getResultDisplayNeeded();
         Integer newDisplay = dto.getResultDisplayNeeded();
         if (oldDisplay == null) {
@@ -341,6 +371,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         if (oldDisplay == 0 && newDisplay == 1) {
+            // 5.1 原无展示节点，新配置需要展示时新增节点
             List<Long> endIds = tcTaskManagerMapper.selectEndNodeInstIds(dto.getTaskId());
             if (!endIds.isEmpty()) {
                 NodeInfo viewNode = nodeInfoMapper.selectByName("查看影像结果");
@@ -355,19 +386,20 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         tcTaskManagerMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
                         List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
                         for (String uid : userIds) {
-                            tcTaskManagerMapper.insertWorkItem(dto.getTaskId(), viewInstId, uid, 0, userId);
+                            taskWorkItemMapper.insertWorkItem(dto.getTaskId(), viewInstId, uid, 0, userId);
                         }
                     }
                 }
             }
         } else if (oldDisplay == 1 && newDisplay == 0) {
+            // 5.2 原配置展示节点，新配置不需要时删除节点
             NodeInfo viewNode = nodeInfoMapper.selectByName("查看影像结果");
             if (viewNode != null) {
                 Long viewInstId = tcTaskManagerMapper.selectViewNodeInstId(dto.getTaskId(), viewNode.getId());
                 if (viewInstId != null) {
                     tcTaskManagerMapper.deleteNodeInst(viewInstId, userId);
                     tcTaskManagerMapper.clearEndNodeNext(dto.getTaskId(), viewInstId, userId);
-                    tcTaskManagerMapper.deleteWorkItemsByNodeInst(viewInstId, userId);
+                    taskWorkItemMapper.deleteWorkItemsByNodeInst(viewInstId, userId);
                 }
             }
         }
@@ -381,10 +413,114 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
      */
     @Override
     public List<TemplateNodeFlowVO> listNodeFlows(String templateId) {
+        // 1. 参数校验
         if (StringUtils.isBlank(templateId)) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
-        //todo 这里的最大时长是从tc_template_node表里拿的，后续看模板任务怎么设计再改
+        // 2. 查询并返回节点流信息
+        // todo 这里的最大时长是从tc_template_node表里拿的，后续看模板任务怎么设计再改
         return tcTaskManagerMapper.selectTemplateNodeFlows(templateId);
+    }
+
+    /**
+     * 提交节点操作
+     *
+     * @param dto 节点操作参数
+     */
+    @Override
+    @Transactional
+    public void submitAction(NodeActionSubmitDto dto) {
+        // 1. 参数校验
+        if (dto == null || dto.getTaskId() == null || dto.getNodeInstId() == null || dto.getActionType() == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        // 2. 获取当前用户
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+
+        // 3. 权限校验：节点需在办理中，且当前用户必须属于处理角色
+        Integer nodeStatus = tcTaskManagerMapper.selectNodeInstStatus(dto.getNodeInstId());
+        if (nodeStatus == null) {
+            throw new BaseException(ResultCode.INSTANCE_IS_NOT_EXISTS);
+        }
+        if (nodeStatus != 1) {
+            throw new BaseException(ResultCode.STATUS_INVALID);
+        }
+        String roleJson = tcTaskManagerMapper.selectHandlerRoleIds(dto.getNodeInstId());
+        List<String> roleIds = JSON.parseArray(roleJson, String.class);
+        if (roleIds == null || roleIds.isEmpty()) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+        }
+        List<String> permitted = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+        if (permitted == null || !permitted.contains(userId)) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+        }
+
+        // 4. 记录本次操作
+        TaskNodeActionRecord record = new TaskNodeActionRecord();
+        record.setTaskId(dto.getTaskId());
+        record.setNodeInstId(dto.getNodeInstId());
+        record.setActionType(dto.getActionType());
+        record.setActionPayload(dto.getActionPayload());
+        record.setCreateBy(userId);
+        record.setUpdateBy(userId);
+        actionRecordMapper.insert(record);
+
+        // 5. 处理决策操作
+        if (dto.getActionType() == 2) {
+            boolean processed = true;
+            if (dto.getActionPayload() != null) {
+                try {
+                    JSONObject obj = JSON.parseObject(dto.getActionPayload());
+                    String decision = obj.getString("decision");
+                    if (decision != null && !"yes".equalsIgnoreCase(decision)) {
+                        processed = false;
+                    }
+                } catch (Exception ignore) {
+                    // ignore parse errors and treat as processed
+                }
+            }
+            // 5.1 决策拒绝，终止任务
+            if (!processed) {
+                tcTaskManagerMapper.updateTaskAbort(dto.getTaskId(), userId);
+                tcTaskManagerMapper.updateNodeInstAbort(dto.getTaskId(), userId);
+                taskWorkItemMapper.updateWorkItemAbort(dto.getTaskId(), userId);
+                return;
+            }
+
+            // 5.2 决策通过，完成当前节点并推进后继节点
+            tcTaskManagerMapper.completeNodeInst(dto.getNodeInstId(), userId);
+            taskWorkItemMapper.updateMyWorkItem(dto.getTaskId(), dto.getNodeInstId(), userId);
+            taskWorkItemMapper.updateOtherWorkItem(dto.getTaskId(), dto.getNodeInstId(), userId);
+
+            String nextJson = tcTaskManagerMapper.selectNextNodeIds(dto.getNodeInstId());
+            List<Long> nextIds = JSON.parseArray(nextJson, Long.class);
+            if (nextIds != null) {
+                for (Long nextId : nextIds) {
+                    // 增加到达次数并尝试激活后继节点
+                    tcTaskManagerMapper.increaseArrivedCount(nextId, userId);
+                    int activated = tcTaskManagerMapper.activateNodeInst(nextId, userId);
+                    if (activated > 0) {
+                        // 为激活的节点创建待办工作项
+                        String nextRolesJson = tcTaskManagerMapper.selectHandlerRoleIds(nextId);
+                        List<String> nextRoleIds = JSON.parseArray(nextRolesJson, String.class);
+                        if (nextRoleIds != null && !nextRoleIds.isEmpty()) {
+                            List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(nextRoleIds);
+                            for (String uid : userIds) {
+                                taskWorkItemMapper.insertWorkItem(dto.getTaskId(), nextId, uid, 1, userId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5.3 若所有节点均已完成，则结束任务
+            Long ongoing = tcTaskManagerMapper.countOngoingNodeInst(dto.getTaskId());
+            if (ongoing != null && ongoing == 0) {
+                tcTaskManagerMapper.updateTaskComplete(dto.getTaskId(), userId);
+            }
+        }
     }
 }
