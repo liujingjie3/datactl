@@ -24,14 +24,19 @@ import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.entity.TaskNodeActionRecord;
 import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeActionVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.service.ISysUserService;
+import com.zjlab.dataservice.modules.system.entity.SysUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import org.apache.commons.lang3.StringUtils;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -523,9 +528,140 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
             // 5.3 若所有节点均已完成，则结束任务
             Long ongoing = taskNodeInstMapper.countOngoingNodeInst(dto.getTaskId());
-            if (ongoing != null && ongoing == 0) {
-                tcTaskManagerMapper.updateTaskComplete(dto.getTaskId(), userId);
+        if (ongoing != null && ongoing == 0) {
+            tcTaskManagerMapper.updateTaskComplete(dto.getTaskId(), userId);
+        }
+    }
+
+    @Override
+    public TaskDetailVO getTaskDetail(Long taskId) {
+        // 1. 参数校验并查询任务基本信息
+        if (taskId == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        TaskDetailVO detail = tcTaskManagerMapper.selectTaskDetail(taskId);
+        if (detail == null) {
+            throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
+        }
+
+        // 2. 解析卫星信息 JSON 字段
+        if (StringUtils.isNotBlank(detail.getSatellitesJson())) {
+            List<String> sats = JSON.parseArray(detail.getSatellitesJson(), String.class);
+            detail.setSatellites(sats);
+        }
+
+        // 3. 查询当前节点及其角色信息
+        List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(Collections.singletonList(taskId));
+        Map<Long, CurrentNodeVO> nodeMap = new LinkedHashMap<>();
+        Set<String> roleIds = new HashSet<>();
+        for (CurrentNodeRow row : rows) {
+            // 按节点实例聚合角色列表
+            CurrentNodeVO cn = nodeMap.computeIfAbsent(row.getNodeInstId(), k -> {
+                CurrentNodeVO v = new CurrentNodeVO();
+                v.setNodeInstId(row.getNodeInstId());
+                v.setNodeName(row.getNodeName());
+                v.setRoles(new ArrayList<>());
+                return v;
+            });
+            if (StringUtils.isNotBlank(row.getHandlerRoleIds())) {
+                List<String> ids = JSON.parseArray(row.getHandlerRoleIds(), String.class);
+                if (ids != null) {
+                    for (String rid : ids) {
+                        NodeRoleDto role = new NodeRoleDto();
+                        role.setRoleId(rid);
+                        cn.getRoles().add(role);
+                        roleIds.add(rid);
+                    }
+                }
             }
         }
+        if (!roleIds.isEmpty()) {
+            // 查询角色名称并填充到结果中
+            List<SysRole> roleList = sysRoleMapper.selectBatchIds(roleIds);
+            Map<String, String> roleNameMap = roleList.stream()
+                    .collect(Collectors.toMap(SysRole::getId, SysRole::getRoleName));
+            for (CurrentNodeVO cn : nodeMap.values()) {
+                for (NodeRoleDto role : cn.getRoles()) {
+                    String name = roleNameMap.get(role.getRoleId());
+                    if (name != null) {
+                        role.setRoleName(name);
+                    }
+                }
+            }
+        }
+        detail.setCurrentNodes(new ArrayList<>(nodeMap.values()));
+
+        // 4. 构建工作流概况和历史记录
+        List<TaskNodeVO> insts = taskNodeInstMapper.selectNodeInstsByTaskId(taskId);
+        List<TaskNodeVO> overview = new ArrayList<>();
+        List<TaskNodeVO> history = new ArrayList<>();
+        Map<Long, TaskNodeVO> historyMap = new HashMap<>();
+        for (TaskNodeVO inst : insts) {
+            // 概况信息
+            TaskNodeVO ov = new TaskNodeVO();
+            ov.setNodeInstId(inst.getNodeInstId());
+            ov.setNodeName(inst.getNodeName());
+            ov.setOrderNo(inst.getOrderNo());
+            ov.setStatus(inst.getStatus());
+            overview.add(ov);
+
+            // 历史信息，仅记录已办理过的节点
+            if (inst.getStatus() != null && inst.getStatus() != 0) {
+                TaskNodeVO hv = new TaskNodeVO();
+                hv.setNodeInstId(inst.getNodeInstId());
+                hv.setNodeName(inst.getNodeName());
+                hv.setOrderNo(inst.getOrderNo());
+                hv.setStatus(inst.getStatus());
+                hv.setProcessTime(inst.getCompletedAt() != null ? inst.getCompletedAt() : inst.getStartedAt());
+                hv.setOperatorId(inst.getCompletedBy());
+                if (StringUtils.isNotBlank(inst.getCompletedBy())) {
+                    SysUser user = sysUserService.getById(inst.getCompletedBy());
+                    if (user != null) {
+                        hv.setOperatorName(user.getRealname());
+                    }
+                }
+                hv.setActionLogs(new ArrayList<>());
+                history.add(hv);
+                historyMap.put(inst.getNodeInstId(), hv);
+            }
+        }
+
+        // 5. 拼装节点操作日志
+        List<TaskNodeActionRecord> records = actionRecordMapper.selectList(
+                new QueryWrapper<TaskNodeActionRecord>().eq("task_id", taskId).orderByAsc("create_time"));
+        if (!records.isEmpty()) {
+            Set<String> userIds = records.stream().map(TaskNodeActionRecord::getCreateBy)
+                    .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+            Map<String, String> userNameMap = new HashMap<>();
+            if (!userIds.isEmpty()) {
+                List<SysUser> users = sysUserService.listByIds(userIds);
+                if (users != null) {
+                    for (SysUser u : users) {
+                        userNameMap.put(u.getId(), u.getRealname());
+                    }
+                }
+            }
+            for (TaskNodeActionRecord r : records) {
+                // 组装单条操作日志
+                TaskNodeActionVO av = new TaskNodeActionVO();
+                av.setNodeInstId(r.getNodeInstId());
+                av.setActionType(r.getActionType());
+                av.setActionPayload(r.getActionPayload());
+                av.setActionTime(r.getCreateTime());
+                av.setOperatorId(r.getCreateBy());
+                if (StringUtils.isNotBlank(r.getCreateBy())) {
+                    av.setOperatorName(userNameMap.get(r.getCreateBy()));
+                }
+                TaskNodeVO hv = historyMap.get(r.getNodeInstId());
+                if (hv != null) {
+                    hv.getActionLogs().add(av);
+                }
+            }
+        }
+
+        // 6. 设置返回值
+        detail.setHistory(history);
+        detail.setWorkflow(overview);
+        return detail;
     }
 }
