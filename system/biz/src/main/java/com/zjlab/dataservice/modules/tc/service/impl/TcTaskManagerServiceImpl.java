@@ -384,6 +384,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (StringUtils.isBlank(templateId)) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
+        //todo 这里的最大时长是从tc_template_node表里拿的，后续看模板任务怎么设计再改
         return tcTaskManagerMapper.selectTemplateNodeFlows(templateId);
     }
 }
