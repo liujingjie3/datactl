@@ -9,8 +9,8 @@ import lombok.Data;
 @Data
 @TableName("tc_task_node_action_record")
 public class TaskNodeActionRecord extends TcBaseEntity {
-    private static final long serialVersionUID = 1L;
 
+    private static final long serialVersionUID = 1531697776856485836L;
     /** 任务ID */
     private Long taskId;
     /** 节点实例ID */

@@ -11,7 +11,8 @@ import java.util.List;
  */
 @Data
 public class TaskBaseVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 4706875137336565273L;
     private Long taskId;
     private String taskName;
     private LocalDateTime createTime;

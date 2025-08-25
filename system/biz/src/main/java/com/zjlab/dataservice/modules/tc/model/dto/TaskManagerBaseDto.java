@@ -11,8 +11,9 @@ import java.io.Serializable;
  */
 @Data
 public class TaskManagerBaseDto implements Serializable {
-    private static final long serialVersionUID = 1L;
 
+
+    private static final long serialVersionUID = -6867405314065688881L;
     /** 任务名称 */
     @NotBlank(message = "taskName不能为空")
     private String taskName;

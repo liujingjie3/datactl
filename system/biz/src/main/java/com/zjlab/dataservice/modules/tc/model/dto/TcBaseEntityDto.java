@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
  */
 @Data
 public class TcBaseEntityDto implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 5014487643533278311L;
     private Long id;
     /** 创建人ID */
     private String creatorId;

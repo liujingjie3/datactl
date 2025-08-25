@@ -9,8 +9,9 @@ import java.io.Serializable;
  */
 @Data
 public class TemplateNodeFlowVO implements Serializable {
-    private static final long serialVersionUID = 1L;
 
+
+    private static final long serialVersionUID = 4530725641642511132L;
     /** 节点名称 */
     private String nodeName;
 

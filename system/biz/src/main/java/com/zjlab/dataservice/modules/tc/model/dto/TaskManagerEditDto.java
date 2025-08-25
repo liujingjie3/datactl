@@ -9,8 +9,9 @@ import javax.validation.constraints.NotNull;
  */
 @Data
 public class TaskManagerEditDto extends TaskManagerBaseDto {
-    private static final long serialVersionUID = 1L;
 
+
+    private static final long serialVersionUID = 2245295950382672740L;
     /** 任务ID */
     @NotNull(message = "taskId不能为空")
     private Long taskId;

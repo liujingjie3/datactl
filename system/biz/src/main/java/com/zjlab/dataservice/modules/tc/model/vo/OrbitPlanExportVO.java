@@ -10,8 +10,8 @@ import java.io.Serializable;
  */
 @Data
 public class OrbitPlanExportVO implements Serializable {
-    private static final long serialVersionUID = 1L;
 
+    private static final long serialVersionUID = 3886975097530256873L;
     @Excel(name = "飞控圈次")
     private String orbitNo;
 

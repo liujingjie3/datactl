@@ -9,7 +9,8 @@ import java.io.Serializable;
  */
 @Data
 public class TaskManagerEditInfo implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 5250567804316528322L;
     /** 任务状态 */
     private Integer status;
     /** 发起人 */

@@ -9,8 +9,9 @@ import javax.validation.constraints.NotBlank;
  */
 @Data
 public class TaskManagerCreateDto extends TaskManagerBaseDto {
-    private static final long serialVersionUID = 1L;
 
+
+    private static final long serialVersionUID = 8407968386506820592L;
     /** 模板ID */
     @NotBlank(message = "templateId不能为空")
     private String templateId;

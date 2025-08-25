@@ -10,8 +10,9 @@ import java.io.Serializable;
  */
 @Data
 public class RemoteCmdExportVO implements Serializable {
-    private static final long serialVersionUID = 1L;
 
+
+    private static final long serialVersionUID = -317954105992275421L;
     @Excel(name = "序号")
     private Integer index;
 

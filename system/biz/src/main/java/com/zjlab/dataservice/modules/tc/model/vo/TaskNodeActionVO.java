@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 /** 节点操作记录信息 */
 @Data
 public class TaskNodeActionVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 8431966549122817451L;
     /** 节点实例ID */
     private Long nodeInstId;
     /** 操作时间 */

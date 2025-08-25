@@ -9,7 +9,8 @@ import java.util.List;
 /** 工作流节点信息 */
 @Data
 public class TaskNodeVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = -572132768269317377L;
     /** 节点实例ID */
     private Long nodeInstId;
     /** 节点名称 */

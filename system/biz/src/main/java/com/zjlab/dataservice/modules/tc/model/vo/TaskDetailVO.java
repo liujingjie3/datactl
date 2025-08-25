@@ -7,7 +7,8 @@ import java.util.List;
 /** 任务详情信息 */
 @Data
 public class TaskDetailVO extends TaskBaseVO {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 6353472493151876597L;
     private String taskType;
     private String satellitesJson;
     private List<String> satellites;
