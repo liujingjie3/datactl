@@ -4,6 +4,7 @@ import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 
@@ -50,4 +51,11 @@ public interface TcTaskManagerService {
      * @return 节点流列表
      */
     List<TemplateNodeFlowVO> listNodeFlows(String templateId);
+
+    /**
+     * 提交节点操作
+     *
+     * @param dto 节点操作参数
+     */
+    void submitAction(NodeActionSubmitDto dto);
 }
