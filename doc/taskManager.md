@@ -133,6 +133,7 @@ if result_display_needed == 1:
 -- F. 生成工作项并激活起点
 for each tpl in tplNodes:
   instId := mapTplToInst[tpl.key];
+  -- 在任务创建时为所有节点/所有用户预生成工作项，非起点=0候选未到达，起点=1待办
   roleIds := tpl.roleIds or [];
   users := SELECT DISTINCT ur.user_id FROM sys_user_role ur
            WHERE JSON_CONTAINS(JSON_ARRAY(roleIds...), CAST(ur.role_id AS JSON), '$');
@@ -390,74 +391,129 @@ WHERE t.del_flag=0
 注：上面 SELECT_FIELDS / WHERE_CONDITIONS / curN_subquery 为示意占位，实际写 SQL 时请替换成完整片段。
 
 
-### 2.3 节点办理（提交动作 → 完成 → 推进后继）
+### 2.3 任务节点处理（办理与异常）
 
-提交 & 完成（事务）
+任务节点处理是任务管理的核心环节。每个节点包含若干操作选项（上传、选择计划、填写文本等），其中**至少有一个决策选项**。用户选择决策选项（执行 / 不执行）即视为对该节点的最终处理。
+
+* **执行决策**：节点完成，推进工作流到后继节点。
+* **不执行决策**：触发异常结束，整个任务进入异常状态。
+
+---
+
+#### 2.3.1 正常办理流程（执行决策）
+
+当用户选择执行时，整体事务流程（**仅更新既有工作项，不再新增**）：
 
 ```sql
 BEGIN;
 
--- A. 记录一次操作（可含附件）
+-- A. 记录一次操作（动作、附件、文本、决策等）
 INSERT INTO tc_task_node_action_record(task_id,node_inst_id,action_type,action_payload,create_by)
 VALUES (:taskId,:nodeInstId,:type,:payloadJson,:uid);
 
--- B. 完成节点（行锁 + 幂等）
+-- B. 完成当前节点（行锁 + 幂等控制）
 UPDATE tc_task_node_inst
-SET status=2, completed_at=NOW(), completed_by=:uid, update_by=:uid, update_time=NOW()
+SET status=2, completed_at=NOW(), completed_by=:uid, update_by=:uid
 WHERE id=:nodeInstId AND task_id=:taskId AND status=1 AND del_flag=0;
 
--- C. 工作项：我=2已处理；其他人=4他人已完成失效
+-- C. 更新当前节点的工作项状态
 UPDATE tc_task_work_item
-SET phase_status=2, update_by=:uid, update_time=NOW()
-WHERE task_id=:taskId AND node_inst_id=:nodeInstId AND assignee_id=:uid AND del_flag=0;
+SET phase_status=2, update_by=:uid
+WHERE task_id=:taskId AND node_inst_id=:nodeInstId AND assignee_id=:uid;
 
 UPDATE tc_task_work_item
-SET phase_status=4, update_by=:uid, update_time=NOW()
-WHERE task_id=:taskId AND node_inst_id=:nodeInstId AND assignee_id<>:uid AND del_flag=0 AND phase_status IN (0,1);
+SET phase_status=4, update_by=:uid
+WHERE task_id=:taskId AND node_inst_id=:nodeInstId AND assignee_id<>:uid AND phase_status IN (0,1);
 
--- D. 推进后继：计数 + 激活 + 发放待办（用实例快照）
-nextIds := SELECT JSON_EXTRACT(next_node_ids, '$') FROM tc_task_node_inst WHERE id=:nodeInstId FOR UPDATE;
+-- D. 推进后继节点（只做到达计数与激活；激活后仅“更新”既有工作项为待办）
+nextIds := SELECT next_node_ids FROM tc_task_node_inst WHERE id=:nodeInstId FOR UPDATE;
 for each nextId in nextIds:
   UPDATE tc_task_node_inst
-  SET arrived_count = arrived_count + 1, update_by=:uid, update_time=NOW()
+  SET arrived_count = arrived_count + 1, update_by=:uid
   WHERE id=nextId AND del_flag=0;
 
+  -- 满足所有前驱到达，激活节点
   UPDATE tc_task_node_inst
   SET status=1, started_at=NOW(), update_by=:uid
   WHERE id=nextId AND status=0 AND del_flag=0
     AND arrived_count >= JSON_LENGTH(prev_node_ids);
 
-  IF ROW_COUNT() > 0 THEN
-     roleIds := (SELECT handler_role_ids FROM tc_task_node_inst WHERE id=nextId);
-     users := SELECT DISTINCT ur.user_id FROM sys_user_role ur
-              WHERE JSON_CONTAINS(roleIds, CAST(ur.role_id AS JSON), '$');
-     for u in users:
-       INSERT INTO tc_task_work_item(task_id,node_inst_id,assignee_id,phase_status,create_by)
-       VALUES (:taskId, nextId, u, 1, :uid);
-  END IF;
+  -- 将该节点下所有预生成的工作项从 0(候选未到达) 更新为 1(待办)
+  UPDATE tc_task_work_item
+  SET phase_status=1, update_by=:uid
+  WHERE task_id=:taskId AND node_inst_id=nextId AND del_flag=0 AND phase_status=0;
 
--- E. 任务完结判定（无任何 0/1 节点）
-SELECT COUNT(*) INTO @ongoing
-FROM tc_task_node_inst
-WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1);
-IF @ongoing = 0 THEN
-  UPDATE tc_task SET status=1, update_by=:uid, update_time=NOW()
-  WHERE id=:taskId AND del_flag=0;
+-- E. 任务完结判断（无任何 0/1 节点）
+IF (SELECT COUNT(*) FROM tc_task_node_inst WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1))=0 THEN
+  UPDATE tc_task SET status=1, update_by=:uid WHERE id=:taskId AND del_flag=0;
 END IF;
 
 COMMIT;
 ```
 
-权限校验（服务层）
+---
 
-* 节点必须 status=1；
-* uid 必须属于当前实例 handler\_role\_ids 对应的角色之一：
+#### 2.3.2 异常办理流程（不执行决策）
+
+当用户选择“不执行”时，任务进入异常结束。**将原 B（仅当前节点异常）与 D（其他未完成节点异常）合并为单条语句**：
 
 ```sql
-EXISTS (SELECT 1 FROM sys_user_role ur WHERE ur.user_id=:uid AND JSON_CONTAINS(ni.handler_role_ids, CAST(ur.role_id AS JSON), '$'));
+BEGIN;
+
+-- A. 记录一次决策操作
+INSERT INTO tc_task_node_action_record(task_id,node_inst_id,action_type,action_payload,create_by)
+VALUES (:taskId,:nodeInstId,2,:payloadJson,:uid);
+
+-- B&D 合并：将“当前节点 + 所有未完成节点”一并置为异常结束（不影响已完成节点）
+UPDATE tc_task_node_inst
+SET status=4, update_by=:uid
+WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1);
+
+-- C. 任务标记为异常结束
+UPDATE tc_task
+SET status=2, update_by=:uid
+WHERE id=:taskId AND del_flag=0;
+
+-- D. 统一更新所有预生成工作项为异常结束
+UPDATE tc_task_work_item
+SET phase_status=5, update_by=:uid
+WHERE task_id=:taskId AND del_flag=0 AND phase_status IN (0,1);
+
+COMMIT;
 ```
 
 ---
+
+#### 2.3.3 权限与校验
+
+1. 节点必须 `status=1`（处理中）。
+2. 操作人必须属于节点实例 `handler_role_ids` 对应角色：
+
+   ```sql
+   EXISTS (SELECT 1 FROM sys_user_role ur WHERE ur.user_id=:uid AND JSON_CONTAINS(ni.handler_role_ids, CAST(ur.role_id AS JSON), '$'))
+   ```
+3. 幂等控制：完成节点时通过 `WHERE status=1` 避免重复。
+4. 所有更新必须带 `update_by=:uid`，保证审计。
+
+---
+
+#### 2.3.4 状态总结
+
+* **任务状态 `tc_task.status`**：0运行中 / 1结束 / 2异常结束 / 3取消
+* **节点状态 `tc_task_node_inst.status`**：0待处理 / 1处理中 / 2已完成 / 3已取消 / 4异常结束
+* **工作项状态 `tc_task_work_item.phase_status`**：
+
+  * 0候选未到达
+  * 1待办
+  * 2我已处理
+  * 3任务取消撤销
+  * 4他人已完成失效
+  * 5异常结束
+
+---
+
+通过以上机制，节点处理与异常中断统一到一个 **决策驱动的工作流处理引擎** 中，实现了节点、任务、工作项的完整生命周期管理。
+ 
 
 ### 2.4 编辑任务
 
@@ -570,31 +626,7 @@ COMMIT;
 
 ---
 
-### 2.7 异常结束任务（用户中断工作流）
-
-当用户在处理中途选择终止（例如在决策节点点击“不执行”）时，任务应标记为异常结束，同时更新未完成的节点和工作项状态。
-
-**事务脚本**
-
-```sql
-BEGIN;
-
-UPDATE tc_task
-SET status=2, update_by=:uid, update_time=NOW()
-WHERE id=:taskId AND del_flag=0;
-
-UPDATE tc_task_node_inst
-SET status=4, update_by=:uid, update_time=NOW()
-WHERE task_id=:taskId AND del_flag=0 AND status IN (0,1);
-
-UPDATE tc_task_work_item
-SET phase_status=5, update_by=:uid, update_time=NOW()
-WHERE task_id=:taskId AND del_flag=0 AND phase_status IN (0,1);
-
-COMMIT;
-```
-
----
+ 
 
 ### 2.8 超时提醒（定时任务）
 

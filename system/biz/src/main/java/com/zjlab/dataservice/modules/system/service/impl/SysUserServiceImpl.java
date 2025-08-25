@@ -1320,6 +1320,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
     }
 
+    //todo, 这里等确认了怎么定义管理员要再改
     @Override
     public boolean isAdmin(String userId) {
         if (oConvertUtils.isEmpty(userId)) {
