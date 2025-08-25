@@ -7,6 +7,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 
 import java.util.List;
 
@@ -58,4 +59,12 @@ public interface TcTaskManagerService {
      * @param dto 节点操作参数
      */
     void submitAction(NodeActionSubmitDto dto);
+
+    /**
+     * 查询任务详情
+     *
+     * @param taskId 任务ID
+     * @return 任务详情
+     */
+    TaskDetailVO getTaskDetail(Long taskId);
 }

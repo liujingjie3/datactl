@@ -6,6 +6,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -26,6 +27,9 @@ public interface TcTaskManagerMapper {
     List<TaskManagerListItemVO> selectTaskList(@Param("query") TaskManagerListQuery query);
     /** 统计总数 */
     Long countTaskList(@Param("query") TaskManagerListQuery query);
+
+    /** 查询任务详情基本信息 */
+    TaskDetailVO selectTaskDetail(@Param("taskId") Long taskId);
 
     /** 查询任务状态 */
     Integer selectTaskStatus(@Param("taskId") Long taskId);

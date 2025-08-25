@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.tc.mapper;
 
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -68,5 +69,8 @@ public interface TcTaskNodeInstMapper {
     int updateNodeInstAbort(@Param("taskId") Long taskId, @Param("userId") String userId);
 
     Integer selectNodeInstStatus(@Param("nodeInstId") Long nodeInstId);
+
+    /** 按任务ID查询所有节点实例 */
+    List<TaskNodeVO> selectNodeInstsByTaskId(@Param("taskId") Long taskId);
 }
 

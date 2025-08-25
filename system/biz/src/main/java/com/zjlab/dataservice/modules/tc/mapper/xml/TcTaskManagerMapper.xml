@@ -103,6 +103,18 @@
         </if>
     </select>
 
+    <select id="selectTaskDetail" resultType="com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO">
+        SELECT t.id AS taskId,
+               t.task_name AS taskName,
+               t.task_type AS taskType,
+               t.satellites AS satellitesJson,
+               t.create_time AS createTime,
+               t.status AS status,
+               t.task_requirement AS taskRequirement
+        FROM tc_task t
+        WHERE t.id = #{taskId} AND t.del_flag = 0
+    </select>
+
     <select id="selectTaskStatus" resultType="int">
         SELECT status FROM tc_task WHERE id = #{taskId} AND del_flag = 0 FOR UPDATE
     </select>

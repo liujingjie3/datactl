@@ -11,6 +11,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -47,6 +48,14 @@ public class TcTaskManagerController {
     @ApiOperation(value="任务列表", notes="分页查询任务列表")
     public Result<PageResult<TaskManagerListItemVO>> list(@Valid TaskManagerListQuery query) {
         return Result.ok(taskManagerService.listTasks(query));
+    }
+
+    @GetMapping("/detail")
+    @ApiOperationSupport(order = 8)
+    @ApiOperation(value = "任务详情", notes = "根据任务ID查询任务详情")
+    public Result<TaskDetailVO> detail(@RequestParam Long taskId) {
+        // 调用服务层组装任务详情并返回
+        return Result.ok(taskManagerService.getTaskDetail(taskId));
     }
 
     @PostMapping("/create")
