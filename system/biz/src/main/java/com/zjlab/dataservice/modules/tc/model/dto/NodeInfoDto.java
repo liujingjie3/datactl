@@ -2,17 +2,14 @@ package com.zjlab.dataservice.modules.tc.model.dto;
 
 import lombok.Data;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 新建或编辑节点请求
  */
 @Data
-public class NodeInfoDto implements Serializable {
+public class NodeInfoDto extends TcBaseEntityDto {
     private static final long serialVersionUID = 4626255581973570903L;
-    private Long id;
     /** 节点名称 */
     private String name;
     /** 节点描述 */
@@ -29,17 +26,4 @@ public class NodeInfoDto implements Serializable {
     /** 绑定的操作控制项 */
     private List<NodeActionDto> actions;
 
-    /** 创建人ID */
-    private String creatorId;
-    /** 创建人名称 */
-    private String creatorName;
-    /** 创建时间 */
-    private LocalDateTime createTime;
-
-    /** 更新人ID */
-    private String updaterId;
-    /** 更新人名称 */
-    private String updaterName;
-    /** 更新时间 */
-    private LocalDateTime updateTime;
 }

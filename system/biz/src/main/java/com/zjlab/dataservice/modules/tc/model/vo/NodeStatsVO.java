@@ -1,4 +1,4 @@
-package com.zjlab.dataservice.modules.tc.model.dto;
+package com.zjlab.dataservice.modules.tc.model.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NodeStatsVo implements Serializable {
+public class NodeStatsVO implements Serializable {
     private static final long serialVersionUID = -2910543287558173917L;
     private Integer activeCount;
     private Integer disabledCount;

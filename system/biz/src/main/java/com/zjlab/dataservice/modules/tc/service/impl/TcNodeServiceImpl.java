@@ -17,6 +17,7 @@ import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.*;
+import com.zjlab.dataservice.modules.tc.model.vo.NodeStatsVO;
 import com.zjlab.dataservice.modules.tc.service.TcNodeService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ public class TcNodeServiceImpl implements TcNodeService {
      * @return 节点统计信息
      */
     @Override
-    public NodeStatsVo getStats() {
+    public NodeStatsVO getStats() {
         // 统计启用、停用及总数量
         long active = nodeInfoMapper.selectCount(Wrappers.<NodeInfo>lambdaQuery()
                 .eq(NodeInfo::getDelFlag, 0).eq(NodeInfo::getStatus, 1));
@@ -58,7 +59,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                 .eq(NodeInfo::getDelFlag, 0).eq(NodeInfo::getStatus, 0));
         long total = nodeInfoMapper.selectCount(Wrappers.<NodeInfo>lambdaQuery()
                 .eq(NodeInfo::getDelFlag, 0));
-        return new NodeStatsVo((int) active, (int) disabled, (int) total);
+        return new NodeStatsVO((int) active, (int) disabled, (int) total);
     }
 
     /**
