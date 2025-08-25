@@ -2,6 +2,7 @@ package com.zjlab.dataservice.modules.tc.service;
 
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
+import com.zjlab.dataservice.modules.tc.model.vo.NodeStatsVO;
 
 /**
  * 节点管理服务
@@ -12,7 +13,7 @@ public interface TcNodeService {
      *
      * @return 活跃/禁用及总数
      */
-    NodeStatsVo getStats();
+    NodeStatsVO getStats();
 
     /**
      * 分页查询节点列表

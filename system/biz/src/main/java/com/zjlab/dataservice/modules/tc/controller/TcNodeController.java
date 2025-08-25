@@ -4,6 +4,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
+import com.zjlab.dataservice.modules.tc.model.vo.NodeStatsVO;
 import com.zjlab.dataservice.modules.tc.service.TcNodeService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -27,7 +28,7 @@ public class TcNodeController {
     @GetMapping("/stats")
     @ApiOperationSupport(order = 1)
     @ApiOperation(value = "获取节点统计数据")
-    public Result<NodeStatsVo> stats() {
+    public Result<NodeStatsVO> stats() {
         return Result.ok(tcNodeService.getStats());
     }
 

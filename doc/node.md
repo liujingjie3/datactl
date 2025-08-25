@@ -38,7 +38,7 @@
 * **NodeRoleDto**：`{ roleId, roleName }`。
 * **NodeActionDto**：`{ type, name, config }`，type 取值：0上传、1选择圈次计划、2决策、3文本填写。
 * **NodeQueryDto**：列表查询参数，支持按 `status`、`name`、`roleId` 过滤，并分页（page/pageSize）。
-* **NodeStatsVo**：节点统计数据载体，`{ activeCount, disabledCount, totalCount }`。
+* **NodeStatsVO**：节点统计数据载体，`{ activeCount, disabledCount, totalCount }`。
 
 ---
 
