@@ -111,6 +111,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         Long taskId = tcTaskManagerMapper.selectLastInsertId();
 
         // 4. 解析模板并初始化所有节点实例
+        //todo 这里template_attr的结构还要再讨论，是否还需要中间表格也还要考虑下
         String attr = tcTaskManagerMapper.selectTemplateAttr(dto.getTemplateId());
         List<TemplateNode> nodes = new ArrayList<>();
         if (StringUtils.isNotBlank(attr)) {
