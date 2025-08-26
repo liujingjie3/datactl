@@ -10,7 +10,8 @@ import java.util.List;
  */
 @Data
 public class SatelliteGroupVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 806291365827527820L;
     /** 星座或分组名称 */
     private String group;
     /** 分组下的卫星ID集合 */
