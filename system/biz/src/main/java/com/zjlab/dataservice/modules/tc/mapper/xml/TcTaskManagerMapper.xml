@@ -38,7 +38,7 @@
         ) VALUES (
             #{taskCode}, #{dto.taskName}, #{dto.taskRequirement}, #{dto.templateId},
             #{dto.needImaging}, #{dto.imagingArea}, #{dto.resultDisplayNeeded},
-            #{dto.satellites}, #{dto.remoteCmds}, #{dto.orbitPlans}, 0,
+            #{dto.satellitesJson}, #{dto.remoteCmdsJson}, #{dto.orbitPlansJson}, 0,
             #{userId}, NOW(), #{userId}, NOW()
         )
     </insert>
@@ -48,7 +48,18 @@
         WHERE template_id = #{templateId} AND del_flag = 0
     </select>
 
-    <select id="selectTaskList" resultType="com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO">
+    <resultMap id="TaskManagerListItemResultMap" type="com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO">
+        <id column="taskId" property="taskId"/>
+        <result column="taskName" property="taskName"/>
+        <result column="taskCode" property="taskCode"/>
+        <result column="templateId" property="templateId"/>
+        <result column="templateName" property="templateName"/>
+        <result column="satellites" property="satellitesJson"/>
+        <result column="createTime" property="createTime"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <select id="selectTaskList" resultMap="TaskManagerListItemResultMap">
         SELECT
         <include refid="selectFields"/>
         FROM (
@@ -103,11 +114,21 @@
         </if>
     </select>
 
-    <select id="selectTaskDetail" resultType="com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO">
+    <resultMap id="TaskDetailResultMap" type="com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO">
+        <id column="taskId" property="taskId"/>
+        <result column="taskName" property="taskName"/>
+        <result column="taskType" property="taskType"/>
+        <result column="satellites" property="satellitesJson"/>
+        <result column="createTime" property="createTime"/>
+        <result column="status" property="status"/>
+        <result column="taskRequirement" property="taskRequirement"/>
+    </resultMap>
+
+    <select id="selectTaskDetail" resultMap="TaskDetailResultMap">
         SELECT t.id AS taskId,
                t.task_name AS taskName,
                t.task_type AS taskType,
-               t.satellites AS satellitesJson,
+               t.satellites AS satellites,
                t.create_time AS createTime,
                t.status AS status,
                t.task_requirement AS taskRequirement
@@ -173,6 +194,14 @@
             update_time = NOW()
         WHERE id = #{taskId} AND del_flag = 0
     </update>
+
+    <select id="selectRemoteCmds" resultType="string">
+        SELECT remote_cmds FROM tc_task WHERE id = #{taskId} AND del_flag = 0
+    </select>
+
+    <select id="selectOrbitPlans" resultType="string">
+        SELECT orbit_plans FROM tc_task WHERE id = #{taskId} AND del_flag = 0
+    </select>
 
     <select id="selectTemplateNodeFlows" resultType="com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO">
         SELECT

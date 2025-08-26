@@ -8,6 +8,8 @@ import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
+import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
+import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 
 import java.util.List;
 
@@ -67,4 +69,20 @@ public interface TcTaskManagerService {
      * @return 任务详情
      */
     TaskDetailVO getTaskDetail(Long taskId);
+
+    /**
+     * 查询遥控指令单
+     *
+     * @param taskId 任务ID
+     * @return 遥控指令单列表
+     */
+    List<RemoteCmdExportVO> getRemoteCmds(Long taskId);
+
+    /**
+     * 查询轨道计划
+     *
+     * @param taskId 任务ID
+     * @return 轨道计划列表
+     */
+    List<OrbitPlanExportVO> getOrbitPlans(Long taskId);
 }

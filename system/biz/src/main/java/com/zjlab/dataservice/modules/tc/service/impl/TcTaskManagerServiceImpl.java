@@ -28,6 +28,9 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeActionVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
+import com.zjlab.dataservice.modules.tc.model.vo.SatelliteGroupVO;
+import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
+import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
@@ -112,6 +115,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
         // 3. 新建任务记录
         String taskCode = UUID.randomUUID().toString().replace("-", "");
+        String satellitesJson = dto.getSatellites() == null ? null : JSON.toJSONString(dto.getSatellites());
+        String remoteCmdsJson = dto.getRemoteCmds() == null ? null : JSON.toJSONString(dto.getRemoteCmds());
+        String orbitPlansJson = dto.getOrbitPlans() == null ? null : JSON.toJSONString(dto.getOrbitPlans());
+        dto.setSatellitesJson(satellitesJson);
+        dto.setRemoteCmdsJson(remoteCmdsJson);
+        dto.setOrbitPlansJson(orbitPlansJson);
         tcTaskManagerMapper.insertTask(taskCode, dto, userId);
         Long taskId = tcTaskManagerMapper.selectLastInsertId();
 
@@ -224,6 +233,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         // 4. 查询任务列表
         List<TaskManagerListItemVO> vos = tcTaskManagerMapper.selectTaskList(query);
         if (!vos.isEmpty()) {
+            for (TaskManagerListItemVO vo : vos) {
+                if (StringUtils.isNotBlank(vo.getSatellitesJson())) {
+                    vo.setSatellites(JSON.parseArray(vo.getSatellitesJson(), SatelliteGroupVO.class));
+                }
+            }
             // 4.1 查询每个任务的当前节点信息
             List<Long> taskIds = vos.stream().map(TaskManagerListItemVO::getTaskId).collect(Collectors.toList());
             List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(taskIds);
@@ -544,11 +558,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (detail == null) {
             throw new BaseException(ResultCode.TASK_IS_NOT_EXISTS);
         }
-
-        // 2. 解析卫星信息 JSON 字段
         if (StringUtils.isNotBlank(detail.getSatellitesJson())) {
-            List<String> sats = JSON.parseArray(detail.getSatellitesJson(), String.class);
-            detail.setSatellites(sats);
+            detail.setSatellites(JSON.parseArray(detail.getSatellitesJson(), SatelliteGroupVO.class));
         }
 
         // 3. 查询当前节点及其角色信息
@@ -664,5 +675,29 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         detail.setHistory(history);
         detail.setWorkflow(overview);
         return detail;
+    }
+
+    @Override
+    public List<RemoteCmdExportVO> getRemoteCmds(Long taskId) {
+        if (taskId == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        String json = tcTaskManagerMapper.selectRemoteCmds(taskId);
+        if (StringUtils.isBlank(json)) {
+            return Collections.emptyList();
+        }
+        return JSON.parseArray(json, RemoteCmdExportVO.class);
+    }
+
+    @Override
+    public List<OrbitPlanExportVO> getOrbitPlans(Long taskId) {
+        if (taskId == null) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        String json = tcTaskManagerMapper.selectOrbitPlans(taskId);
+        if (StringUtils.isBlank(json)) {
+            return Collections.emptyList();
+        }
+        return JSON.parseArray(json, OrbitPlanExportVO.class);
     }
 }

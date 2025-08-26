@@ -43,7 +43,7 @@ DDL 详见ddl.md。
 * **tc\_task**
   task\_code, task\_name, task\_requirement(<=255), template\_id(string，必填)
   need\_imaging, imaging\_area(JSON|null), result\_display\_needed
-  satellites(JSON 二级结构), remote\_cmds(JSON), orbit\_plans(JSON)
+  satellites(JSON 二级结构，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remote\_cmds(JSON), orbit\_plans(JSON)
   status：0运行中 / 1结束 / 2异常结束 / 3取消
 
 * **tc\_task\_node\_inst**
@@ -71,9 +71,9 @@ DDL 详见ddl.md。
 
 **入参（JSON）**
 
-taskName\*, taskRequirement, templateId\*,
+taskName\*, taskRequirement\*, templateId\*,
 needImaging(0/1), imagingArea(JSON|null), resultDisplayNeeded(0/1),
-satellites(JSON), remoteCmds(JSON), orbitPlans(JSON)。
+satellites(JSON，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remoteCmds(List<RemoteCmdExportVO>), orbitPlans(List<OrbitPlanExportVO>)。
 
 **事务流程（伪代码）**
 
@@ -184,7 +184,7 @@ TODO：当管理员判定规则明确后，在 tab=all 的入口做权限校验�
   "taskName": "应急成像-京津冀",
   "taskCode": "T2025-0001",
   "template": { "templateId": "TPL-0004", "templateName": "应急成像模板" },
-  "satellites": [{"group":"三体星座","satIds":[1,2]}],
+  "satellites": [{"group":"三体星座","satIds":["1","2"]}],
   "createTime": "2025-08-01 10:20:30",
   "status": 0,
   "currentNodes": [
@@ -644,9 +644,9 @@ COMMIT;
 Body(JSON)：
 
 ```
-taskName*, taskRequirement, templateId*,
+taskName*, taskRequirement*, templateId*,
 needImaging(0|1), imagingArea, resultDisplayNeeded(0|1),
-satellites, remoteCmds, orbitPlans
+satellites(JSON，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remoteCmds(List<RemoteCmdExportVO>), orbitPlans(List<OrbitPlanExportVO>)
 ```
 
 Resp：`{ id }`（needImaging=1 时 imagingArea 必填）
@@ -669,6 +669,12 @@ Resp：`{ success: true }`
 
 任务详情 `GET /task/detail?taskId=...`
 Resp：任务主信息 + 当前激活节点ID集合（可选）
+
+查询遥控指令单 `GET /task/remoteCmds?taskId=...`
+Resp：`[RemoteCmdExportVO]`
+
+查询轨道计划 `GET /task/orbitPlans?taskId=...`
+Resp：`[OrbitPlanExportVO]`
 
 列表（三个 Tab）
 
