@@ -124,6 +124,14 @@ public class TcTaskManagerController {
         return Result.ok(taskManagerService.getOrbitPlans(taskId));
     }
 
+    @GetMapping("/orbitPlans/realtime")
+    @ApiOperationSupport(order = 11)
+    @ApiOperation(value = "查询实时轨道计划", notes = "调用测运控接口实时获取轨道计划")
+    public Result<List<OrbitPlanExportVO>> getOrbitPlansRealtime(@RequestParam Long taskId) {
+        // TODO 调用测运控接口实时计算轨道计划
+        return Result.ok(taskManagerService.getRealtimeOrbitPlans(taskId));
+    }
+
     @GetMapping("/nodeFlows")
     @ApiOperationSupport(order = 6)
     @ApiOperation(value = "查询模板节点流", notes = "根据模板ID获取节点流列表")
