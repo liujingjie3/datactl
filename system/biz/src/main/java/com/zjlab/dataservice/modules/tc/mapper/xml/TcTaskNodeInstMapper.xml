@@ -167,6 +167,9 @@
                ninfo.name AS nodeName,
                ni.order_no AS orderNo,
                ni.status AS status,
+               ni.prev_node_ids AS prevNodeIdsJson,
+               ni.next_node_ids AS nextNodeIdsJson,
+               ni.handler_role_ids AS handlerRoleIds,
                ni.started_at AS startedAt,
                ni.completed_at AS completedAt,
                ni.completed_by AS completedBy
