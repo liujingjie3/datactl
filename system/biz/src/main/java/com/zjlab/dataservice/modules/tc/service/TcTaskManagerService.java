@@ -85,4 +85,12 @@ public interface TcTaskManagerService {
      * @return 轨道计划列表
      */
     List<OrbitPlanExportVO> getOrbitPlans(Long taskId);
+
+    /**
+     * 实时查询轨道计划
+     *
+     * @param taskId 任务ID
+     * @return 轨道计划列表
+     */
+    List<OrbitPlanExportVO> getRealtimeOrbitPlans(Long taskId);
 }
