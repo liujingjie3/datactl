@@ -1,5 +1,7 @@
 package com.zjlab.dataservice.modules.tc.model.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,6 +21,12 @@ public class TaskNodeVO implements Serializable {
     private Integer orderNo;
     /** 节点状态 */
     private Integer status;
+    /** 前驱节点 */
+    private List<Long> prevNodeIds;
+    /** 后继节点 */
+    private List<Long> nextNodeIds;
+    /** 处理角色 */
+    private List<NodeRoleDto> roles;
     /** 开始时间 */
     private LocalDateTime startedAt;
     /** 完成时间 */
@@ -33,4 +41,11 @@ public class TaskNodeVO implements Serializable {
     private String operatorName;
     /** 操作日志 */
     private List<TaskNodeActionVO> actionLogs;
+
+    @JsonIgnore
+    private String handlerRoleIds;
+    @JsonIgnore
+    private String prevNodeIdsJson;
+    @JsonIgnore
+    private String nextNodeIdsJson;
 }

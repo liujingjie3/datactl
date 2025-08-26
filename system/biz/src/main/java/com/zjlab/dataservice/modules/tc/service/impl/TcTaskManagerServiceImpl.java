@@ -26,8 +26,11 @@ import com.zjlab.dataservice.modules.tc.model.vo.CurrentNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeActionVO;
-import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO; // internal DTO
+import com.zjlab.dataservice.modules.tc.model.vo.TaskHistoryNodeVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskWorkflowNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
+import com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow;
 import com.zjlab.dataservice.modules.tc.model.vo.SatelliteGroupVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
@@ -45,13 +48,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -238,7 +242,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     vo.setSatellites(JSON.parseArray(vo.getSatellitesJson(), SatelliteGroupVO.class));
                 }
             }
-            // 4.1 查询每个任务的当前节点信息
+            // 4.1 查询每个任务的当前节点及其角色信息
             List<Long> taskIds = vos.stream().map(TaskManagerListItemVO::getTaskId).collect(Collectors.toList());
             List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(taskIds);
             Map<Long, Map<Long, CurrentNodeVO>> taskNodeMap = new HashMap<>();
@@ -443,7 +447,22 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         // 2. 查询并返回节点流信息
         // todo 这里的最大时长是从tc_template_node表里拿的，后续看模板任务怎么设计再改
-        return tcTaskManagerMapper.selectTemplateNodeFlows(templateId);
+        List<TemplateNodeFlowRow> rows = tcTaskManagerMapper.selectTemplateNodeFlows(templateId);
+        List<TemplateNodeFlowVO> result = new ArrayList<>();
+        for (TemplateNodeFlowRow row : rows) {
+            TemplateNodeFlowVO vo = new TemplateNodeFlowVO();
+            vo.setNodeName(row.getNodeName());
+            vo.setNodeDescription(row.getNodeDescription());
+            if (StringUtils.isNotBlank(row.getHandlerRealName())) {
+                vo.setHandlerRealName(Arrays.asList(row.getHandlerRealName().split(",")));
+            } else {
+                vo.setHandlerRealName(new ArrayList<>());
+            }
+            vo.setMaxDuration(row.getMaxDuration());
+            vo.setOrderNo(row.getOrderNo());
+            result.add(vo);
+        }
+        return result;
     }
 
     /**
@@ -562,79 +581,90 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             detail.setSatellites(JSON.parseArray(detail.getSatellitesJson(), SatelliteGroupVO.class));
         }
 
-        // 3. 查询当前节点及其角色信息
+        // 3. 查询当前节点信息
         List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(Collections.singletonList(taskId));
-        Map<Long, CurrentNodeVO> nodeMap = new LinkedHashMap<>();
-        Set<String> roleIds = new HashSet<>();
+        List<CurrentNodeVO> currentNodes = new ArrayList<>();
         for (CurrentNodeRow row : rows) {
-            // 按节点实例聚合角色列表
-            CurrentNodeVO cn = nodeMap.computeIfAbsent(row.getNodeInstId(), k -> {
-                CurrentNodeVO v = new CurrentNodeVO();
-                v.setNodeInstId(row.getNodeInstId());
-                v.setNodeName(row.getNodeName());
-                v.setRoles(new ArrayList<>());
-                return v;
-            });
-            if (StringUtils.isNotBlank(row.getHandlerRoleIds())) {
-                List<String> ids = JSON.parseArray(row.getHandlerRoleIds(), String.class);
-                if (ids != null) {
-                    for (String rid : ids) {
-                        NodeRoleDto role = new NodeRoleDto();
-                        role.setRoleId(rid);
-                        cn.getRoles().add(role);
-                        roleIds.add(rid);
-                    }
-                }
-            }
+            CurrentNodeVO cn = new CurrentNodeVO();
+            cn.setNodeInstId(row.getNodeInstId());
+            cn.setNodeName(row.getNodeName());
+            currentNodes.add(cn);
         }
-        if (!roleIds.isEmpty()) {
-            // 查询角色名称并填充到结果中
-            List<SysRole> roleList = sysRoleMapper.selectBatchIds(roleIds);
-            Map<String, String> roleNameMap = roleList.stream()
-                    .collect(Collectors.toMap(SysRole::getId, SysRole::getRoleName));
-            for (CurrentNodeVO cn : nodeMap.values()) {
-                for (NodeRoleDto role : cn.getRoles()) {
-                    String name = roleNameMap.get(role.getRoleId());
-                    if (name != null) {
-                        role.setRoleName(name);
-                    }
-                }
-            }
-        }
-        detail.setCurrentNodes(new ArrayList<>(nodeMap.values()));
+        detail.setCurrentNodes(currentNodes);
 
         // 4. 构建工作流概况和历史记录
         List<TaskNodeVO> insts = taskNodeInstMapper.selectNodeInstsByTaskId(taskId);
-        List<TaskNodeVO> overview = new ArrayList<>();
-        List<TaskNodeVO> history = new ArrayList<>();
-        Map<Long, TaskNodeVO> historyMap = new HashMap<>();
+        List<TaskWorkflowNodeVO> overview = new ArrayList<>();
+        List<TaskHistoryNodeVO> history = new ArrayList<>();
+        Map<Long, TaskHistoryNodeVO> historyMap = new HashMap<>();
+        Set<String> roleIds = new HashSet<>();
         for (TaskNodeVO inst : insts) {
             // 概况信息
-            TaskNodeVO ov = new TaskNodeVO();
+            TaskWorkflowNodeVO ov = new TaskWorkflowNodeVO();
             ov.setNodeInstId(inst.getNodeInstId());
             ov.setNodeName(inst.getNodeName());
             ov.setOrderNo(inst.getOrderNo());
             ov.setStatus(inst.getStatus());
+            if (StringUtils.isNotBlank(inst.getPrevNodeIdsJson())) {
+                ov.setPrevNodeIds(JSON.parseArray(inst.getPrevNodeIdsJson(), Long.class));
+            } else {
+                ov.setPrevNodeIds(new ArrayList<>());
+            }
+            if (StringUtils.isNotBlank(inst.getNextNodeIdsJson())) {
+                ov.setNextNodeIds(JSON.parseArray(inst.getNextNodeIdsJson(), Long.class));
+            } else {
+                ov.setNextNodeIds(new ArrayList<>());
+            }
             overview.add(ov);
 
-            // 历史信息，仅记录已办理过的节点
+            // 历史信息，包含已办理和当前节点
             if (inst.getStatus() != null && inst.getStatus() != 0) {
-                TaskNodeVO hv = new TaskNodeVO();
+                TaskHistoryNodeVO hv = new TaskHistoryNodeVO();
                 hv.setNodeInstId(inst.getNodeInstId());
                 hv.setNodeName(inst.getNodeName());
                 hv.setOrderNo(inst.getOrderNo());
                 hv.setStatus(inst.getStatus());
-                hv.setProcessTime(inst.getCompletedAt() != null ? inst.getCompletedAt() : inst.getStartedAt());
-                hv.setOperatorId(inst.getCompletedBy());
-                if (StringUtils.isNotBlank(inst.getCompletedBy())) {
-                    SysUser user = sysUserService.getById(inst.getCompletedBy());
-                    if (user != null) {
-                        hv.setOperatorName(user.getRealname());
+                if (inst.getStatus() == 2) {
+                    hv.setProcessTime(inst.getCompletedAt());
+                    if (StringUtils.isNotBlank(inst.getCompletedBy())) {
+                        SysUser user = sysUserService.getById(inst.getCompletedBy());
+                        if (user != null) {
+                            hv.setOperatorName(user.getRealname());
+                        }
+                    }
+                } else {
+                    hv.setRoles(new ArrayList<>());
+                    if (StringUtils.isNotBlank(inst.getHandlerRoleIds())) {
+                        List<String> ids = JSON.parseArray(inst.getHandlerRoleIds(), String.class);
+                        if (ids != null) {
+                            for (String rid : ids) {
+                                NodeRoleDto role = new NodeRoleDto();
+                                role.setRoleId(rid);
+                                hv.getRoles().add(role);
+                                roleIds.add(rid);
+                            }
+                        }
                     }
                 }
                 hv.setActionLogs(new ArrayList<>());
                 history.add(hv);
                 historyMap.put(inst.getNodeInstId(), hv);
+            }
+        }
+
+        if (!roleIds.isEmpty()) {
+            List<SysRole> roleList = sysRoleMapper.selectBatchIds(roleIds);
+            Map<String, String> roleNameMap = roleList.stream()
+                    .collect(Collectors.toMap(SysRole::getId, SysRole::getRoleName));
+            for (TaskHistoryNodeVO hv : history) {
+                if (hv.getRoles() != null) {
+                    for (NodeRoleDto r : hv.getRoles()) {
+                        String name = roleNameMap.get(r.getRoleId());
+                        if (name != null) {
+                            r.setRoleName(name);
+                        }
+                    }
+                }
             }
         }
 
@@ -664,7 +694,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 if (StringUtils.isNotBlank(r.getCreateBy())) {
                     av.setOperatorName(userNameMap.get(r.getCreateBy()));
                 }
-                TaskNodeVO hv = historyMap.get(r.getNodeInstId());
+                TaskHistoryNodeVO hv = historyMap.get(r.getNodeInstId());
                 if (hv != null) {
                     hv.getActionLogs().add(av);
                 }

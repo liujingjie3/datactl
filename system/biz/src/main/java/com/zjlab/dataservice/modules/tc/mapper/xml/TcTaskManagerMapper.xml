@@ -203,12 +203,13 @@
         SELECT orbit_plans FROM tc_task WHERE id = #{taskId} AND del_flag = 0
     </select>
 
-    <select id="selectTemplateNodeFlows" resultType="com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO">
+    <select id="selectTemplateNodeFlows" resultType="com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow">
         SELECT
             ni.name AS nodeName,
             ni.description AS nodeDescription,
             GROUP_CONCAT(DISTINCT su.realname ORDER BY su.realname) AS handlerRealName,
-            ttn.max_duration AS maxDuration
+            ttn.max_duration AS maxDuration,
+            ttn.order_no AS orderNo
         FROM tc_task_template_node ttn
         JOIN tc_node_info ni ON ni.id = ttn.node_id
         LEFT JOIN tc_node_role_rel nrr ON nrr.node_id = ttn.node_id AND nrr.del_flag = 0
