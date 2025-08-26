@@ -58,4 +58,9 @@ public interface TcTaskManagerMapper {
     /** 更新任务状态为异常结束 */
     int updateTaskAbort(@Param("taskId") Long taskId, @Param("userId") String userId);
 
+    /** 查询遥控指令单JSON */
+    String selectRemoteCmds(@Param("taskId") Long taskId);
+
+    /** 查询轨道计划JSON */
+    String selectOrbitPlans(@Param("taskId") Long taskId);
 }

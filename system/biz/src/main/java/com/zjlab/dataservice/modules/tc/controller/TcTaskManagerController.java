@@ -110,6 +110,20 @@ public class TcTaskManagerController {
         return mv;
     }
 
+    @GetMapping("/remoteCmds")
+    @ApiOperationSupport(order = 9)
+    @ApiOperation(value = "查询遥控指令单", notes = "根据任务ID查询遥控指令单列表")
+    public Result<List<RemoteCmdExportVO>> getRemoteCmds(@RequestParam Long taskId) {
+        return Result.ok(taskManagerService.getRemoteCmds(taskId));
+    }
+
+    @GetMapping("/orbitPlans")
+    @ApiOperationSupport(order = 10)
+    @ApiOperation(value = "查询轨道计划", notes = "根据任务ID查询轨道计划列表")
+    public Result<List<OrbitPlanExportVO>> getOrbitPlans(@RequestParam Long taskId) {
+        return Result.ok(taskManagerService.getOrbitPlans(taskId));
+    }
+
     @GetMapping("/nodeFlows")
     @ApiOperationSupport(order = 6)
     @ApiOperation(value = "查询模板节点流", notes = "根据模板ID获取节点流列表")
