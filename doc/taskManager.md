@@ -157,12 +157,12 @@ COMMIT;
 #### 2.2.1 Tab & 访问控制
 
 Tab 值：
-- **all** — 所有任务（TODO：后续加管理员判定）
+- **all** — 所有任务，仅管理员可用
 - **startedByMe** — 发起的任务（创建人为我）
 - **todo** — 待办任务（我的办理项及参与任务，phase_status∈(0,1)）
 - **handled** — 已处理任务（我本人或我所属角色组有人处理过，phase_status∈(2,4,5)）
 
-TODO：当管理员判定规则明确后，在 tab=all 的入口做权限校验。
+管理员使用非 all 的 tab 将返回 `TASKMANAGE_ADMIN_ONLY_ALL`；非管理员请求 all 将返回 `TASKMANAGE_ONLY_ADMIN_ALL`。
 
 #### 2.2.2 统一筛选参数（全部可选）
 
@@ -676,11 +676,9 @@ Resp：`[RemoteCmdExportVO]`
 查询轨道计划 `GET /task/orbitPlans?taskId=...`
 Resp：`[OrbitPlanExportVO]`
 
-列表（三个 Tab）
+列表 `GET /task/list?tab=&page=&pageSize=`
 
-* 发起的：`GET /task/list/startedByMe?userId&page&pageSize`
-* 待办： `GET /task/list/todo?userId&page&pageSize`
-* 已处理：`GET /task/list/handledByMyGroup?userId&page&pageSize`
+说明：统一接口，通过 `tab` 参数区分四种列表。管理员仅允许 `tab=all`，请求其他值返回 `TASKMANAGE_ADMIN_ONLY_ALL`；非管理员请求 `tab=all` 返回 `TASKMANAGE_ONLY_ADMIN_ALL`。
 
 Resp（统一分页）：`{ list: [...], total: number }`
 
@@ -744,20 +742,25 @@ ORDER BY r.create_time DESC;
 
 ## 5. 错误码与校验
 
-* **400 PARAM\_INVALID**：JSON 非法、必填缺失
-* **403 NO\_PERMISSION**：提交者不在实例 handler\_role\_ids 对应角色集合中
-* **404 NOT\_FOUND**：任务/节点不存在
-* **409 TASK\_CANNOT\_CANCEL**：已有节点完成，不能取消
-* **403 TASKMANAGE\_NO\_PERMISSION**：只有发起人或管理员可以编辑或取消任务
-* **400 TASKMANAGE\_IMAGING\_AREA\_REQUIRED**：成像区域不能为空
-* **409 NODE\_NOT\_PROCESSING**：节点不是处理中，不能提交
-* **500 INTERNAL\_ERROR**
+* **501 PARA_ERROR**：参数错误
+* **131000 USERID_IS_NULL**：用户ID为空
+* **200002 TASK_IS_NOT_EXISTS**：待办任务不存在
+* **210001 TASKMANAGE_ADMIN_ONLY_ALL**：管理员只能查看所有任务
+* **210002 TASKMANAGE_ONLY_ADMIN_ALL**：只有管理员可以查看所有任务
+* **210003 TASKMANAGE_CANNOT_CANCEL**：已有节点完成，不能取消
+* **210004 TASKMANAGE_NO_PERMISSION**：只有发起人或管理员可以编辑或取消任务
+* **210005 TASKMANAGE_CANNOT_EDIT**：已有节点处理，不能编辑
+* **210006 TASKMANAGE_IMAGING_AREA_REQUIRED**：成像区域不能为空
+* **200004 INSTANCE_IS_NOT_EXISTS**：实例对象不存在
+* **122000 STATUS_INVALID**：传入状态不合法
+* **510 SC_JEECG_NO_AUTHZ**：访问权限认证未通过
 
 **校验点：**
 
-* 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填；satellites/remote\_cmds/orbit\_plans 均 JSON\_VALID=1。
-* 提交：权限校验基于实例 handler\_role\_ids。
-* 取消：无 status=2 的节点且仅发起人或管理员可操作。
+* 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填。
+* 列表：管理员只能查询 `tab=all`，非管理员禁止 `tab=all`。
+* 提交：节点必须处理中且提交者属于实例 handler_role_ids。
+* 取消/编辑：任务 status=0 且无节点完成，且仅发起人或管理员可操作。
 
 ---
 
@@ -769,28 +772,3 @@ ORDER BY r.create_time DESC;
 
 ---
 
-## 7. 开发清单（codeX 任务拆分）
-
-**DAO**：TaskDao / TaskNodeInstDao / TaskWorkItemDao / TaskActionRecordDao / TemplateNodeDao
-
-**Service**：
-
-* TaskService.createTask(dto)（§2.1）
-* TaskService.cancel(taskId, uid)（§2.6）
-* TaskService.listTabs(userId, type, page, size)（§2.2）
-* NodeService.submitAction(dto)（§2.3）
-
-**校验器**：JSON 校验、实例角色权限校验
-
-  **Scheduler**：超时提醒扫描（§2.8）
-
-**API**：按 §3 暴露
-
-**测试**：
-
-* 起点激活与待办生成
-* 合流（多前驱）激活
-* 节点完成推进后继 & 任务完结
-* 取消约束
-* 附件解析
-* 同一 node\_id 在模板多次出现（模板节点ID连边）
