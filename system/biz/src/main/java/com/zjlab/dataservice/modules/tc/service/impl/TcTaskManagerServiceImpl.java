@@ -732,7 +732,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     }
 
     @Override
-    public List<OrbitPlanExportVO> getRealtimeOrbitPlans(Long taskId) {
+    public List<OrbitPlanExportVO> getRealtimeOrbitPlans() {
         // TODO 调用测运控接口实时计算轨道计划
         return Collections.emptyList();
     }
