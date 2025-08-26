@@ -1,5 +1,6 @@
 package com.zjlab.dataservice.modules.tc.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
@@ -43,12 +44,8 @@ public class TcTemplateController {
     @ApiOperationSupport(order = 2)
     @ApiOperation(value = "详情", notes = "传入todoTemplateQueryVO")
     public Result<TodoTemplate> detail(@PathVariable Long id) {
-        try {
-            TodoTemplate todoTemplate = tcTemplateService.getDetail(id);
-            return Result.ok(todoTemplate);
-        } catch (Exception e) {
-            return Result.error("查询失败: " + e.getMessage());
-        }
+        TodoTemplate todoTemplate = tcTemplateService.getDetail(id);
+        return Result.ok(todoTemplate);
     }
 
     /**
@@ -58,28 +55,23 @@ public class TcTemplateController {
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "新增或修改", notes = "传入templateVO")
     public Result<TodoTemplateDto> save(@RequestParam(value = "file", required = false) MultipartFile file,
-                                        @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
-        try {
-            TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
-            TodoTemplateDto todoTemplate = tcTemplateService.submit(file, dto);
-            return Result.OK("新增模版成功", todoTemplate);
-        } catch (Exception e) {
-            return Result.error("新增模版失败: " + e.getMessage());
-        }
+                                        @RequestPart("todoTemplateDto") String todoTemplateDtoJson) throws Exception {
+
+        TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
+        TodoTemplateDto todoTemplate = tcTemplateService.submit(file, dto);
+        return Result.OK("新增模版成功", todoTemplate);
+
     }
 
     @PostMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 4)
     @ApiOperation(value = "新增或修改", notes = "传入templateVO")
     public Result<TodoTemplateDto> update(@RequestParam(value = "file", required = false) MultipartFile file,
-                                          @RequestPart("todoTemplateDto") String todoTemplateDtoJson) {
-        try {
-            TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
-            TodoTemplateDto todoTemplate = tcTemplateService.update(file, dto);
-            return Result.OK("新增模版成功", todoTemplate);
-        } catch (Exception e) {
-            return Result.error("新增模版失败: " + e.getMessage());
-        }
+                                          @RequestPart("todoTemplateDto") String todoTemplateDtoJson) throws Exception {
+
+        TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
+        TodoTemplateDto todoTemplate = tcTemplateService.update(file, dto);
+        return Result.OK("新增模版成功", todoTemplate);
     }
 
 
@@ -93,6 +85,7 @@ public class TcTemplateController {
         tcTemplateService.deleteById(id);
         return Result.ok();
     }
+
     /**
      * 发布
      */
@@ -111,13 +104,8 @@ public class TcTemplateController {
     @ApiOperationSupport(order = 9)
     @ApiOperation(value = "统计")
     public Result<TemplateCountVO> count() {
-        try {
-            TemplateCountVO templateCountVO = tcTemplateService.getCount();
-            return Result.ok(templateCountVO);
-        } catch (Exception e) {
-            return Result.error("查询失败: " + e.getMessage());
-        }
+        TemplateCountVO templateCountVO = tcTemplateService.getCount();
+        return Result.ok(templateCountVO);
     }
-
 }
 

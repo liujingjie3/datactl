@@ -45,16 +45,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @Service
 @Slf4j
-public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoTemplate> implements
-        TcTemplateService {
+public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoTemplate> implements TcTemplateService {
 
     @Autowired
     private ISysBaseAPI userService;  // 注入 UserService
 
     @Autowired
     private TodoTemplateMapper todoTemplateMapper;
-//    @Resource
-//    private TcCommandMapper tcCommandMapper;
 
     @Resource
     private MinioFileServiceImpl minioFileService;
@@ -71,11 +68,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         //模糊搜索
         QueryWrapper<TodoTemplate> wrapper = new QueryWrapper<>();
         if (StringUtils.isNotBlank(queryListDto.getKeyword())) {
-            wrapper.lambda().and(w -> w
-                    .like(TodoTemplate::getTemplateName, queryListDto.getKeyword())
-                    .or()
-                    .like(TodoTemplate::getRemark, queryListDto.getKeyword())
-            );
+            wrapper.lambda().and(w -> w.like(TodoTemplate::getTemplateName, queryListDto.getKeyword()).or().like(TodoTemplate::getRemark, queryListDto.getKeyword()));
         }
         // 查询数据
         IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto);
@@ -86,12 +79,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         }
 
         List<TemplateQueryListVO> collect = listRecords.stream().map(TodoTemplate -> {
-            TemplateQueryListVO templateQueryListVo = TemplateQueryListVO.builder()
-                    .id(TodoTemplate.getId())
-                    .flag(TodoTemplate.getFlag())
-                    .templateName(TodoTemplate.getTemplateName())
-                    .updateTime(TodoTemplate.getUpdateTime())
-                    .build();
+            TemplateQueryListVO templateQueryListVo = TemplateQueryListVO.builder().id(TodoTemplate.getId()).flag(TodoTemplate.getFlag()).templateName(TodoTemplate.getTemplateName()).updateTime(TodoTemplate.getUpdateTime()).build();
 
             //todo 节点数量统计
             String createBy = TodoTemplate.getCreateBy();
@@ -225,9 +213,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         if (Func.isNotBlank(todoTemplateQueryVO.getTemplateCode())) {
             queryWrapper.eq("code", todoTemplateQueryVO.getTemplateCode());
         }
-        queryWrapper.eq("del_flag", 0)
-                .orderByDesc("id")
-                .last("limit 1");
+        queryWrapper.eq("del_flag", 0).orderByDesc("id").last("limit 1");
         TodoTemplate todoTemplate = baseMapper.selectOne(queryWrapper);
         if (Func.isNull(todoTemplate)) {
             return null;
@@ -254,8 +240,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
             for (String code : templateCodes) {
                 QueryWrapper<TodoTemplate> queryWrapper = new QueryWrapper<>();
-                queryWrapper.eq("code", code).orderByDesc("id")
-                        .last("limit 1");
+                queryWrapper.eq("code", code).orderByDesc("id").last("limit 1");
                 TodoTemplate todoTemplate = baseMapper.selectOne(queryWrapper);
                 if (Func.notNull(todoTemplate)) {
                     todoTemplate.setDelFlag(true);
@@ -286,8 +271,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         if (Func.notNull(templateId)) {
             queryWrapper.eq("template_id", templateId);
         }
-        queryWrapper.eq("code", templateQueryVO.getTemplateCode()).orderByDesc("id")
-                .last("limit 1");
+        queryWrapper.eq("code", templateQueryVO.getTemplateCode()).orderByDesc("id").last("limit 1");
         TodoTemplate todoTemplate = baseMapper.selectOne(queryWrapper);
         if (Func.notNull(todoTemplate)) {
 
@@ -370,17 +354,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Override
     public TemplateCountVO getCount() {
+        String userId = UserThreadLocal.getUserId();
+
         // === 模板数量统计 ===
-        long totalCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>()
-                .eq("del_flag", false));
-
-        long publishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>()
-                .eq("del_flag", false)
-                .eq("flag", 1));
-
-        long unpublishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>()
-                .eq("del_flag", false)
-                .eq("flag", 0));
+        long totalCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>().eq("del_flag", false).eq("create_by", userId));
+        long publishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>().eq("del_flag", false).eq("flag", 1).eq("create_by", userId));
+        long unpublishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>().eq("del_flag", false).eq("flag", 0).eq("create_by", userId));
         return new TemplateCountVO(totalCount, publishedCount, unpublishedCount);
     }
 
