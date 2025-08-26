@@ -7,7 +7,8 @@ import java.io.Serializable;
 /** 模板节点流查询行数据 */
 @Data
 public class TemplateNodeFlowRow implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 8219827587153519739L;
     /** 节点名称 */
     private String nodeName;
     /** 节点描述 */

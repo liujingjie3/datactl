@@ -10,7 +10,8 @@ import java.util.List;
 /** 节点历史信息 */
 @Data
 public class TaskHistoryNodeVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = -6904767033716008113L;
     /** 节点实例ID */
     private Long nodeInstId;
     /** 节点名称 */

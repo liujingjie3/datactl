@@ -8,7 +8,8 @@ import java.util.List;
 /** 工作流节点展示信息 */
 @Data
 public class TaskWorkflowNodeVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 3019261426232449059L;
     /** 节点实例ID */
     private Long nodeInstId;
     /** 节点名称 */
