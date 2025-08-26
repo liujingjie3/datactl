@@ -64,14 +64,9 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         // 参数校验
         checkParam(queryListDto);
         IPage<TodoTemplate> page = new Page<>(queryListDto.getPageNo(), queryListDto.getPageSize());
-
-        //模糊搜索
-        QueryWrapper<TodoTemplate> wrapper = new QueryWrapper<>();
-        if (StringUtils.isNotBlank(queryListDto.getKeyword())) {
-            wrapper.lambda().and(w -> w.like(TodoTemplate::getTemplateName, queryListDto.getKeyword()).or().like(TodoTemplate::getRemark, queryListDto.getKeyword()));
-        }
+        String userId = UserThreadLocal.getUserId(); // 获取当前用户ID
         // 查询数据
-        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto);
+        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto,userId);
 
         List<TodoTemplate> listRecords = resultPage.getRecords();
         if (CollectionUtils.isEmpty(listRecords)) {
@@ -139,16 +134,10 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         }
         LoginUser user = userService.getUserById(userId);
         String templateId;
-
         // 新增
         templateId = Func.randomUUID();
         template.setTemplateId(templateId);
-        template.setCreateTime(LocalDateTime.now());
-        template.setUpdateTime(LocalDateTime.now());
-        if (Func.notNull(user)) {
-            template.setCreateBy(userId);
-            template.setUpdateBy(userId);
-        }
+        template.initBase(true, userId);
         log.info("before insert template info: {}", template);
 
         if (file != null && !file.isEmpty()) {
@@ -321,13 +310,13 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Override
     public TodoTemplate getDetail(Long id) {
-        TodoTemplate todoTemplate = todoTemplateMapper.selectById(id);
+        TodoTemplate todoTemplate = todoTemplateMapper.selectTodoTemplateDetail(id);
         return todoTemplate;
     }
 
     @Override
     public void deleteById(Long id) {
-        TodoTemplate todoTemplate = todoTemplateMapper.selectById(id);
+        TodoTemplate todoTemplate = todoTemplateMapper.selectTodoTemplateDetail(id);
         LocalDateTime now = LocalDateTime.now();
         String userId = UserThreadLocal.getUserId();
 
@@ -342,7 +331,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Override
     public void publish(Long id) {
-        TodoTemplate todoTemplate = todoTemplateMapper.selectById(id);
+        TodoTemplate todoTemplate = todoTemplateMapper.selectTodoTemplateDetail(id);
         if (todoTemplate != null) {
             Integer currentFlag = todoTemplate.getFlag();
             // 如果为0则改为1，如果为1则改为0

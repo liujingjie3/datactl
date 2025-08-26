@@ -1,7 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper">
-
+    <resultMap id="TodoTemplateResultMap" type="com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="templateId" column="template_id"/>
+        <result property="templateType" column="template_type"/>
+        <result property="templateName" column="template_name"/>
+        <result property="flag" column="flag"/>
+        <result property="remark" column="remark"/>
+        <!-- 这里用 JacksonTypeHandler -->
+        <result property="templateAttr" column="template_attr"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="agentId" column="agent_id"/>
+        <result property="ext" column="ext"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="filePath" column="file_path"/>
+    </resultMap>
     <select id="selectTodoTemplatePage" resultType="com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate">
         SELECT
         id,
@@ -23,10 +42,13 @@
         tc_todo_template
         WHERE
         del_flag = 0
-        <if test="request.templateName != null and request.templateName != ''">
-            AND template_name LIKE CONCAT('%', #{request.templateName}, '%')
+        <if test="userId != null and userId != ''">
+            AND create_by = #{userId}
         </if>
-
+        <if test="request.keyword != null and request.keyword != ''">
+            AND (template_name LIKE CONCAT('%', #{request.keyword}, '%')
+            OR remark LIKE CONCAT('%', #{request.keyword}, '%'))
+        </if>
         <choose>
             <when test="request.orderByField != null and request.orderByField != ''">
                 ORDER BY
@@ -121,5 +143,12 @@
         WHERE id = #{id}
     </update>
 
+    <select id="selectTodoTemplateDetail"
+            parameterType="long"
+            resultMap="TodoTemplateResultMap">
+        SELECT * FROM tc_todo_template
+        WHERE del_flag = 0
+          AND id = #{id}
+    </select>
 
 </mapper>

@@ -1,5 +1,6 @@
 package com.zjlab.dataservice.modules.tc.model.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zjlab.dataservice.common.system.base.entity.BasePo;
@@ -12,7 +13,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 @Data
-@TableName("tc_todo_template")
+@TableName(value = "tc_todo_template", autoResultMap = true)
 @ApiModel(value = "TodoTemplate对象", description = "实例模板信息表")
 public class TodoTemplate extends BasePo implements Serializable {
 
@@ -52,6 +53,7 @@ public class TodoTemplate extends BasePo implements Serializable {
      * 模板属性
      */
     @ApiModelProperty(value = "模板属性")
+    @TableField(value = "template_attr", typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
     private Map<String, Object> templateAttr;
     /**
      * 客户端标识

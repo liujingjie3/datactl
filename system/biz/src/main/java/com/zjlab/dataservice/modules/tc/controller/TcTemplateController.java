@@ -32,7 +32,10 @@ public class TcTemplateController {
     @PostMapping("/list")
     @ApiOperationSupport(order = 1)
     @ApiOperation(value = "分页", notes = "传入basePage")
-    public Result<PageResult<TemplateQueryListVO>> page(@Valid @RequestBody QueryListDto basePage) {
+    public Result<PageResult<TemplateQueryListVO>> page(@RequestBody(required = false) QueryListDto basePage) {
+        if (basePage == null) {
+            basePage = new QueryListDto(); // 赋一个默认对象
+        }
         PageResult<TemplateQueryListVO> result = tcTemplateService.qryTemplateList(basePage);
         return Result.ok(result);
     }
