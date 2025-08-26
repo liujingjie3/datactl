@@ -2,7 +2,9 @@ package com.zjlab.dataservice.modules.tc.model.dto;
 
 import lombok.Data;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
 
 import com.zjlab.dataservice.modules.tc.model.vo.SatelliteGroupVO;
@@ -22,10 +24,16 @@ public class TaskManagerCreateDto extends TaskManagerBaseDto {
     @NotBlank(message = "templateId不能为空")
     private String templateId;
     /** 执行卫星分组 */
+    @NotEmpty(message = "satellites不能为空")
+    @Valid
     private List<SatelliteGroupVO> satellites;
     /** 遥控指令单 */
+    @NotEmpty(message = "remoteCmds不能为空")
+    @Valid
     private List<RemoteCmdExportVO> remoteCmds;
     /** 轨道计划 */
+    @NotEmpty(message = "orbitPlans不能为空")
+    @Valid
     private List<OrbitPlanExportVO> orbitPlans;
 
     /** 执行卫星分组JSON */
