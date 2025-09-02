@@ -10,4 +10,9 @@ public class QueryListDto extends PageRequest {
     @ApiModelProperty(value = "搜索关键词")
     private String keyword;
 
+    @ApiModelProperty(value = "模版状态")
+    private Integer flag;
+
+
+
 }

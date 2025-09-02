@@ -9,7 +9,9 @@ public enum ToolBoxStatus {
     FAIL(6, "失败"),
     DELETE(7, "已删除"),
     WAITING(8, "等待中"),
-    STOP(9, "已停止");
+    STOP(9, "已停止"),
+
+    CANCEL(10, "已取消");
 
     private int code;
     private String description;

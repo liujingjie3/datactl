@@ -5,29 +5,36 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.constant.enums.ResultCode;
 import com.zjlab.dataservice.common.exception.BaseException;
+import com.zjlab.dataservice.common.system.api.ISysBaseAPI;
 import com.zjlab.dataservice.common.system.vo.LoginUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.common.util.Func;
+import com.zjlab.dataservice.common.util.storage.MinioUtil;
 import com.zjlab.dataservice.modules.storage.service.impl.MinioFileServiceImpl;
+import com.zjlab.dataservice.modules.system.mapper.SysUserRoleMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TcCommand;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
+import com.zjlab.dataservice.modules.tc.model.vo.CommandVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.zjlab.dataservice.common.system.api.ISysBaseAPI;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -35,13 +42,10 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @Service
 @Slf4j
@@ -53,11 +57,16 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Autowired
     private TodoTemplateMapper todoTemplateMapper;
 
+    @Autowired
+    private SysUserRoleMapper sysUserRoleMapper;
+
     @Resource
     private MinioFileServiceImpl minioFileService;
 
     private static final String BUCKET_NAME = "dspp";
     private static final String FOLDER_NAME = "/TJEOS/WORKDIR/FILE/command";
+    private static final String adminRoleId = "f6817f48af4fb3af11b9e8bf182f618b";
+
 
     @Override
     public PageResult<TemplateQueryListVO> qryTemplateList(QueryListDto queryListDto) {
@@ -65,8 +74,10 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         checkParam(queryListDto);
         IPage<TodoTemplate> page = new Page<>(queryListDto.getPageNo(), queryListDto.getPageSize());
         String userId = UserThreadLocal.getUserId(); // 获取当前用户ID
-        // 查询数据
-        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto,userId);
+        List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
+        boolean isAdmin = roles.contains(adminRoleId);
+
+        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto, userId, isAdmin);
 
         List<TodoTemplate> listRecords = resultPage.getRecords();
         if (CollectionUtils.isEmpty(listRecords)) {
@@ -74,7 +85,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         }
 
         List<TemplateQueryListVO> collect = listRecords.stream().map(TodoTemplate -> {
-            TemplateQueryListVO templateQueryListVo = TemplateQueryListVO.builder().id(TodoTemplate.getId()).flag(TodoTemplate.getFlag()).templateName(TodoTemplate.getTemplateName()).updateTime(TodoTemplate.getUpdateTime()).build();
+            TemplateQueryListVO templateQueryListVo = TemplateQueryListVO.builder().id(TodoTemplate.getId()).templateId(TodoTemplate.getTemplateId()).flag(TodoTemplate.getFlag()).templateName(TodoTemplate.getTemplateName()).updateTime(TodoTemplate.getUpdateTime()).remark(TodoTemplate.getRemark()).build();
 
             //todo 节点数量统计
             String createBy = TodoTemplate.getCreateBy();
@@ -85,6 +96,10 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
                     templateQueryListVo.setUserName(user.getRealname()); // 这里假设 LoginUser 有 getUsername()
                 }
             }
+            String filePath = TodoTemplate.getFilePath();
+            templateQueryListVo.setFileCount(StringUtils.isNotBlank(filePath) ? 1 : 0);
+            templateQueryListVo.setNodeCount(0);
+
             return templateQueryListVo;
         }).collect(Collectors.toList());
 
@@ -132,7 +147,6 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-        LoginUser user = userService.getUserById(userId);
         String templateId;
         // 新增
         templateId = Func.randomUUID();
@@ -151,17 +165,8 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
 
     @Override
     public TodoTemplateDto update(MultipartFile file, TodoTemplateDto todoTemplateDto) throws Exception {
-
-        TodoTemplate query = new TodoTemplate();
-        query.setId(todoTemplateDto.getId());
-        TodoTemplate existing = baseMapper.selectOneByTemplate(query);
-
-        TodoTemplate template = new TodoTemplate();
-        BeanUtil.copyProperties(todoTemplateDto, template);
-        template.setTemplateAttr(todoTemplateDto.getAttrs());
-
+        TodoTemplate existing = baseMapper.selectTodoTemplateDetail(Long.valueOf(todoTemplateDto.getId()));
         BeanUtil.copyProperties(todoTemplateDto, existing); // 用新值覆盖旧值
-        existing.setTemplateAttr(template.getTemplateAttr());
         existing.setUpdateTime(LocalDateTime.now());
 
         String userId = UserThreadLocal.getUserId();
@@ -174,12 +179,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             existing.setUpdateBy(userId);
         }
         if (file != null && !file.isEmpty()) {
-            if (file != null && !file.isEmpty()) {
-                String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, FOLDER_NAME);
-                template.setFilePath(objectName);
+            if (existing.getFilePath() != null) {
+                existing.setFilePathOld(existing.getFilePath());
             }
+            String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, FOLDER_NAME);
+            existing.setFilePath(objectName);
         }
-
         log.info("before update template info: {}", existing);
         todoTemplateMapper.updateTodoTemplate(existing);
         return todoTemplateDto;
@@ -241,7 +246,6 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
                     templates.add(todoTemplate);
                 }
             }
-
             updateBatchById(templates);
         }
         return templateQueryVO;
@@ -344,12 +348,47 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Override
     public TemplateCountVO getCount() {
         String userId = UserThreadLocal.getUserId();
+        List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
+        QueryWrapper<TodoTemplate> baseWrapper = new QueryWrapper<TodoTemplate>().eq("del_flag", false);
+        // 如果不是管理员，按用户过滤
+        // 如果用户角色ID中不包含指定管理员角色ID，则按用户过滤
+        if (!roles.contains(adminRoleId)) {
+            baseWrapper.eq("create_by", userId);
+        }
 
-        // === 模板数量统计 ===
-        long totalCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>().eq("del_flag", false).eq("create_by", userId));
-        long publishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>().eq("del_flag", false).eq("flag", 1).eq("create_by", userId));
-        long unpublishedCount = baseMapper.selectCount(new QueryWrapper<TodoTemplate>().eq("del_flag", false).eq("flag", 0).eq("create_by", userId));
+        long totalCount = baseMapper.selectCount(baseWrapper);
+        long publishedCount = baseMapper.selectCount(baseWrapper.eq("flag", 1));
+        long unpublishedCount = baseMapper.selectCount(baseWrapper.eq("flag", 0));
+
         return new TemplateCountVO(totalCount, publishedCount, unpublishedCount);
+
+    }
+
+    @Override
+    public List<CommandVO> parse(Long id) throws Exception {
+        TodoTemplate todoTemplate = todoTemplateMapper.selectTodoTemplateDetail(id);
+        String filePath = todoTemplate.getFilePath();
+        List<CommandVO> list = new ArrayList<>();
+
+        try (InputStream is = MinioUtil.getObject(BUCKET_NAME, filePath)) {
+            Workbook workbook = new XSSFWorkbook(is);
+            Sheet sheet = workbook.getSheetAt(0);
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) { // 从第2行开始
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+//                if (row.getCell(0) == null) continue;
+                CommandVO cmd = new CommandVO();
+                cmd.setId(i);
+                cmd.setCode(row.getCell(0).getStringCellValue());
+                cmd.setName(row.getCell(1).getStringCellValue());
+                cmd.setTimeOrder(row.getCell(2).getStringCellValue());
+                cmd.setExecution(row.getCell(3).getStringCellValue());
+                cmd.setDescription(row.getCell(4).getStringCellValue());
+                list.add(cmd);
+            }
+        }
+        return list;
+
     }
 
     // 封装分页结果

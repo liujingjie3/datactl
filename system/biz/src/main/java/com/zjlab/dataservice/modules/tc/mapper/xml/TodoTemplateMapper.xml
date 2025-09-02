@@ -37,17 +37,24 @@
         create_by,
         create_time,
         update_by,
-        update_time
+        update_time,
+        file_path
         FROM
         tc_todo_template
         WHERE
         del_flag = 0
-        <if test="userId != null and userId != ''">
+
+        <!-- 非特殊用户才限制 create_by -->
+        <if test="!isAdmin">
             AND create_by = #{userId}
         </if>
         <if test="request.keyword != null and request.keyword != ''">
             AND (template_name LIKE CONCAT('%', #{request.keyword}, '%')
             OR remark LIKE CONCAT('%', #{request.keyword}, '%'))
+        </if>
+        <!-- 模版状态过滤 -->
+        <if test="request.flag != null">
+            AND flag = #{request.flag}
         </if>
         <choose>
             <when test="request.orderByField != null and request.orderByField != ''">
@@ -139,7 +146,8 @@
             update_by = #{updateBy},
             update_time = #{updateTime},
             ext = #{ext},
-            file_path = #{filePath}
+            file_path = #{filePath},
+            file_path_old = #{filePathOld}
         WHERE id = #{id}
     </update>
 

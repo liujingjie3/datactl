@@ -69,6 +69,7 @@ public enum ResultCode {
     START_TASK_FAIL(150003, "执行任务失败"),
     DUPLICATE_TEMPLATE_NAME(150004, "模板名重复"),
     QUERY_TEMPLATE_FAIL(150005, "模板未找到"),
+    QUERY_TASK_FAIL(150006, "taskId为空"),
 
     // 任务中心
     TASK_IS_EXISTS(200001, "待办任务已存在"),

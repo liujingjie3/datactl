@@ -74,6 +74,9 @@ public class TodoTemplate extends BasePo implements Serializable {
     @ApiModelProperty(value = "文件路径1")
     private String filePath;
 
+    @ApiModelProperty(value = "修改前的文件路径")
+    private String filePathOld;
+
     public String getAttrsJson() {
         try {
             return templateAttr == null ? "{}" : new ObjectMapper().writeValueAsString(templateAttr);

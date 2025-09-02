@@ -387,7 +387,6 @@ public class SystemApiController {
         return sysUserService.getUserRolesSet(username);
     }
 
-
     /**
      * 查询用户权限信息
      * @param username

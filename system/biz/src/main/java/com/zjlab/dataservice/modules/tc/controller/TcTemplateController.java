@@ -9,6 +9,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
+import com.zjlab.dataservice.modules.tc.model.vo.CommandVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping("/tc/template")
@@ -68,13 +70,13 @@ public class TcTemplateController {
 
     @PostMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 4)
-    @ApiOperation(value = "新增或修改", notes = "传入templateVO")
+    @ApiOperation(value = "修改", notes = "传入templateVO")
     public Result<TodoTemplateDto> update(@RequestParam(value = "file", required = false) MultipartFile file,
                                           @RequestPart("todoTemplateDto") String todoTemplateDtoJson) throws Exception {
 
         TodoTemplateDto dto = new ObjectMapper().readValue(todoTemplateDtoJson, TodoTemplateDto.class);
         TodoTemplateDto todoTemplate = tcTemplateService.update(file, dto);
-        return Result.OK("新增模版成功", todoTemplate);
+        return Result.OK("修改模版成功", todoTemplate);
     }
 
 
@@ -109,6 +111,13 @@ public class TcTemplateController {
     public Result<TemplateCountVO> count() {
         TemplateCountVO templateCountVO = tcTemplateService.getCount();
         return Result.ok(templateCountVO);
+    }
+
+    @GetMapping("/parse/{id}")
+    @ApiOperation(value = "解析指令单")
+    public Result<List<CommandVO>> parse(@PathVariable Long id) throws Exception {
+        List<CommandVO> commandVOList =tcTemplateService.parse(id);
+        return Result.ok(commandVOList);
     }
 }
 

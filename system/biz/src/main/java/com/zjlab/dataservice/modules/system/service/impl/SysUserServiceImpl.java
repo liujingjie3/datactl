@@ -334,6 +334,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         return new HashSet<>(roles);
     }
 
+    @Override
+    public Set<String> getUserRolesSetByUserId(String userId) {
+        // 查询用户拥有的角色集合
+        List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
+        log.info("-------通过数据库读取用户拥有的角色Rules------username： " + userId + ",Roles size: " + (roles == null ? 0 : roles.size()));
+        return new HashSet<>(roles);
+    }
     /**
      * 通过用户名获取用户权限集合
      *

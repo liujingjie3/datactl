@@ -50,13 +50,26 @@ public class TaskJobHandler {
             if (nearestTask != null) {
                 String data = nearestTask.getData();
                 String[] dataList = data.split(",");
-                String dataName = dataList[0];
-                String userId = nearestTask.getUserId();
-                String taskId = nearestTask.getTaskId();
-
-                String url = String.format("http://10.107.104.17:8088/dspp/tbx/workflow/gf2flow?file_name=%s&user_id=%s&task_id=%s", dataName, userId, taskId);
-                JSONObject postResult = RestUtil.get(url);
-                log.info("[XXL JOB]start task: " + postResult);
+                String execId = nearestTask.getExecId();
+                String url = "";
+                switch (execId){
+                    case "ROAD_EXTRACT":
+                        url = "10.15.41.122:31004/process";
+                        JSONObject params = new JSONObject();
+                        params.put("input_path", "/nfs/home/QYL/Programs/RoadCorrect-main/datas/GF2_PMS2_E112.9_N28.1_20231017_L1A13396461001-pansharpen.tiff");
+                        params.put("output_path", "/nfs/home/QYL/Programs/RoadCorrect-main/data");
+                        JSONObject roadExtractResponse = RestUtil.post(url, params);
+                        log.info("[XXL JOB]start task: " + roadExtractResponse);
+                        break;
+                    // 默认是预处理方法
+                    default:
+                        String dataName = dataList[0];
+                        String userId = nearestTask.getUserId();
+                        String taskId = nearestTask.getTaskId();
+                        url = String.format("http://10.107.104.17:8088/dspp/tbx/workflow/gf2flow?file_name=%s&user_id=%s&task_id=%s", dataName, userId, taskId);
+                        JSONObject postResult = RestUtil.get(url);
+                        log.info("[XXL JOB]start task: " + postResult);
+                }
             }
         } catch (Exception e) {
             return ReturnT.FAIL;

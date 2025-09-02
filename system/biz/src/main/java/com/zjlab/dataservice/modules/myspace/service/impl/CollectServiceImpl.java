@@ -287,39 +287,47 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, CollectPo> im
     @Transactional(rollbackFor = Exception.class)
     @DS("postgre")
     public void addCollectImage(CollectImageAddDto addDto) {
-        Integer imageId = addDto.getImageId();
+        String imageIds = addDto.getImageId();
         String userId = checkUserIdExist();
 
-        //检查是否已收藏
-        QueryWrapper<CollectPo> wrapper = new QueryWrapper<>();
-        wrapper.lambda().eq(CollectPo::getUserId, userId)
-                .eq(CollectPo::getImageId, imageId)
-                .eq(CollectPo::getDelFlag, 0);
-        CollectPo exist = baseMapper.selectOne(wrapper);
-        if (exist != null) {
-            throw new BaseException(ResultCode.IMAGE_ALREADY_COLLECTED);
-        }
+        for (String imageId: imageIds.split(",")) {
+            String imgId = imageId.trim();
+            Integer intImgId = Integer.valueOf(imgId);
+            //检查是否已收藏
+            QueryWrapper<CollectPo> wrapper = new QueryWrapper<>();
+            wrapper.lambda().eq(CollectPo::getUserId, userId)
+                    .eq(CollectPo::getImageId, intImgId)
+                    .eq(CollectPo::getDelFlag, 0);
+            CollectPo exist = baseMapper.selectOne(wrapper);
+            // 已收藏的影像，跳过循环
+            if (exist != null) {
+//                throw new BaseException(ResultCode.IMAGE_ALREADY_COLLECTED);
+                log.info("the image has been collected already: " + imgId);
+                continue;
+            }
 
-        //查询收藏影像的信息
-        MetadataGfPo metadataGfPo = metadataGfMapper.selectById(imageId);
-        //入库
-        CollectPo collectPo = new CollectPo();
-        collectPo.setUserId(userId)
-                .setFileName(metadataGfPo.getFileName())
-                .setFileSize(metadataGfPo.getFileSize())
-                .setPath(addDto.getPath() + "/" + metadataGfPo.getFileName())
-                .setParentPath(addDto.getPath())
-                .setIsDir(0)
-                .setImageId(imageId)
-                .setImageType(ImageTypeEnum.GF2.getType())
-                .setApplyStatus(ImageApplyStatusEnum.UNAPPLY.getStatus())
-                .setThumbUrl(metadataGfPo.getThumbFileLocation())
-                .setImageGsd(metadataGfPo.getImageGsd());
-        collectPo.initBase(true, userId);
+            //查询收藏影像的信息
+            MetadataGfPo metadataGfPo = metadataGfMapper.selectById(intImgId);
+            //入库
+            CollectPo collectPo = new CollectPo();
+            collectPo.setUserId(userId)
+                    .setFileName(metadataGfPo.getFileName())
+                    .setFileSize(metadataGfPo.getFileSize())
+                    .setPath(addDto.getPath() + "/" + metadataGfPo.getFileName())
+                    .setParentPath(addDto.getPath())
+                    .setIsDir(0)
+                    .setImageId(intImgId)
+                    // todo: 为什么强制塞GF2？？？
+                    .setImageType(ImageTypeEnum.GF2.getType())
+                    .setApplyStatus(ImageApplyStatusEnum.UNAPPLY.getStatus())
+                    .setThumbUrl(metadataGfPo.getThumbFileLocation())
+                    .setImageGsd(metadataGfPo.getImageGsd());
+            collectPo.initBase(true, userId);
 
-        int num = baseMapper.insert(collectPo);
-        if (num <= 0) {
-            throw new BaseException(ResultCode.SQL_UPDATE_ERROR);
+            int num = baseMapper.insert(collectPo);
+            if (num <= 0) {
+                throw new BaseException(ResultCode.SQL_UPDATE_ERROR);
+            }
         }
         //事务不依赖spring代理：
         // 1、解决同一个事务查询两类数据库Transactional注解，默认查询主库，不查询pg问题

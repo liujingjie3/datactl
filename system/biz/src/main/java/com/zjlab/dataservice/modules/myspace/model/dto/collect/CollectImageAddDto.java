@@ -9,7 +9,7 @@ public class CollectImageAddDto {
 
     //影像id
     @NotNull(message = "影像id不可为空")
-    private Integer imageId;
+    private String imageId;
 
     private String path = "/default";
 }

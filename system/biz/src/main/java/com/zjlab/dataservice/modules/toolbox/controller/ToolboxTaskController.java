@@ -42,8 +42,12 @@ public class ToolboxTaskController {
 
     @PostMapping("queryTask")
     public Result<TaskVo> queryTask(@RequestBody(required = false) @Valid TaskDto taskDto) {
-        TaskVo taskVo = toolboxTaskService.queryTask(taskDto.getTaskId());
-        return Result.ok(taskVo);
+        if (taskDto.getTaskId() == null) {
+            return Result.error(ResultCode.QUERY_TASK_FAIL.getCode(), ResultCode.QUERY_TASK_FAIL.getMessage());
+        } else {
+            TaskVo taskVo = toolboxTaskService.queryTask(taskDto.getTaskId());
+            return Result.ok(taskVo);
+        }
     }
 
     @PostMapping("delete")

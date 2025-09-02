@@ -71,14 +71,14 @@ spring:
   #            threadPriority: 5
   #            threadsInheritContextClassLoaderOfInitializingThread: true
 
-  kafka:
-    bootstrap-servers: 10.107.104.53:9092,10.107.104.54:9092,10.107.104.55:9092
-    consumer:
-      # 配置消费者消息offset是否自动重置(消费者重连会能够接收最开始的消息)
-      auto-offset-reset: earliest
-    producer:
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      retries: 3  #  重试次数
+#  kafka:
+#    bootstrap-servers: 10.107.104.53:9092,10.107.104.54:9092,10.107.104.55:9092
+#    consumer:
+#      # 配置消费者消息offset是否自动重置(消费者重连会能够接收最开始的消息)
+#      auto-offset-reset: earliest
+#    producer:
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#      retries: 3  #  重试次数
 
   #json 时间戳统一转换
   jackson:
@@ -385,6 +385,4 @@ url:
     cyk: http://10.107.104.48:32293/base/api/v1.0/cxxq
 #  cyk: http://10.5.2.3:28000/base/api/v1.0/cxxq
 
-kafka:
-  topic:
-    my-topic: tj-scs-instantaneous-elements
+

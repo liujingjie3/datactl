@@ -6,9 +6,12 @@ import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
+import com.zjlab.dataservice.modules.tc.model.vo.CommandVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface TcTemplateService  extends IService<TodoTemplate> {
 
@@ -65,4 +68,6 @@ public interface TcTemplateService  extends IService<TodoTemplate> {
     void publish(Long id);
 
     TemplateCountVO getCount();
+
+    List<CommandVO> parse(Long id) throws Exception;
 }

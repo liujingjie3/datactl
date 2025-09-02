@@ -22,12 +22,6 @@ public class TodoTemplateDto implements Serializable{
     private  Integer id;
 
     /**
-     *模板id
-     */
-    @ApiModelProperty(value = "模板id")
-    private String templateId;
-
-    /**
      * 模板名称
      */
     @NotEmpty
@@ -39,7 +33,6 @@ public class TodoTemplateDto implements Serializable{
      */
     @ApiModelProperty(value = "模板属性")
     @JsonProperty("attrs")
-//    private Map<String, Object> attrs;
     private Map<String, Object> attrs;
 
 

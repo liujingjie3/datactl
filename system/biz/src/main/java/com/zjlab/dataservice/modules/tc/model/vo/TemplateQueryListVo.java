@@ -18,11 +18,19 @@ public class TemplateQueryListVO extends PageRequest implements Serializable{
     @ApiModelProperty(value = "id")
     private Integer id;
 
+    private String templateId;
+
     @ApiModelProperty(value = "模板名称")
     private String templateName;
 
+    @ApiModelProperty(value = "备注")
+    private String remark;
+
     @ApiModelProperty(value = "状态，0：未发布，1：已发布")
     private Integer flag;
+
+    @ApiModelProperty(value = "文件数量")
+    private Integer fileCount;
 
     @ApiModelProperty(value = "模板类型")
     private Integer nodeCount;
