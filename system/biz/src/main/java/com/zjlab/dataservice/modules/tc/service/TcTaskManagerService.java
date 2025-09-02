@@ -10,6 +10,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
 
 import java.util.List;
 
@@ -92,4 +93,18 @@ public interface TcTaskManagerService {
      * @return 轨道计划列表
      */
     List<OrbitPlanExportVO> getRealtimeOrbitPlans();
+
+    /**
+     * 统计任务数量
+     *
+     * @return 任务数量统计
+     */
+    TaskCountVO countTasks();
+
+    /**
+     * 获取当前登录用户真实姓名
+     *
+     * @return 真实姓名，获取失败返回空字符串
+     */
+    String getCurrentUserRealName();
 }

@@ -203,6 +203,13 @@
         SELECT orbit_plans FROM tc_task WHERE id = #{taskId} AND del_flag = 0
     </select>
 
+    <select id="countTaskByStatus" resultType="com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto">
+        SELECT status, COUNT(1) AS count
+        FROM tc_task
+        WHERE del_flag = 0
+        GROUP BY status
+    </select>
+
     <select id="selectTemplateNodeFlows" resultType="com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow">
         SELECT
             ni.name AS nodeName,

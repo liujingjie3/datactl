@@ -18,6 +18,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TemplateNode;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
@@ -34,8 +35,10 @@ import com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow;
 import com.zjlab.dataservice.modules.tc.model.vo.SatelliteGroupVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
+import com.zjlab.dataservice.modules.tc.enums.TaskManagerStatusEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.service.ISysUserService;
@@ -735,5 +738,45 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
     public List<OrbitPlanExportVO> getRealtimeOrbitPlans() {
         // TODO 调用测运控接口实时计算轨道计划
         return Collections.emptyList();
+    }
+
+    @Override
+    public TaskCountVO countTasks() {
+        List<TaskStatusCountDto> list = tcTaskManagerMapper.countTaskByStatus();
+        long running = 0L;
+        long completed = 0L;
+        long canceled = 0L;
+        if (list != null) {
+            for (TaskStatusCountDto dto : list) {
+                if (dto == null || dto.getStatus() == null) {
+                    continue;
+                }
+                if (dto.getStatus() == TaskManagerStatusEnum.RUNNING.getCode()) {
+                    running += dto.getCount();
+                } else if (dto.getStatus() == TaskManagerStatusEnum.CANCELED.getCode()) {
+                    canceled += dto.getCount();
+                } else if (dto.getStatus() == TaskManagerStatusEnum.FINISHED.getCode()
+                        || dto.getStatus() == TaskManagerStatusEnum.ABNORMAL_END.getCode()) {
+                    completed += dto.getCount();
+                }
+            }
+        }
+        long total = running + completed + canceled;
+        TaskCountVO vo = new TaskCountVO();
+        vo.setTotal(total);
+        vo.setRunning(running);
+        vo.setCompleted(completed);
+        vo.setCanceled(canceled);
+        return vo;
+    }
+
+    @Override
+    public String getCurrentUserRealName() {
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            return "";
+        }
+        SysUser user = sysUserService.getById(userId);
+        return user != null ? user.getRealname() : "";
     }
 }

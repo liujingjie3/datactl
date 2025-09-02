@@ -7,6 +7,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -63,4 +64,7 @@ public interface TcTaskManagerMapper {
 
     /** 查询轨道计划JSON */
     String selectOrbitPlans(@Param("taskId") Long taskId);
+
+    /** 按状态统计任务数量 */
+    List<TaskStatusCountDto> countTaskByStatus();
 }
