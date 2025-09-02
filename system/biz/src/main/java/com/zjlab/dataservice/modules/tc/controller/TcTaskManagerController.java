@@ -12,6 +12,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -27,8 +28,6 @@ import org.springframework.web.servlet.ModelAndView;
 import org.jeecgframework.poi.excel.entity.ExportParams;
 import org.jeecgframework.poi.excel.def.NormalExcelConstants;
 import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
-import com.zjlab.dataservice.common.system.vo.LoginUser;
-import org.apache.shiro.SecurityUtils;
 
 import java.util.List;
 
@@ -87,11 +86,10 @@ public class TcTaskManagerController {
     @ApiOperation(value = "导出遥控指令单", notes = "导出前端传来的遥控指令单")
     public ModelAndView exportRemoteCmds(@RequestBody List<RemoteCmdExportVO> list) {
         ModelAndView mv = new ModelAndView(new JeecgEntityExcelView());
-        LoginUser user = (LoginUser) SecurityUtils.getSubject().getPrincipal();
         mv.addObject(NormalExcelConstants.FILE_NAME, "遥控指令单");
         mv.addObject(NormalExcelConstants.CLASS, RemoteCmdExportVO.class);
         mv.addObject(NormalExcelConstants.PARAMS,
-                new ExportParams("遥控指令单", "导出人:" + user.getRealname(), "遥控指令单"));
+                new ExportParams("遥控指令单", "导出人:" + taskManagerService.getCurrentUserRealName(), "遥控指令单"));
         mv.addObject(NormalExcelConstants.DATA_LIST, list);
         return mv;
     }
@@ -101,11 +99,10 @@ public class TcTaskManagerController {
     @ApiOperation(value = "导出仿真轨道计划", notes = "导出前端传来的仿真轨道计划")
     public ModelAndView exportOrbitPlans(@RequestBody List<OrbitPlanExportVO> list) {
         ModelAndView mv = new ModelAndView(new JeecgEntityExcelView());
-        LoginUser user = (LoginUser) SecurityUtils.getSubject().getPrincipal();
         mv.addObject(NormalExcelConstants.FILE_NAME, "测运控仿真轨道计划");
         mv.addObject(NormalExcelConstants.CLASS, OrbitPlanExportVO.class);
         mv.addObject(NormalExcelConstants.PARAMS,
-                new ExportParams("测运控仿真轨道计划", "导出人:" + user.getRealname(), "轨道计划"));
+                new ExportParams("测运控仿真轨道计划", "导出人:" + taskManagerService.getCurrentUserRealName(), "轨道计划"));
         mv.addObject(NormalExcelConstants.DATA_LIST, list);
         return mv;
     }
@@ -146,5 +143,12 @@ public class TcTaskManagerController {
     public Result<Void> submitNodeAction(@RequestBody @Valid NodeActionSubmitDto dto) {
         taskManagerService.submitAction(dto);
         return Result.ok();
+    }
+
+    @GetMapping("/statistics")
+    @ApiOperationSupport(order = 12)
+    @ApiOperation(value = "任务统计", notes = "获取总任务数、运行中、已完成和已取消任务数")
+    public Result<TaskCountVO> statistics() {
+        return Result.ok(taskManagerService.countTasks());
     }
 }
