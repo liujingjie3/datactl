@@ -4,6 +4,7 @@ import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.constant.enums.ResultCode;
 import com.zjlab.dataservice.common.exception.BaseException;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
@@ -31,7 +32,6 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO; // internal DTO
 import com.zjlab.dataservice.modules.tc.model.vo.TaskHistoryNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskWorkflowNodeVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
-import com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow;
 import com.zjlab.dataservice.modules.tc.model.vo.SatelliteGroupVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
@@ -59,6 +59,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Queue;
+import java.util.LinkedList;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -138,12 +140,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         Long taskId = tcTaskManagerMapper.selectLastInsertId();
 
         // 4. 解析模板并初始化所有节点实例
-        //todo 这里template_attr的结构还要再讨论，是否还需要中间表格也还要考虑下
         String attr = tcTaskManagerMapper.selectTemplateAttr(dto.getTemplateId());
-        List<TemplateNode> nodes = new ArrayList<>();
-        if (StringUtils.isNotBlank(attr)) {
-            nodes = JSON.parseArray(attr, TemplateNode.class);
-        }
+        List<TemplateNode> nodes = parseTemplateNodes(attr);
         if (nodes.isEmpty()) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
@@ -454,21 +452,26 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (StringUtils.isBlank(templateId)) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
-        // 2. 查询并返回节点流信息
-        // todo 这里的最大时长是从tc_template_node表里拿的，后续看模板任务怎么设计再改
-        List<TemplateNodeFlowRow> rows = tcTaskManagerMapper.selectTemplateNodeFlows(templateId);
+        // 2. 解析模板并生成节点流信息
+        String attr = tcTaskManagerMapper.selectTemplateAttr(templateId);
+        List<TemplateNode> nodes = parseTemplateNodes(attr);
         List<TemplateNodeFlowVO> result = new ArrayList<>();
-        for (TemplateNodeFlowRow row : rows) {
+        for (TemplateNode n : nodes) {
             TemplateNodeFlowVO vo = new TemplateNodeFlowVO();
-            vo.setNodeName(row.getNodeName());
-            vo.setNodeDescription(row.getNodeDescription());
-            if (StringUtils.isNotBlank(row.getHandlerRealName())) {
-                vo.setHandlerRealName(Arrays.asList(row.getHandlerRealName().split(",")));
-            } else {
-                vo.setHandlerRealName(new ArrayList<>());
+            vo.setNodeName(n.getNodeName());
+            vo.setNodeDescription(n.getNodeDescription());
+            List<String> roleIds = n.getRoleIds();
+            List<String> handlerNames = new ArrayList<>();
+            if (roleIds != null && !roleIds.isEmpty()) {
+                List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+                if (userIds != null && !userIds.isEmpty()) {
+                    List<SysUser> users = sysUserService.listByIds(userIds);
+                    handlerNames = users.stream().map(SysUser::getRealname).collect(Collectors.toList());
+                }
             }
-            vo.setMaxDuration(row.getMaxDuration());
-            vo.setOrderNo(row.getOrderNo());
+            vo.setHandlerRealName(handlerNames);
+            vo.setMaxDuration(n.getMaxDuration());
+            vo.setOrderNo(n.getOrderNo());
             result.add(vo);
         }
         return result;
@@ -768,6 +771,97 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         vo.setCompleted(completed);
         vo.setCanceled(canceled);
         return vo;
+    }
+
+    /**
+     * 解析模板属性JSON，生成带有前驱/后继关系的节点列表
+     */
+    private List<TemplateNode> parseTemplateNodes(String attr) {
+        if (StringUtils.isBlank(attr)) {
+            return new ArrayList<>();
+        }
+        JSONObject obj = JSON.parseObject(attr);
+        JSONArray nodeArr = obj.getJSONArray("nodes");
+        JSONArray edgeArr = obj.getJSONArray("edges");
+
+        Map<String, TemplateNode> map = new LinkedHashMap<>();
+        if (nodeArr != null) {
+            for (int i = 0; i < nodeArr.size(); i++) {
+                JSONObject nodeObj = nodeArr.getJSONObject(i);
+                String key = nodeObj.getString("id");
+                JSONObject params = nodeObj.getJSONObject("properties");
+                if (params != null) {
+                    params = params.getJSONObject("nodeConfigParams");
+                }
+                if (params == null) {
+                    continue;
+                }
+                TemplateNode node = new TemplateNode();
+                node.setKey(key);
+                node.setNodeId(params.getLong("id"));
+                node.setNodeName(params.getString("name"));
+                node.setNodeDescription(params.getString("description"));
+                node.setMaxDuration(params.getInteger("expectedDuration"));
+                List<String> roleIds = new ArrayList<>();
+                JSONArray roles = params.getJSONArray("roles");
+                if (roles != null) {
+                    for (int j = 0; j < roles.size(); j++) {
+                        JSONObject r = roles.getJSONObject(j);
+                        roleIds.add(r.getString("roleId"));
+                    }
+                }
+                node.setRoleIds(roleIds);
+                node.setPrev(new ArrayList<>());
+                node.setNext(new ArrayList<>());
+                map.put(key, node);
+            }
+        }
+
+        if (edgeArr != null) {
+            for (int i = 0; i < edgeArr.size(); i++) {
+                JSONObject edge = edgeArr.getJSONObject(i);
+                String s = edge.getString("sourceNodeId");
+                String t = edge.getString("targetNodeId");
+                TemplateNode sn = map.get(s);
+                TemplateNode tn = map.get(t);
+                if (sn != null && tn != null) {
+                    sn.getNext().add(t);
+                    tn.getPrev().add(s);
+                }
+            }
+        }
+
+        // 计算层级序号
+        Map<String, Integer> indegree = new HashMap<>();
+        for (TemplateNode n : map.values()) {
+            indegree.put(n.getKey(), n.getPrev().size());
+        }
+        Queue<String> queue = new LinkedList<>();
+        for (Map.Entry<String, Integer> e : indegree.entrySet()) {
+            if (e.getValue() == 0) {
+                queue.offer(e.getKey());
+            }
+        }
+        int level = 0;
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i < size; i++) {
+                String k = queue.poll();
+                TemplateNode node = map.get(k);
+                if (node != null) {
+                    node.setOrderNo(level);
+                    for (String next : node.getNext()) {
+                        indegree.put(next, indegree.get(next) - 1);
+                        if (indegree.get(next) == 0) {
+                            queue.offer(next);
+                        }
+                    }
+                }
+            }
+            level++;
+        }
+
+        return new ArrayList<>(map.values());
     }
 
 }

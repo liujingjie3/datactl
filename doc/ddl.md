@@ -111,24 +111,7 @@ CREATE TABLE `tc_todo_template` (
 
 #### 5) 模板节点定义表 `tc_task_template_node`
 
-```sql
-CREATE TABLE `tc_task_template_node` (
-  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '模板节点记录ID',
-  `template_id` varchar(128) NOT NULL COMMENT '任务模板ID',
-  `node_id` BIGINT NOT NULL COMMENT '节点ID',
-  `order_no` INT COMMENT '层级序号',
-  `prev_keys` JSON COMMENT '前驱节点键数组',
-  `next_keys` JSON COMMENT '后继节点键数组',
-  `max_duration` INT COMMENT '最大时长（分钟）',
-  `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
-  `create_by` varchar(32) DEFAULT NULL COMMENT '创建人ID',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_by` varchar(32) DEFAULT NULL COMMENT '更新人ID',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CHECK (`prev_keys` IS NULL OR JSON_VALID(`prev_keys`)),
-  CHECK (`next_keys` IS NULL OR JSON_VALID(`next_keys`))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务模板-节点定义表';
-```
+> **已废弃**：模板节点信息现直接存储在 `tc_task_node_inst` 表中，`tc_task_template_node` 不再使用。
 
 ---
 
