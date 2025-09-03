@@ -777,6 +777,7 @@ ORDER BY r.create_time DESC;
 ---
 
 ## 7. 任务模板中的工作流信息，采用logicflow（参考https://site.logic-flow.cn/）的数据结构，该字段以json存在tc_todo_template的template_attr字段。
+template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 `nodes[].properties.nodeConfigParams`，节点定义ID存放在 `nodeConfigParams.id`。
 示例数据：
 {
   "nodes": [

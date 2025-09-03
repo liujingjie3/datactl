@@ -66,20 +66,32 @@ public class TcNodeServiceImpl implements TcNodeService {
             if (attr == null) {
                 continue;
             }
-            Object nodeConfigs = attr.get("nodeConfigParams");
-            if (nodeConfigs instanceof List) {
-                for (Object obj : (List<?>) nodeConfigs) {
-                    if (obj instanceof Map) {
-                        Object idObj = ((Map<?, ?>) obj).get("id");
-                        if (idObj != null) {
-                            try {
-                                long id = Long.parseLong(String.valueOf(idObj));
-                                if (id == nodeId) {
-                                    return true;
-                                }
-                            } catch (NumberFormatException ignore) {
-                            }
+            Object nodesObj = attr.get("nodes");
+            if (!(nodesObj instanceof List)) {
+                continue;
+            }
+            for (Object nodeObj : (List<?>) nodesObj) {
+                if (!(nodeObj instanceof Map)) {
+                    continue;
+                }
+                Map<?, ?> nodeMap = (Map<?, ?>) nodeObj;
+                Object propertiesObj = nodeMap.get("properties");
+                if (!(propertiesObj instanceof Map)) {
+                    continue;
+                }
+                Map<?, ?> propertiesMap = (Map<?, ?>) propertiesObj;
+                Object cfgObj = propertiesMap.get("nodeConfigParams");
+                if (!(cfgObj instanceof Map)) {
+                    continue;
+                }
+                Object idObj = ((Map<?, ?>) cfgObj).get("id");
+                if (idObj != null) {
+                    try {
+                        long id = Long.parseLong(String.valueOf(idObj));
+                        if (id == nodeId) {
+                            return true;
                         }
+                    } catch (NumberFormatException ignore) {
                     }
                 }
             }
