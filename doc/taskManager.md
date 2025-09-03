@@ -772,3 +772,630 @@ ORDER BY r.create_time DESC;
 
 ---
 
+## 7. 任务模板中的工作流信息，采用logicflow（参考https://site.logic-flow.cn/）的数据结构，该字段以json存在tc_todo_template的template_attr字段。
+示例数据：
+{
+  "nodes": [
+    {
+      "id": 3,
+      "type": "rect",
+      "x": 625,
+      "y": 84.66665649414062,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 3,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-11 14:50:24",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-22 17:58:37",
+          "name": "确认遥测状态3",
+          "description": "工作人员确认遥测状态3",
+          "expectedDuration": 5,
+          "timeoutRemind": 10,
+          "status": 1,
+          "roles": [
+            {
+              "roleId": "1",
+              "roleName": "总体组组长"
+            },
+            {
+              "roleId": "2",
+              "roleName": "总体组组员"
+            }
+          ],
+          "actions": [
+            {
+              "type": 0,
+              "name": "上传操作3",
+              "config": null
+            },
+            {
+              "type": 2,
+              "name": "决策操作3",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 625,
+        "y": 84.66665649414062,
+        "value": "确认遥测状态3"
+      }
+    },
+    {
+      "id": 1,
+      "type": "rect",
+      "x": 129,
+      "y": 85.66665649414062,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 1,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-08 16:54:16",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-22 17:58:37",
+          "name": "提交任务需求",
+          "description": "用户提交任务需求信息",
+          "expectedDuration": 15,
+          "timeoutRemind": 10,
+          "status": 1,
+          "roles": [
+            {
+              "roleId": "1",
+              "roleName": "总体组组长"
+            }
+          ],
+          "actions": [
+            {
+              "type": 0,
+              "name": "上传合同",
+              "config": null
+            },
+            {
+              "type": 2,
+              "name": "合同审批",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 129,
+        "y": 85.66665649414062,
+        "value": "提交任务需求"
+      }
+    },
+    {
+      "id": 5,
+      "type": "rect",
+      "x": 381,
+      "y": 276.6666564941406,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 5,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-11 15:17:38",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-22 17:58:37",
+          "name": "确认遥测状态5",
+          "description": "工作人员确认遥测状态6",
+          "expectedDuration": 5,
+          "timeoutRemind": 5,
+          "status": 1,
+          "roles": [
+            {
+              "roleId": "1",
+              "roleName": "总体组组长"
+            },
+            {
+              "roleId": "3",
+              "roleName": "测运控组长"
+            }
+          ],
+          "actions": [
+            {
+              "type": 0,
+              "name": "上传操作5",
+              "config": null
+            },
+            {
+              "type": 2,
+              "name": "决策操作5",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 381,
+        "y": 276.6666564941406,
+        "value": "确认遥测状态5"
+      }
+    },
+    {
+      "id": 7,
+      "type": "rect",
+      "x": 373,
+      "y": 84.66665649414062,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 7,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-19 10:43:34",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-22 17:58:37",
+          "name": "方案选择",
+          "description": "选择圈次计划",
+          "expectedDuration": 20,
+          "timeoutRemind": 10,
+          "status": 0,
+          "roles": [
+            {
+              "roleId": "3",
+              "roleName": "测运控组长"
+            }
+          ],
+          "actions": [
+            {
+              "type": 1,
+              "name": "选择圈次计划",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 373,
+        "y": 84.66665649414062,
+        "value": "方案选择"
+      }
+    },
+    {
+      "id": 9,
+      "type": "rect",
+      "x": 625.8333129882812,
+      "y": 282.6666564941406,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 9,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-21 13:45:51",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-22 17:58:37",
+          "name": "确认遥测状态4",
+          "description": "工作人员确认遥测状态4",
+          "expectedDuration": 4,
+          "timeoutRemind": 4,
+          "status": 0,
+          "roles": [
+            {
+              "roleId": "1",
+              "roleName": "总体组组长"
+            },
+            {
+              "roleId": "2",
+              "roleName": "总体组组员"
+            }
+          ],
+          "actions": [
+            {
+              "type": 0,
+              "name": "上传操作4",
+              "config": null
+            },
+            {
+              "type": 2,
+              "name": "决策操作4",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 625.8333129882812,
+        "y": 282.6666564941406,
+        "value": "确认遥测状态4"
+      }
+    },
+    {
+      "id": 10,
+      "type": "rect",
+      "x": 607.8333129882812,
+      "y": 509.6666564941406,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 10,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-26 15:37:03",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-26 15:37:03",
+          "name": "确认遥测状态7",
+          "description": "工作人员确认遥测状态7",
+          "expectedDuration": 4,
+          "timeoutRemind": 4,
+          "status": 1,
+          "roles": [
+            {
+              "roleId": "1",
+              "roleName": "总体组组长"
+            },
+            {
+              "roleId": "2",
+              "roleName": "总体组组员"
+            }
+          ],
+          "actions": [
+            {
+              "type": 0,
+              "name": "上传操作7",
+              "config": null
+            },
+            {
+              "type": 2,
+              "name": "决策操作7",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 607.8333129882812,
+        "y": 509.6666564941406,
+        "value": "确认遥测状态7"
+      }
+    },
+    {
+      "id": "a8b85181-183b-4b30-aef1-5ed37811ed00",
+      "type": "rect",
+      "x": 161.83331298828125,
+      "y": 261.6666564941406,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 7,
+          "creatorId": "1001",
+          "creatorName": "张三",
+          "createTime": "2025-08-19 10:43:34",
+          "updaterId": "1001",
+          "updaterName": "张三",
+          "updateTime": "2025-08-22 17:58:37",
+          "name": "方案选择",
+          "description": "选择圈次计划",
+          "expectedDuration": 20,
+          "timeoutRemind": 10,
+          "status": 0,
+          "roles": [
+            {
+              "roleId": "3",
+              "roleName": "测运控组长"
+            }
+          ],
+          "actions": [
+            {
+              "type": 1,
+              "name": "选择圈次计划",
+              "config": null
+            }
+          ]
+        }
+      },
+      "text": {
+        "x": 161.83331298828125,
+        "y": 261.6666564941406,
+        "value": "方案选择"
+      }
+    },
+    {
+      "id": 11,
+      "type": "rect",
+      "x": 236.83331298828125,
+      "y": 474.6666564941406,
+      "properties": {
+        "width": 160,
+        "height": 80,
+        "nodeConfigParams": {
+          "id": 11,
+          "creatorId": null,
+          "creatorName": null,
+          "createTime": "2025-08-26 16:07:15",
+          "updaterId": null,
+          "updaterName": null,
+          "updateTime": "2025-08-26 16:15:38",
+          "name": "4",
+          "description": "4",
+          "expectedDuration": 44,
+          "timeoutRemind": 1,
+          "status": 0,
+          "roles": [
+            {
+              "roleId": "1",
+              "roleName": "总体组组长"
+            }
+          ],
+          "actions": []
+        },
+        "name": "结束",
+        "description": ""
+      },
+      "text": {
+        "x": 236.83331298828125,
+        "y": 474.6666564941406,
+        "value": "结束"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "bf31608b-7e8c-4b1a-9755-0cbbdd010115",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 1,
+      "targetNodeId": 7,
+      "sourceAnchorId": "1_1",
+      "targetAnchorId": "7_3",
+      "startPoint": {
+        "x": 209,
+        "y": 85.66665649414062
+      },
+      "endPoint": {
+        "x": 293,
+        "y": 84.66665649414062
+      },
+      "pointsList": [
+        {
+          "x": 209,
+          "y": 85.66665649414062
+        },
+        {
+          "x": 251,
+          "y": 85.66665649414062
+        },
+        {
+          "x": 251,
+          "y": 84.66665649414062
+        },
+        {
+          "x": 293,
+          "y": 84.66665649414062
+        }
+      ]
+    },
+    {
+      "id": "bf055a64-e395-4f37-8749-4db72111b4a9",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 7,
+      "targetNodeId": 3,
+      "sourceAnchorId": "7_1",
+      "targetAnchorId": "3_3",
+      "startPoint": {
+        "x": 453,
+        "y": 84.66665649414062
+      },
+      "endPoint": {
+        "x": 545,
+        "y": 84.66665649414062
+      },
+      "pointsList": [
+        {
+          "x": 453,
+          "y": 84.66665649414062
+        },
+        {
+          "x": 545,
+          "y": 84.66665649414062
+        }
+      ]
+    },
+    {
+      "id": "3aa36153-9e70-4040-b2c1-8963b5523bd7",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 3,
+      "targetNodeId": 9,
+      "sourceAnchorId": "3_2",
+      "targetAnchorId": "9_0",
+      "startPoint": {
+        "x": 625,
+        "y": 124.66665649414062
+      },
+      "endPoint": {
+        "x": 625.8333129882812,
+        "y": 242.66665649414062
+      },
+      "pointsList": [
+        {
+          "x": 625,
+          "y": 124.66665649414062
+        },
+        {
+          "x": 625,
+          "y": 183.66665649414062
+        },
+        {
+          "x": 625.8333129882812,
+          "y": 183.66665649414062
+        },
+        {
+          "x": 625.8333129882812,
+          "y": 242.66665649414062
+        }
+      ]
+    },
+    {
+      "id": "c11a53d4-4fab-401a-abad-9fdec56f57cc",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 3,
+      "targetNodeId": 5,
+      "sourceAnchorId": "3_2",
+      "targetAnchorId": "5_0",
+      "startPoint": {
+        "x": 625,
+        "y": 124.66665649414062
+      },
+      "endPoint": {
+        "x": 381,
+        "y": 236.66665649414062
+      },
+      "pointsList": [
+        {
+          "x": 625,
+          "y": 124.66665649414062
+        },
+        {
+          "x": 625,
+          "y": 206.66665649414062
+        },
+        {
+          "x": 381,
+          "y": 206.66665649414062
+        },
+        {
+          "x": 381,
+          "y": 236.66665649414062
+        }
+      ]
+    },
+    {
+      "id": "3fcdcb48-b79c-4bd9-bdf7-876430ed97a5",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 5,
+      "targetNodeId": "a8b85181-183b-4b30-aef1-5ed37811ed00",
+      "sourceAnchorId": "5_3",
+      "targetAnchorId": "a8b85181-183b-4b30-aef1-5ed37811ed00_1",
+      "startPoint": {
+        "x": 301,
+        "y": 276.6666564941406
+      },
+      "endPoint": {
+        "x": 241.83331298828125,
+        "y": 261.6666564941406
+      },
+      "pointsList": [
+        {
+          "x": 301,
+          "y": 276.6666564941406
+        },
+        {
+          "x": 271,
+          "y": 276.6666564941406
+        },
+        {
+          "x": 271,
+          "y": 269.1666564941406
+        },
+        {
+          "x": 271.83331298828125,
+          "y": 269.1666564941406
+        },
+        {
+          "x": 271.83331298828125,
+          "y": 261.6666564941406
+        },
+        {
+          "x": 241.83331298828125,
+          "y": 261.6666564941406
+        }
+      ]
+    },
+    {
+      "id": "8f0c5f1b-ffcf-4b1c-9010-25fdbfef8dd7",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 9,
+      "targetNodeId": 10,
+      "sourceAnchorId": "9_2",
+      "targetAnchorId": "10_0",
+      "startPoint": {
+        "x": 625.8333129882812,
+        "y": 322.6666564941406
+      },
+      "endPoint": {
+        "x": 607.8333129882812,
+        "y": 469.6666564941406
+      },
+      "pointsList": [
+        {
+          "x": 625.8333129882812,
+          "y": 322.6666564941406
+        },
+        {
+          "x": 625.8333129882812,
+          "y": 396.1666564941406
+        },
+        {
+          "x": 607.8333129882812,
+          "y": 396.1666564941406
+        },
+        {
+          "x": 607.8333129882812,
+          "y": 469.6666564941406
+        }
+      ]
+    },
+    {
+      "id": "4906c2c4-66fe-42fa-a4a4-c5b4e2df75e3",
+      "type": "polyline",
+      "properties": {},
+      "sourceNodeId": 10,
+      "targetNodeId": 11,
+      "sourceAnchorId": "10_3",
+      "targetAnchorId": "11_1",
+      "startPoint": {
+        "x": 527.8333129882812,
+        "y": 509.6666564941406
+      },
+      "endPoint": {
+        "x": 316.83331298828125,
+        "y": 474.6666564941406
+      },
+      "pointsList": [
+        {
+          "x": 527.8333129882812,
+          "y": 509.6666564941406
+        },
+        {
+          "x": 422.33331298828125,
+          "y": 509.6666564941406
+        },
+        {
+          "x": 422.33331298828125,
+          "y": 474.6666564941406
+        },
+        {
+          "x": 316.83331298828125,
+          "y": 474.6666564941406
+        }
+      ]
+    }
+  ]
+}
+
