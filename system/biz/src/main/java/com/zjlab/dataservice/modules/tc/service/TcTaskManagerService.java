@@ -101,10 +101,4 @@ public interface TcTaskManagerService {
      */
     TaskCountVO countTasks();
 
-    /**
-     * 获取当前登录用户真实姓名
-     *
-     * @return 真实姓名，获取失败返回空字符串
-     */
-    String getCurrentUserRealName();
 }

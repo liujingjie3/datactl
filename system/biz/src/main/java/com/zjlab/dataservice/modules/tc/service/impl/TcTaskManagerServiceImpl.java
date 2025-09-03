@@ -770,13 +770,4 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         return vo;
     }
 
-    @Override
-    public String getCurrentUserRealName() {
-        String userId = UserThreadLocal.getUserId();
-        if (userId == null) {
-            return "";
-        }
-        SysUser user = sysUserService.getById(userId);
-        return user != null ? user.getRealname() : "";
-    }
 }
