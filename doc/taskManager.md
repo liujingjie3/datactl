@@ -487,10 +487,14 @@ COMMIT;
 #### 2.3.3 权限与校验
 
 1. 节点必须 `status=1`（处理中）。
-2. 操作人必须属于节点实例 `handler_role_ids` 对应角色：
+2. 操作人必须是当前节点工作项办理人（存在待办记录）：
 
    ```sql
-   EXISTS (SELECT 1 FROM sys_user_role ur WHERE ur.user_id=:uid AND JSON_CONTAINS(ni.handler_role_ids, CAST(ur.role_id AS JSON), '$'))
+   EXISTS (
+     SELECT 1 FROM tc_task_work_item wi
+     WHERE wi.task_id=:taskId AND wi.node_inst_id=:nodeInstId
+       AND wi.assignee_id=:uid AND wi.phase_status IN (0,1) AND wi.del_flag=0
+   )
    ```
 3. 幂等控制：完成节点时通过 `WHERE status=1` 避免重复。
 4. 所有更新必须带 `update_by=:uid`，保证审计。
@@ -649,7 +653,7 @@ needImaging(0|1), imagingArea, resultDisplayNeeded(0|1),
 satellites(JSON，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remoteCmds(List<RemoteCmdExportVO>), orbitPlans(List<OrbitPlanExportVO>)
 ```
 
-Resp：`{ id }`（needImaging=1 时 imagingArea 必填）
+Resp：`{ id }`（needImaging=1 时 imagingArea 必填；仅管理员或总体部成员〔角色ID为1或2，或角色名为“总体组组长”“总体组组员”〕可创建）
 
 取消任务 `POST /task/cancel?taskId=...`
 Resp：`{ success: true }`（仅发起人或管理员且尚无人完成节点时允许；不满足条件报 TASKMANAGE\_NO\_PERMISSION 或 TASKMANAGE\_CANNOT\_CANCEL）
@@ -662,7 +666,7 @@ taskId*, taskName, taskRequirement,
 needImaging(0|1), imagingArea, resultDisplayNeeded(0|1)
 ```
 
-Resp：`{ success: true }`（仅发起人或管理员且首节点未处理时允许；若 needImaging=0 将置空 imagingArea；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
+Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无节点已完成时允许；若 needImaging=0 将置空 imagingArea；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
 
 异常结束任务 `POST /task/abort?taskId=...`
 Resp：`{ success: true }`
@@ -692,7 +696,7 @@ taskId*, nodeInstId*, actionType* (0/1/2/3), actionPayload* (JSON)
 ```
 
 行为：按 §2.3 完成节点、推进后继、发放待办。
-Resp：`{ success: true }`
+Resp：`{ success: true }`（仅当前节点操作人可提交）
 
 节点操作记录 `GET /task/node/actions?nodeInstId=...`
 Resp：`[{ id, actionType, actionPayload, createBy, createTime }]`
@@ -759,8 +763,8 @@ ORDER BY r.create_time DESC;
 
 * 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填。
 * 列表：管理员只能查询 `tab=all`，非管理员禁止 `tab=all`。
-* 提交：节点必须处理中且提交者属于实例 handler_role_ids。
-* 取消/编辑：任务 status=0 且无节点完成，且仅发起人或管理员可操作。
+* 提交：节点必须处理中且提交者为该节点当前操作人（存在待办工作项）。
+* 取消/编辑：任务 status=0 且无节点已完成，且仅发起人或管理员可操作。
 
 ---
 

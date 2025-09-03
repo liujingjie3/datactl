@@ -34,5 +34,10 @@ public interface TcTaskWorkItemMapper {
     /** 异常结束任务工作项 */
     int updateWorkItemAbort(@Param("taskId") Long taskId,
                             @Param("userId") String userId);
+
+    /** 统计用户在节点的待处理工作项数量 */
+    Long countActiveWorkItem(@Param("taskId") Long taskId,
+                             @Param("nodeInstId") Long nodeInstId,
+                             @Param("assigneeId") String assigneeId);
 }
 

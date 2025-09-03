@@ -110,6 +110,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
+        // 管理员或总体部成员才能创建任务
+        boolean admin = sysUserService.isAdmin(userId);
+        boolean overall = sysUserService.isOverall(userId);
+        if (!admin && !overall) {
+            throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
+        }
         // 2. 校验是否需要成像以及成像区域
         if (dto.getNeedImaging() != null) {
             if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
@@ -324,8 +330,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-        boolean isAdmin = sysUserService.isAdmin(userId);
-        if (!isAdmin && !userId.equals(info.getCreateBy())) {
+        boolean admin = sysUserService.isAdmin(userId);
+        if (!admin && !userId.equals(info.getCreateBy())) {
             throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
         }
 
@@ -366,8 +372,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-        boolean isAdmin = sysUserService.isAdmin(userId);
-        if (!isAdmin && !userId.equals(info.getCreateBy())) {
+        boolean admin = sysUserService.isAdmin(userId);
+        if (!admin && !userId.equals(info.getCreateBy())) {
             throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
         }
 
@@ -485,8 +491,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
-
-        // 3. 权限校验：节点需在办理中，且当前用户必须属于处理角色
+        // 3. 权限校验：节点需在办理中，且当前用户必须为该节点的当前操作人
         Integer nodeStatus = taskNodeInstMapper.selectNodeInstStatus(dto.getNodeInstId());
         if (nodeStatus == null) {
             throw new BaseException(ResultCode.INSTANCE_IS_NOT_EXISTS);
@@ -494,13 +499,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (nodeStatus != 1) {
             throw new BaseException(ResultCode.STATUS_INVALID);
         }
-        String roleJson = taskNodeInstMapper.selectHandlerRoleIds(dto.getNodeInstId());
-        List<String> roleIds = JSON.parseArray(roleJson, String.class);
-        if (roleIds == null || roleIds.isEmpty()) {
-            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
-        }
-        List<String> permitted = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
-        if (permitted == null || !permitted.contains(userId)) {
+        Long cnt = taskWorkItemMapper.countActiveWorkItem(dto.getTaskId(), dto.getNodeInstId(), userId);
+        if (cnt == null || cnt == 0) {
             throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
         }
 

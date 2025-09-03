@@ -332,6 +332,13 @@ public interface ISysUserService extends IService<SysUser> {
          */
         boolean isAdmin(String userId);
 
+        /**
+         * 判断用户是否属于总体部
+         * @param userId 用户ID
+         * @return boolean 是否总体部成员
+         */
+        boolean isOverall(String userId);
+
     /**
      * 用户离职
      * @param username
