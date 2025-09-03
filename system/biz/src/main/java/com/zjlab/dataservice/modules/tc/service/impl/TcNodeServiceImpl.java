@@ -13,6 +13,7 @@ import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.entity.SysUser;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
+import com.zjlab.dataservice.modules.system.service.ISysUserService;
 import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
@@ -44,6 +45,8 @@ public class TcNodeServiceImpl implements TcNodeService {
     private SysUserMapper sysUserMapper;
     @Autowired
     private SysRoleMapper sysRoleMapper;
+    @Autowired
+    private ISysUserService sysUserService;
 
     /**
      * 统计节点数量。
@@ -164,6 +167,18 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
+        if (!sysUserService.isAdmin(userId)) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+        }
+        if (dto == null
+                || StringUtils.isBlank(dto.getName())
+                || dto.getStatus() == null
+                || dto.getRoles() == null
+                || dto.getRoles().isEmpty()
+                || dto.getExpectedDuration() == null || dto.getExpectedDuration() < 0
+                || dto.getTimeoutRemind() == null || dto.getTimeoutRemind() < 0) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
 
         // 2. 转换DTO为实体并补充通用字段
         NodeInfo node = new NodeInfo();
@@ -177,16 +192,14 @@ public class TcNodeServiceImpl implements TcNodeService {
         nodeInfoMapper.insert(node);
 
         // 3. 保存节点与角色的关联关系
-        if (dto.getRoles() != null) {
-            for (NodeRoleDto roleDto : dto.getRoles()) {
-                NodeRoleRel rel = new NodeRoleRel();
-                rel.setNodeId(node.getId());
-                rel.setRoleId(roleDto.getRoleId());
-                rel.setDelFlag(0);
-                rel.setCreateBy(userId);
-                rel.setUpdateBy(userId);
-                nodeRoleRelMapper.insert(rel);
-            }
+        for (NodeRoleDto roleDto : dto.getRoles()) {
+            NodeRoleRel rel = new NodeRoleRel();
+            rel.setNodeId(node.getId());
+            rel.setRoleId(roleDto.getRoleId());
+            rel.setDelFlag(0);
+            rel.setCreateBy(userId);
+            rel.setUpdateBy(userId);
+            nodeRoleRelMapper.insert(rel);
         }
 
         // 4. 返回新节点ID
@@ -207,6 +220,18 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (userId == null) {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
+        if (!sysUserService.isAdmin(userId)) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+        }
+        if (dto == null
+                || StringUtils.isBlank(dto.getName())
+                || dto.getStatus() == null
+                || dto.getRoles() == null
+                || dto.getRoles().isEmpty()
+                || dto.getExpectedDuration() == null || dto.getExpectedDuration() < 0
+                || dto.getTimeoutRemind() == null || dto.getTimeoutRemind() < 0) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
 
         // 2. 更新节点基本信息
         NodeInfo node = new NodeInfo();
@@ -221,20 +246,17 @@ public class TcNodeServiceImpl implements TcNodeService {
         // 3. 更新角色关系，只有在变更时才调整
         List<NodeRoleRel> existing = nodeRoleRelMapper.selectByNodeId(id);
         Set<String> oldIds = existing.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toSet());
-        Set<String> newIds = dto.getRoles() == null ? Collections.emptySet() :
-                dto.getRoles().stream().map(NodeRoleDto::getRoleId).collect(Collectors.toSet());
+        Set<String> newIds = dto.getRoles().stream().map(NodeRoleDto::getRoleId).collect(Collectors.toSet());
         if (!oldIds.equals(newIds)) {
             nodeRoleRelMapper.deleteByNodeId(id);
-            if (dto.getRoles() != null) {
-                for (NodeRoleDto roleDto : dto.getRoles()) {
-                    NodeRoleRel rel = new NodeRoleRel();
-                    rel.setNodeId(id);
-                    rel.setRoleId(roleDto.getRoleId());
-                    rel.setDelFlag(0);
-                    rel.setCreateBy(userId);
-                    rel.setUpdateBy(userId);
-                    nodeRoleRelMapper.insert(rel);
-                }
+            for (NodeRoleDto roleDto : dto.getRoles()) {
+                NodeRoleRel rel = new NodeRoleRel();
+                rel.setNodeId(id);
+                rel.setRoleId(roleDto.getRoleId());
+                rel.setDelFlag(0);
+                rel.setCreateBy(userId);
+                rel.setUpdateBy(userId);
+                nodeRoleRelMapper.insert(rel);
             }
         }
     }
@@ -247,6 +269,13 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public void updateStatus(Long id, Integer status) {
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        if (!sysUserService.isAdmin(userId)) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+        }
         // 简单更新状态字段
         NodeInfo node = new NodeInfo();
         node.setId(id);
@@ -261,6 +290,13 @@ public class TcNodeServiceImpl implements TcNodeService {
      */
     @Override
     public void deleteNode(Long id) {
+        String userId = UserThreadLocal.getUserId();
+        if (userId == null) {
+            throw new BaseException(ResultCode.USERID_IS_NULL);
+        }
+        if (!sysUserService.isAdmin(userId)) {
+            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+        }
         // 删除节点及关联的角色关系
         nodeInfoMapper.deleteById(id);
         nodeRoleRelMapper.deleteByNodeId(id);

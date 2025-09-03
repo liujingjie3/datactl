@@ -33,11 +33,11 @@ public class TcNodeController {
     }
 
     /**
-     * 查询节点列表
+     * 分页查询节点列表
      */
     @GetMapping("/list")
     @ApiOperationSupport(order = 2)
-    @ApiOperation(value = "查询节点列表")
+    @ApiOperation(value = "分页查询节点列表")
     public Result<PageResult<NodeInfoDto>> list(NodeQueryDto queryDto) {
         return Result.ok(tcNodeService.listNodes(queryDto));
     }
