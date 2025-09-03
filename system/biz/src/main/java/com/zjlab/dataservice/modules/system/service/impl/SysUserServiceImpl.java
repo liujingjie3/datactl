@@ -1344,4 +1344,23 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         List<String> roleIds = sysUserRoleMapper.getRoleIdByUserName(user.getUsername());
         return roleIds != null && roleIds.contains("f6817f48af4fb3af11b9e8bf182f618b");
     }
+
+    @Override
+    public boolean isOverall(String userId) {
+        if (oConvertUtils.isEmpty(userId)) {
+            return false;
+        }
+        List<SysRole> roles = sysRoleMapper.selectRolesByUserId(userId);
+        if (roles != null) {
+            for (SysRole r : roles) {
+                String rid = r.getId();
+                String rname = r.getRoleName();
+                if ("1".equals(rid) || "2".equals(rid)
+                        || "总体组组长".equals(rname) || "总体组组员".equals(rname)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

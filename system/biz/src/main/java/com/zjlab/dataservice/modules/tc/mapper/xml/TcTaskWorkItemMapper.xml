@@ -52,4 +52,12 @@
         WHERE task_id = #{taskId} AND del_flag = 0 AND phase_status IN (0,1)
     </update>
 
+    <select id="countActiveWorkItem" resultType="long">
+        SELECT COUNT(*) FROM tc_task_work_item
+        WHERE task_id = #{taskId}
+          AND node_inst_id = #{nodeInstId}
+          AND assignee_id = #{assigneeId}
+          AND del_flag = 0 AND phase_status IN (0,1)
+    </select>
+
 </mapper>
