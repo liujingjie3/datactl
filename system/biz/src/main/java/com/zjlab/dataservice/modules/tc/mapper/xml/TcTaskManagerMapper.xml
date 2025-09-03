@@ -210,21 +210,4 @@
         GROUP BY status
     </select>
 
-    <select id="selectTemplateNodeFlows" resultType="com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow">
-        SELECT
-            ni.name AS nodeName,
-            ni.description AS nodeDescription,
-            GROUP_CONCAT(DISTINCT su.realname ORDER BY su.realname) AS handlerRealName,
-            ttn.max_duration AS maxDuration,
-            ttn.order_no AS orderNo
-        FROM tc_task_template_node ttn
-        JOIN tc_node_info ni ON ni.id = ttn.node_id
-        LEFT JOIN tc_node_role_rel nrr ON nrr.node_id = ttn.node_id AND nrr.del_flag = 0
-        LEFT JOIN sys_user_role sur ON sur.role_id = nrr.role_id
-        LEFT JOIN sys_user su ON su.id = sur.user_id
-        WHERE ttn.del_flag = 0 AND ttn.template_id = #{templateId}
-        GROUP BY ttn.id, ni.name, ni.description, ttn.max_duration, ttn.order_no
-        ORDER BY ttn.order_no
-    </select>
-
 </mapper>

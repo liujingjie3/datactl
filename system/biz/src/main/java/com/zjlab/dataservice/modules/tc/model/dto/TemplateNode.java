@@ -13,6 +13,8 @@ public class TemplateNode implements Serializable {
     private static final long serialVersionUID = 4803433644452599632L;
     private String key;
     private Long nodeId;
+    private String nodeName;
+    private String nodeDescription;
     private Integer orderNo;
     private List<String> prev;
     private List<String> next;

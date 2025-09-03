@@ -5,7 +5,6 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
-import com.zjlab.dataservice.modules.tc.model.dto.TemplateNodeFlowRow;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
 import org.apache.ibatis.annotations.Param;
@@ -49,9 +48,6 @@ public interface TcTaskManagerMapper {
 
     /** 根据角色ID集合查询用户ID */
     List<String> selectUserIdsByRoleIds(@Param("roleIds") List<String> roleIds);
-
-    /** 根据模板ID查询节点流 */
-    List<TemplateNodeFlowRow> selectTemplateNodeFlows(@Param("templateId") String templateId);
 
     /** 更新任务状态为已完成 */
     int updateTaskComplete(@Param("taskId") Long taskId, @Param("userId") String userId);
