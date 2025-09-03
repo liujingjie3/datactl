@@ -85,6 +85,7 @@ public enum ResultCode {
     TASKMANAGE_NO_PERMISSION(210004, "只有发起人或管理员可以编辑或取消任务"),
     TASKMANAGE_CANNOT_EDIT(210005, "已有节点处理，不能编辑"),
     TASKMANAGE_IMAGING_AREA_REQUIRED(210006, "成像区域不能为空"),
+    NODE_ASSOCIATED_TEMPLATE(210007, "节点已关联任务模板，无法删除或禁用"),
 
     ;
     //返回码

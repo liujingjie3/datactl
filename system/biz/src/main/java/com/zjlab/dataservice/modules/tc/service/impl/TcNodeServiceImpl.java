@@ -16,6 +16,7 @@ import com.zjlab.dataservice.modules.system.mapper.SysUserMapper;
 import com.zjlab.dataservice.modules.system.service.ISysUserService;
 import com.zjlab.dataservice.modules.tc.mapper.NodeInfoMapper;
 import com.zjlab.dataservice.modules.tc.mapper.NodeRoleRelMapper;
+import com.zjlab.dataservice.modules.tc.mapper.TodoTemplateMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.*;
 import com.zjlab.dataservice.modules.tc.model.vo.NodeStatsVO;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.alibaba.fastjson.JSON;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,11 +44,57 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Autowired
     private NodeRoleRelMapper nodeRoleRelMapper;
     @Autowired
+    private TodoTemplateMapper todoTemplateMapper;
+    @Autowired
     private SysUserMapper sysUserMapper;
     @Autowired
     private SysRoleMapper sysRoleMapper;
     @Autowired
     private ISysUserService sysUserService;
+
+    /**
+     * 检查节点是否关联任务模板
+     */
+    private boolean nodeReferencedByTemplate(Long nodeId) {
+        List<TodoTemplate> templates = todoTemplateMapper.selectList(Wrappers.<TodoTemplate>lambdaQuery()
+                .eq(TodoTemplate::getDelFlag, false));
+        if (templates == null || templates.isEmpty()) {
+            return false;
+        }
+        for (TodoTemplate template : templates) {
+            Map<String, Object> attr = template.getTemplateAttr();
+            if (attr == null) {
+                continue;
+            }
+            Object nodeConfigs = attr.get("nodeConfigParams");
+            if (nodeConfigs instanceof List) {
+                for (Object obj : (List<?>) nodeConfigs) {
+                    if (obj instanceof Map) {
+                        Object idObj = ((Map<?, ?>) obj).get("id");
+                        if (idObj != null) {
+                            try {
+                                long id = Long.parseLong(String.valueOf(idObj));
+                                if (id == nodeId) {
+                                    return true;
+                                }
+                            } catch (NumberFormatException ignore) {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 关联校验
+     */
+    private void ensureNodeNotReferenced(Long nodeId) {
+        if (nodeReferencedByTemplate(nodeId)) {
+            throw new BaseException(ResultCode.NODE_ASSOCIATED_TEMPLATE);
+        }
+    }
 
     /**
      * 统计节点数量。
@@ -233,6 +281,11 @@ public class TcNodeServiceImpl implements TcNodeService {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
 
+        NodeInfo exist = nodeInfoMapper.selectById(id);
+        if (exist != null && exist.getStatus() == 1 && dto.getStatus() == 0) {
+            ensureNodeNotReferenced(id);
+        }
+
         // 2. 更新节点基本信息
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
@@ -276,6 +329,10 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (!sysUserService.isAdmin(userId)) {
             throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
         }
+        NodeInfo exist = nodeInfoMapper.selectById(id);
+        if (exist != null && status == 0 && exist.getStatus() != 0) {
+            ensureNodeNotReferenced(id);
+        }
         // 简单更新状态字段
         NodeInfo node = new NodeInfo();
         node.setId(id);
@@ -297,6 +354,7 @@ public class TcNodeServiceImpl implements TcNodeService {
         if (!sysUserService.isAdmin(userId)) {
             throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
         }
+        ensureNodeNotReferenced(id);
         // 删除节点及关联的角色关系
         nodeInfoMapper.deleteById(id);
         nodeRoleRelMapper.deleteByNodeId(id);
