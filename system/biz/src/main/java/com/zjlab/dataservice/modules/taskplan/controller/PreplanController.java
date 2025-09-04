@@ -10,6 +10,7 @@ import com.zjlab.dataservice.modules.taskplan.model.dto.*;
 import com.zjlab.dataservice.modules.taskplan.model.entity.TaskInfoEntity;
 import com.zjlab.dataservice.modules.taskplan.model.po.PreplanDataPo;
 import com.zjlab.dataservice.modules.taskplan.model.po.TaskManagePo;
+import com.zjlab.dataservice.modules.taskplan.model.po.TcCxtaskPo;
 import com.zjlab.dataservice.modules.taskplan.model.vo.*;
 import com.zjlab.dataservice.modules.taskplan.service.MetadataGfService;
 import com.zjlab.dataservice.modules.taskplan.service.PreplanDataService;
@@ -22,10 +23,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -80,8 +78,15 @@ public class PreplanController {
         int tcTaskId = tcCxtaskService.addTcTask(tcTaskAddDto);
         // 如果一切顺利，返回成功的预定ID
         return Result.ok(tcTaskId);
-
     }
+
+    @GetMapping("detail/{id}")
+    public Result detail(@PathVariable Long id) {
+        TcCxtaskPo tcCxtaskPo = tcCxtaskService.getDetail(id);
+        // 如果一切顺利，返回成功的预定ID
+        return Result.ok(tcCxtaskPo);
+    }
+
 
     @PostMapping("add_beifen")
     @Transactional(rollbackFor = Exception.class)

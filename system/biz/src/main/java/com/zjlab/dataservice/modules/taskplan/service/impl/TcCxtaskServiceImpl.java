@@ -8,6 +8,7 @@ import com.zjlab.dataservice.modules.taskplan.model.dto.TcTaskAddDto;
 import com.zjlab.dataservice.modules.taskplan.model.po.TcCxtaskPo;
 import com.zjlab.dataservice.modules.taskplan.service.TcCxtaskService;
 import com.zjlab.dataservice.modules.taskplan.mapper.TcCxtaskMapper;
+import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,12 @@ public class TcCxtaskServiceImpl extends ServiceImpl<TcCxtaskMapper, TcCxtaskPo>
             throw new BaseException(ResultCode.SQL_UPDATE_ERROR);
         }
         return tcCxtaskPo.getId();
+    }
+
+    @Override
+    public TcCxtaskPo getDetail(Long id) {
+        TcCxtaskPo tcCxtaskPo = baseMapper.selectById(id);
+        return tcCxtaskPo;
     }
 }
 

@@ -7,4 +7,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface TcCxtaskService extends IService<TcCxtaskPo> {
     int addTcTask(TcTaskAddDto tcTaskAddDto);
 
+    TcCxtaskPo getDetail(Long id);
 }
