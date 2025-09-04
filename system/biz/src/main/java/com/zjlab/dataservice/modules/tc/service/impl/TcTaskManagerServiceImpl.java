@@ -64,6 +64,7 @@ import java.util.Queue;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 /**
  * 任务相关服务实现
@@ -450,10 +451,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
      * 根据任务模板ID查询节点流
      *
      * @param templateId 模板ID
+     * @param resultDisplayNeeded 是否需要结果展示（0 或 1，必传）
      * @return 节点流列表
      */
     @Override
-    public List<TemplateNodeFlowVO> listNodeFlows(String templateId) {
+    public List<TemplateNodeFlowVO> listNodeFlows(String templateId, Integer resultDisplayNeeded) {
         // 1. 参数校验
         if (StringUtils.isBlank(templateId)) {
             throw new BaseException(ResultCode.PARA_ERROR);
@@ -480,6 +482,35 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             vo.setOrderNo(n.getOrderNo());
             result.add(vo);
         }
+        // 3. 根据需求追加查看影像结果节点
+        if (resultDisplayNeeded == 1) {
+            NodeInfo viewNode = nodeInfoMapper.selectByName("查看影像结果");
+            if (viewNode != null) {
+                List<NodeRoleRel> rels = nodeRoleRelMapper.selectByNodeId(viewNode.getId());
+                List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
+                List<String> handlerNames = new ArrayList<>();
+                if (!roleIds.isEmpty()) {
+                    List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+                    if (userIds != null && !userIds.isEmpty()) {
+                        List<SysUser> users = sysUserService.listByIds(userIds);
+                        handlerNames = users.stream().map(SysUser::getRealname).collect(Collectors.toList());
+                    }
+                }
+                TemplateNodeFlowVO vo = new TemplateNodeFlowVO();
+                vo.setNodeName(viewNode.getName());
+                vo.setNodeDescription(viewNode.getDescription());
+                vo.setHandlerRealName(handlerNames);
+                vo.setMaxDuration(viewNode.getExpectedDuration());
+                int orderNo = result.stream()
+                    .map(TemplateNodeFlowVO::getOrderNo)
+                    .filter(o -> o != null)
+                    .max(Integer::compareTo)
+                    .orElse(0) + 1;
+                vo.setOrderNo(orderNo);
+                result.add(vo);
+            }
+        }
+        result.sort(Comparator.comparing(TemplateNodeFlowVO::getOrderNo, Comparator.nullsLast(Integer::compareTo)));
         return result;
     }
 

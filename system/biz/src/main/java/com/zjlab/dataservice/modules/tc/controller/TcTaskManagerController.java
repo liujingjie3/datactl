@@ -132,8 +132,9 @@ public class TcTaskManagerController {
     @GetMapping("/nodeFlows")
     @ApiOperationSupport(order = 6)
     @ApiOperation(value = "查询模板节点流", notes = "根据模板ID获取节点流列表")
-    public Result<List<TemplateNodeFlowVO>> nodeFlows(@RequestParam String templateId) {
-        List<TemplateNodeFlowVO> flows = taskManagerService.listNodeFlows(templateId);
+    public Result<List<TemplateNodeFlowVO>> nodeFlows(@RequestParam String templateId,
+                                                     @RequestParam Integer resultDisplayNeeded) {
+        List<TemplateNodeFlowVO> flows = taskManagerService.listNodeFlows(templateId, resultDisplayNeeded);
         return Result.ok(flows);
     }
 
