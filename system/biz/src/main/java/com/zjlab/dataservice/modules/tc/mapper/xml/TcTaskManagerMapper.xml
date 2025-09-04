@@ -158,8 +158,6 @@
         UPDATE tc_task
         SET task_name = #{dto.taskName},
             task_requirement = #{dto.taskRequirement},
-            need_imaging = #{dto.needImaging},
-            imaging_area = #{dto.imagingArea},
             result_display_needed = #{dto.resultDisplayNeeded},
             update_by = #{userId},
             update_time = NOW()

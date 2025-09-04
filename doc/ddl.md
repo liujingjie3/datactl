@@ -162,6 +162,7 @@ CREATE TABLE `tc_task_node_inst` (
   `started_at` DATETIME COMMENT '开始时间',
   `completed_at` DATETIME COMMENT '完成时间',
   `max_duration` INT COMMENT '最大时长（分钟）',
+  `actions` JSON NOT NULL COMMENT '操作控制项数组：[{type,name,config}]',
   `completed_by` varchar(32) DEFAULT NULL COMMENT '最终完成该节点的用户ID',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',
   `create_by` varchar(32) DEFAULT NULL COMMENT '创建人ID',
@@ -170,7 +171,8 @@ CREATE TABLE `tc_task_node_inst` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CHECK (`prev_node_ids` IS NULL OR JSON_VALID(`prev_node_ids`)),
   CHECK (`next_node_ids` IS NULL OR JSON_VALID(`next_node_ids`)),
-  CHECK (`handler_role_ids` IS NULL OR JSON_VALID(`handler_role_ids`))
+  CHECK (`handler_role_ids` IS NULL OR JSON_VALID(`handler_role_ids`)),
+  CHECK (JSON_VALID(`actions`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务节点实例';
 ```
 

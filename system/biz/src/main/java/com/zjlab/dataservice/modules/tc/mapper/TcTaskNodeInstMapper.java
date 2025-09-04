@@ -16,6 +16,7 @@ public interface TcTaskNodeInstMapper {
                        @Param("handlerRoleIds") String handlerRoleIds,
                        @Param("orderNo") Integer orderNo,
                        @Param("maxDuration") Integer maxDuration,
+                       @Param("actions") String actions,
                        @Param("userId") String userId);
 
     int updateNodeInstPrevNext(@Param("nodeInstId") Long nodeInstId,
@@ -42,6 +43,7 @@ public interface TcTaskNodeInstMapper {
                            @Param("nodeId") Long nodeId,
                            @Param("prevNodeIds") String prevNodeIds,
                            @Param("handlerRoleIds") String handlerRoleIds,
+                           @Param("actions") String actions,
                            @Param("userId") String userId);
 
     Long selectLastInsertId();
