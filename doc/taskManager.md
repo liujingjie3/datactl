@@ -672,6 +672,9 @@ Resp：`[OrbitPlanExportVO]`
 
 Resp（统一分页）：`{ list: [...], total: number }`
 
+模板节点流 `GET /task/nodeFlows?templateId=&resultDisplayNeeded=0|1`（resultDisplayNeeded 必传）
+Resp：`[TemplateNodeFlowVO]` 按 `orderNo` 升序排列（resultDisplayNeeded=1 时列表末尾追加“查看影像结果”节点）
+
 ### 3.2 节点办理
 
 提交动作 `POST /task/node/submit`

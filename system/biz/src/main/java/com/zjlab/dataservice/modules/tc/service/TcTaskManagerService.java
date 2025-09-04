@@ -52,9 +52,10 @@ public interface TcTaskManagerService {
      * 根据任务模板ID查询节点流
      *
      * @param templateId 模板ID
+     * @param resultDisplayNeeded 是否需要结果展示（0 或 1，必传）
      * @return 节点流列表
      */
-    List<TemplateNodeFlowVO> listNodeFlows(String templateId);
+    List<TemplateNodeFlowVO> listNodeFlows(String templateId, Integer resultDisplayNeeded);
 
     /**
      * 提交节点操作
