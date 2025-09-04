@@ -77,6 +77,11 @@
         WHERE task_id = #{taskId} AND del_flag = 0 AND JSON_LENGTH(next_node_ids) = 0
     </select>
 
+    <select id="selectMaxOrderNo" resultType="int">
+        SELECT MAX(order_no) FROM tc_task_node_inst
+        WHERE task_id = #{taskId} AND del_flag = 0
+    </select>
+
     <insert id="insertViewNodeInst">
         INSERT INTO tc_task_node_inst(
             task_id, template_id, node_id, prev_node_ids, next_node_ids,
@@ -84,7 +89,7 @@
             create_by, create_time, update_by, update_time
         ) VALUES (
             #{taskId}, #{templateId}, #{nodeId}, #{prevNodeIds}, '[]',
-            0, #{handlerRoleIds}, NULL, 0, NULL, #{actions},
+            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration}, #{actions},
             #{userId}, NOW(), #{userId}, NOW()
         )
     </insert>

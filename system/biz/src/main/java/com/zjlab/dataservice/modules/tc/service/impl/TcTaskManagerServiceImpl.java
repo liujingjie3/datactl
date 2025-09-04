@@ -177,7 +177,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
                     String prevNodeIds = JSON.toJSONString(endIds);
                     String handlerRoleIds = JSON.toJSONString(roleIds);
-                    taskNodeInstMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, viewNode.getActions(), userId);
+                    Integer maxOrderNo = taskNodeInstMapper.selectMaxOrderNo(taskId);
+                    Integer orderNo = maxOrderNo == null ? 1 : maxOrderNo + 1;
+                    Integer maxDuration = viewNode.getExpectedDuration();
+                    taskNodeInstMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, orderNo, maxDuration, viewNode.getActions(), userId);
                     Long viewInstId = taskNodeInstMapper.selectLastInsertId();
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
@@ -415,7 +418,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
                     String prevNodeIds = JSON.toJSONString(endIds);
                     String handlerRoleIds = JSON.toJSONString(roleIds);
-                    taskNodeInstMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, viewNode.getActions(), userId);
+                    Integer maxOrderNo = taskNodeInstMapper.selectMaxOrderNo(dto.getTaskId());
+                    Integer orderNo = maxOrderNo == null ? 1 : maxOrderNo + 1;
+                    Integer maxDuration = viewNode.getExpectedDuration();
+                    taskNodeInstMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, orderNo, maxDuration, viewNode.getActions(), userId);
                     Long viewInstId = taskNodeInstMapper.selectLastInsertId();
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
