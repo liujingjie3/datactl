@@ -127,11 +127,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 dto.setImagingArea(null);
             }
         }
+        //todo 成像区域这里需要跳转到外部平台，这边的交互，是存json还是存成像ID等后面需要进一步沟通，暂时先mock一个json
+
 
         // 3. 新建任务记录
         String taskCode = UUID.randomUUID().toString().replace("-", "");
         String satellitesJson = dto.getSatellites() == null ? null : JSON.toJSONString(dto.getSatellites());
         String remoteCmdsJson = dto.getRemoteCmds() == null ? null : JSON.toJSONString(dto.getRemoteCmds());
+        //todo 遥感指令这里需要根据测运控数据计算，怎么存，存什么等后面需要进一步沟通，暂时先mock一个json
         String orbitPlansJson = dto.getOrbitPlans() == null ? null : JSON.toJSONString(dto.getOrbitPlans());
         dto.setSatellitesJson(satellitesJson);
         dto.setRemoteCmdsJson(remoteCmdsJson);
@@ -831,11 +834,13 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
         }
 
-        // 计算层级序号
+        // 用入度法（Kahn 算法）做拓扑排序；同时用 BFS 思路按层级处理节点，给每个节点分配 orderNo；
+        //遍历所有节点，把前驱数量作为入度值存到 indegree
         Map<String, Integer> indegree = new HashMap<>();
         for (TemplateNode n : map.values()) {
             indegree.put(n.getKey(), n.getPrev().size());
         }
+        //找出入度为 0 的节点（起点）
         Queue<String> queue = new LinkedList<>();
         for (Map.Entry<String, Integer> e : indegree.entrySet()) {
             if (e.getValue() == 0) {
@@ -850,6 +855,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 TemplateNode node = map.get(k);
                 if (node != null) {
                     node.setOrderNo(level);
+                    //当前节点被“处理”了，它的每个后继节点的入度减 1。
+                    //如果后继节点的入度变成 0，说明它的所有前驱都已处理完，就可以加入队列等待下一层。
                     for (String next : node.getNext()) {
                         indegree.put(next, indegree.get(next) - 1);
                         if (indegree.get(next) == 0) {
