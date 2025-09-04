@@ -8,6 +8,8 @@
         t.task_code AS taskCode,
         t.template_id AS templateId,
         tt.template_name AS templateName,
+        t.task_requirement AS taskRequirement,
+        t.result_display_needed AS resultDisplayNeeded,
         t.satellites AS satellites,
         t.create_time AS createTime,
         t.status AS status
@@ -54,6 +56,8 @@
         <result column="taskCode" property="taskCode"/>
         <result column="templateId" property="templateId"/>
         <result column="templateName" property="templateName"/>
+        <result column="taskRequirement" property="taskRequirement"/>
+        <result column="resultDisplayNeeded" property="resultDisplayNeeded"/>
         <result column="satellites" property="satellitesJson"/>
         <result column="createTime" property="createTime"/>
         <result column="status" property="status"/>

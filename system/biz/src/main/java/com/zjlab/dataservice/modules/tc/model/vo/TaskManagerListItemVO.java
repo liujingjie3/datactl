@@ -12,6 +12,8 @@ public class TaskManagerListItemVO extends TaskBaseVO {
     private String taskCode;
     private String templateId;
     private String templateName;
+    private String taskRequirement;
+    private Integer resultDisplayNeeded;
     private List<SatelliteGroupVO> satellites;
     @JsonIgnore
     private String satellitesJson;
