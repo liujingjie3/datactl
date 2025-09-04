@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.modules.taskplan.model.dto.TaskAddDto;
 import com.zjlab.dataservice.modules.taskplan.model.dto.TaskListDto;
+import com.zjlab.dataservice.modules.taskplan.model.dto.TcTaskAddDto;
 import com.zjlab.dataservice.modules.taskplan.model.po.TaskManagePo;
 import com.zjlab.dataservice.modules.taskplan.model.vo.TaskManageVo;
 import com.zjlab.dataservice.modules.taskplan.model.vo.TaskStaticsVo;
@@ -25,4 +26,5 @@ public interface TaskManageService extends IService<TaskManagePo> {
     TaskStaticsVo statistics();
 
     List<taskVo> listByStatus(int i);
+
 }

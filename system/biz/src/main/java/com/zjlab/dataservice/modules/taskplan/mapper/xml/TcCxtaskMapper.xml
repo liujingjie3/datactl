@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.taskplan.mapper.TcCxtaskMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjlab.dataservice.modules.taskplan.model.po.TcCxtaskPo">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="taskName" column="task_name" jdbcType="VARCHAR"/>
+            <result property="taskInfo" column="task_info" jdbcType="VARCHAR"/>
+            <result property="level" column="level" jdbcType="VARCHAR"/>
+            <result property="satelliteInfo" column="satellite_info" jdbcType="VARCHAR"/>
+            <result property="comandList" column="comand_list" jdbcType="VARCHAR"/>
+            <result property="from" column="from" jdbcType="INTEGER"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="tenantId" column="tenant_id" jdbcType="INTEGER"/>
+            <result property="delFlag" column="del_flag" jdbcType="TINYINT"/>
+            <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,task_name,task_info,
+        level,satellite_info,comand_list,
+        from,status,tenant_id,
+        del_flag,create_by,create_time,
+        update_by,update_time
+    </sql>
+</mapper>

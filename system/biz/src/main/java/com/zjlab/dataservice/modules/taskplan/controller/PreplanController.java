@@ -14,6 +14,7 @@ import com.zjlab.dataservice.modules.taskplan.model.vo.*;
 import com.zjlab.dataservice.modules.taskplan.service.MetadataGfService;
 import com.zjlab.dataservice.modules.taskplan.service.PreplanDataService;
 import com.zjlab.dataservice.modules.taskplan.service.TaskManageService;
+import com.zjlab.dataservice.modules.taskplan.service.TcCxtaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,9 @@ public class PreplanController {
     private TaskManageService taskManageService;
 
     @Resource
+    private TcCxtaskService tcCxtaskService;
+
+    @Resource
     private MetadataGfService metaDataService;
 
     @Autowired
@@ -72,6 +76,14 @@ public class PreplanController {
     }
 
     @PostMapping("add")
+    public Result addTask(@RequestBody @Valid TcTaskAddDto tcTaskAddDto) {
+        int tcTaskId = tcCxtaskService.addTcTask(tcTaskAddDto);
+        // 如果一切顺利，返回成功的预定ID
+        return Result.ok(tcTaskId);
+
+    }
+
+    @PostMapping("add_beifen")
     @Transactional(rollbackFor = Exception.class)
     public Result addMark(@RequestBody @Valid TaskAddDto taskAddDto) {
         int preplanId = taskManageService.addTask(taskAddDto);
