@@ -14,6 +14,7 @@ import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeInstMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskWorkItemMapper;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeActionDto;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
@@ -153,7 +154,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         Map<String, Long> map = new HashMap<>();
         for (TemplateNode n : nodes) {
             String rolesJson = JSON.toJSONString(n.getRoleIds());
-            taskNodeInstMapper.insertNodeInst(taskId, dto.getTemplateId(), n.getNodeId(), rolesJson, n.getOrderNo(), n.getMaxDuration(), userId);
+            String actionsJson = JSON.toJSONString(n.getActions());
+            taskNodeInstMapper.insertNodeInst(taskId, dto.getTemplateId(), n.getNodeId(), rolesJson, n.getOrderNo(), n.getMaxDuration(), actionsJson, userId);
             Long instId = taskNodeInstMapper.selectLastInsertId();
             map.put(n.getKey(), instId);
         }
@@ -175,7 +177,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
                     String prevNodeIds = JSON.toJSONString(endIds);
                     String handlerRoleIds = JSON.toJSONString(roleIds);
-                    taskNodeInstMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, userId);
+                    taskNodeInstMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, viewNode.getActions(), userId);
                     Long viewInstId = taskNodeInstMapper.selectLastInsertId();
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
@@ -387,14 +389,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.TASKMANAGE_CANNOT_EDIT);
         }
 
-        // 4. 校验成像信息并更新任务基础字段
-        if (dto.getNeedImaging() != null) {
-            if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
-                throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
-            }
-            if (dto.getNeedImaging() == 0) {
-                dto.setImagingArea(null);
-            }
+        // 4. 更新任务基础字段
+        if (StringUtils.isBlank(dto.getTaskName())) {
+            throw new BaseException(ResultCode.PARA_ERROR);
         }
         tcTaskManagerMapper.updateTask(dto, userId);
 
@@ -418,7 +415,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     List<String> roleIds = rels.stream().map(NodeRoleRel::getRoleId).collect(Collectors.toList());
                     String prevNodeIds = JSON.toJSONString(endIds);
                     String handlerRoleIds = JSON.toJSONString(roleIds);
-                    taskNodeInstMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, userId);
+                    taskNodeInstMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, viewNode.getActions(), userId);
                     Long viewInstId = taskNodeInstMapper.selectLastInsertId();
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
@@ -814,6 +811,19 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     }
                 }
                 node.setRoleIds(roleIds);
+                List<NodeActionDto> actions = new ArrayList<>();
+                JSONArray acts = params.getJSONArray("actions");
+                if (acts != null) {
+                    for (int j = 0; j < acts.size(); j++) {
+                        JSONObject a = acts.getJSONObject(j);
+                        NodeActionDto na = new NodeActionDto();
+                        na.setType(a.getInteger("type"));
+                        na.setName(a.getString("name"));
+                        na.setConfig(a.getString("config"));
+                        actions.add(na);
+                    }
+                }
+                node.setActions(actions);
                 node.setPrev(new ArrayList<>());
                 node.setNext(new ArrayList<>());
                 map.put(key, node);

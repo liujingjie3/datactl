@@ -5,11 +5,11 @@
     <insert id="insertNodeInst">
         INSERT INTO tc_task_node_inst(
             task_id, template_id, node_id, prev_node_ids, next_node_ids,
-            arrived_count, handler_role_ids, order_no, status, max_duration,
+            arrived_count, handler_role_ids, order_no, status, max_duration, actions,
             create_by, create_time, update_by, update_time
         ) VALUES (
             #{taskId}, #{templateId}, #{nodeId}, '[]', '[]',
-            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration},
+            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration}, #{actions},
             #{userId}, NOW(), #{userId}, NOW()
         )
     </insert>
@@ -80,11 +80,11 @@
     <insert id="insertViewNodeInst">
         INSERT INTO tc_task_node_inst(
             task_id, template_id, node_id, prev_node_ids, next_node_ids,
-            arrived_count, handler_role_ids, order_no, status, max_duration,
+            arrived_count, handler_role_ids, order_no, status, max_duration, actions,
             create_by, create_time, update_by, update_time
         ) VALUES (
             #{taskId}, #{templateId}, #{nodeId}, #{prevNodeIds}, '[]',
-            0, #{handlerRoleIds}, NULL, 0, NULL,
+            0, #{handlerRoleIds}, NULL, 0, NULL, #{actions},
             #{userId}, NOW(), #{userId}, NOW()
         )
     </insert>
