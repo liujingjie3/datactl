@@ -40,11 +40,11 @@ DDL 详见ddl.md。
 
 ### 1.3 任务运行域（运行态）
 
-* **tc\_task**
-  task\_code, task\_name, task\_requirement(<=255), template\_id(string，必填)
-  need\_imaging, imaging\_area(JSON|null), result\_display\_needed
-  satellites(JSON 二级结构，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remote\_cmds(JSON), orbit\_plans(JSON)
-  status：0运行中 / 1结束 / 2异常结束 / 3取消
+  * **tc\_task**
+    task\_code, task\_name, task\_requirement(<=255), template\_id(string，必填)
+    need\_imaging, imaging\_area(JSON|null), result\_display\_needed
+    satellites(JSON 二级结构，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remote\_cmds(JSON), orbit\_plans(JSON)
+    status：0运行中 / 1结束 / 2异常结束 / 3取消
 
 * **tc\_task\_node\_inst**
   task\_id, template\_id(string，必填), node\_id
@@ -523,8 +523,7 @@ COMMIT;
 
 **入参（JSON）**
 
-taskId\*, taskName\*, taskRequirement,
-needImaging(0/1), imagingArea(JSON|null), resultDisplayNeeded(0/1)
+taskId\*, taskName\*, taskRequirement, resultDisplayNeeded(0/1)
 
 **事务流程（伪代码）**
 
@@ -534,24 +533,12 @@ BEGIN;
 -- A. 权限 & 状态校验（服务层）
 -- 仅发起人或管理员；任务 status=0 且无节点已完成
 
--- B. 更新任务主表（根据成像需求同步成像区域）
-IF :needImaging = 0 THEN
-  UPDATE tc_task
-  SET task_name=:taskName, task_requirement=:taskRequirement,
-      need_imaging=0, imaging_area=NULL,
-      result_display_needed=:display,
-      update_by=:uid, update_time=NOW()
-  WHERE id=:taskId AND del_flag=0;
-ELSE
-  UPDATE tc_task
-  SET task_name=:taskName, task_requirement=:taskRequirement,
-      need_imaging=1, imaging_area=:imagingArea,
-      result_display_needed=:display,
-      update_by=:uid, update_time=NOW()
-  WHERE id=:taskId AND del_flag=0;
-END IF;
-
--- 若 :needImaging = 1 且 imagingArea 为空，服务层返回 TASKMANAGE_IMAGING_AREA_REQUIRED
+-- B. 更新任务主表
+UPDATE tc_task
+SET task_name=:taskName, task_requirement=:taskRequirement,
+    result_display_needed=:display,
+    update_by=:uid, update_time=NOW()
+WHERE id=:taskId AND del_flag=0;
 
 -- C. result_display_needed 变化时增删“查看影像结果”节点及工作项
 IF oldDisplay = 0 AND :display = 1 THEN
@@ -662,11 +649,10 @@ Resp：`{ success: true }`（仅发起人或管理员且尚无人完成节点时
 Body(JSON)：
 
 ```
-taskId*, taskName, taskRequirement,
-needImaging(0|1), imagingArea, resultDisplayNeeded(0|1)
+taskId*, taskName*, taskRequirement, resultDisplayNeeded(0|1)
 ```
 
-Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无节点已完成时允许；若 needImaging=0 将置空 imagingArea；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
+Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无节点已完成时允许；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
 
 异常结束任务 `POST /task/abort?taskId=...`
 Resp：`{ success: true }`
@@ -752,19 +738,19 @@ ORDER BY r.create_time DESC;
 * **210001 TASKMANAGE_ADMIN_ONLY_ALL**：管理员只能查看所有任务
 * **210002 TASKMANAGE_ONLY_ADMIN_ALL**：只有管理员可以查看所有任务
 * **210003 TASKMANAGE_CANNOT_CANCEL**：已有节点完成，不能取消
-* **210004 TASKMANAGE_NO_PERMISSION**：只有发起人或管理员可以编辑或取消任务
-* **210005 TASKMANAGE_CANNOT_EDIT**：已有节点处理，不能编辑
-* **210006 TASKMANAGE_IMAGING_AREA_REQUIRED**：成像区域不能为空
-* **200004 INSTANCE_IS_NOT_EXISTS**：实例对象不存在
-* **122000 STATUS_INVALID**：传入状态不合法
-* **510 SC_JEECG_NO_AUTHZ**：访问权限认证未通过
+  * **210004 TASKMANAGE_NO_PERMISSION**：只有发起人或管理员可以编辑或取消任务
+  * **210005 TASKMANAGE_CANNOT_EDIT**：已有节点处理，不能编辑
+  * **210006 TASKMANAGE_IMAGING_AREA_REQUIRED**：成像区域不能为空
+  * **200004 INSTANCE_IS_NOT_EXISTS**：实例对象不存在
+  * **122000 STATUS_INVALID**：传入状态不合法
+  * **510 SC_JEECG_NO_AUTHZ**：访问权限认证未通过
 
 **校验点：**
 
-* 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填。
-* 列表：管理员只能查询 `tab=all`，非管理员禁止 `tab=all`。
-* 提交：节点必须处理中且提交者为该节点当前操作人（存在待办工作项）。
-* 取消/编辑：任务 status=0 且无节点已完成，且仅发起人或管理员可操作。
+  * 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填。
+  * 列表：管理员只能查询 `tab=all`，非管理员禁止 `tab=all`。
+  * 提交：节点必须处理中且提交者为该节点当前操作人（存在待办工作项）。
+  * 取消/编辑：任务 status=0 且无节点已完成，且仅发起人或管理员可操作。
 
 ---
 
