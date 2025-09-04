@@ -43,6 +43,8 @@ public interface TcTaskNodeInstMapper {
                            @Param("nodeId") Long nodeId,
                            @Param("prevNodeIds") String prevNodeIds,
                            @Param("handlerRoleIds") String handlerRoleIds,
+                           @Param("orderNo") Integer orderNo,
+                           @Param("maxDuration") Integer maxDuration,
                            @Param("actions") String actions,
                            @Param("userId") String userId);
 
@@ -71,6 +73,8 @@ public interface TcTaskNodeInstMapper {
     int updateNodeInstAbort(@Param("taskId") Long taskId, @Param("userId") String userId);
 
     Integer selectNodeInstStatus(@Param("nodeInstId") Long nodeInstId);
+
+    Integer selectMaxOrderNo(@Param("taskId") Long taskId);
 
     /** 按任务ID查询所有节点实例 */
     List<TaskNodeVO> selectNodeInstsByTaskId(@Param("taskId") Long taskId);
