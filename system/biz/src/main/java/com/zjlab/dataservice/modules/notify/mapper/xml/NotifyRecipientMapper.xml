@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.notify.mapper.NotifyRecipientMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO tc_notify_recipient (job_id, user_id, status, del_flag, create_by, create_time, update_by, update_time)
+        VALUES
+        <foreach collection="userIds" item="uid" separator=",">
+            (#{jobId}, #{uid}, 0, 0, #{operator}, NOW(), #{operator}, NOW())
+        </foreach>
+    </insert>
+
+    <select id="findByJobId" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyRecipient">
+        SELECT id, tenant_id, del_flag, create_by, create_time, update_by, update_time,
+               job_id, user_id, status, last_error
+        FROM tc_notify_recipient
+        WHERE job_id = #{jobId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE tc_notify_recipient
+        SET status =
+            <choose>
+                <when test="success">1</when>
+                <otherwise>2</otherwise>
+            </choose>,
+            last_error = #{error},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>
