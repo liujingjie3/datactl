@@ -78,5 +78,8 @@ public interface TcTaskNodeInstMapper {
 
     /** 按任务ID查询所有节点实例 */
     List<TaskNodeVO> selectNodeInstsByTaskId(@Param("taskId") Long taskId);
+
+    /** 查询节点预计最大时长 */
+    Integer selectMaxDuration(@Param("nodeInstId") Long nodeInstId);
 }
 
