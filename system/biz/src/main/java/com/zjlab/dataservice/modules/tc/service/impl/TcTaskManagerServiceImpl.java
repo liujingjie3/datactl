@@ -12,6 +12,9 @@ import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeActionRecordMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeInstMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskWorkItemMapper;
+import com.zjlab.dataservice.modules.notify.service.NotifyService;
+import com.zjlab.dataservice.modules.notify.model.enums.BizTypeEnum;
+import com.zjlab.dataservice.modules.notify.model.enums.ChannelEnum;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeActionDto;
@@ -65,6 +68,8 @@ import java.util.LinkedList;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Comparator;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 任务相关服务实现
@@ -95,6 +100,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private TcTaskWorkItemMapper taskWorkItemMapper;
+
+    @Autowired
+    private NotifyService notifyService;
 
 
     /**
@@ -195,6 +203,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         // 6. 激活起始节点并生成工作项
+        Set<String> allUserIds = new HashSet<>();
         for (TemplateNode n : nodes) {
             Long instId = map.get(n.getKey());
             boolean isStart = n.getPrev() == null || n.getPrev().isEmpty();
@@ -202,16 +211,62 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 taskNodeInstMapper.activateNodeInst(instId, userId);
             }
             List<String> roleIds = n.getRoleIds();
+            List<String> userIds = new ArrayList<>();
             if (roleIds != null && !roleIds.isEmpty()) {
-                List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+                userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
                 int phaseStatus = isStart ? 1 : 0;
                 for (String uid : userIds) {
                     taskWorkItemMapper.insertWorkItem(taskId, instId, uid, phaseStatus, userId);
                 }
+                allUserIds.addAll(userIds);
+            }
+            if (isStart) {
+                scheduleNodeTimeout(instId, n.getMaxDuration(), userIds, userId);
             }
         }
 
-        // 7. 返回任务ID
+        // 7. 通知工作流全体（排除发起人）
+        List<String> recipients = new ArrayList<>(allUserIds);
+        recipients.remove(userId);
+        if (!recipients.isEmpty()) {
+            JSONObject payload = new JSONObject();
+            payload.put("taskId", taskId);
+            payload.put("taskName", dto.getTaskName());
+            notifyService.enqueue((byte) BizTypeEnum.TASK_CREATED.getCode(), taskId,
+                    (byte) ChannelEnum.DINGTALK.getCode(), payload, recipients,
+                    "TASK_CREATED_" + taskId, LocalDateTime.now(), userId);
+        }
+
+        // 7.1 进站前提醒：对所有圈次定时通知
+        List<String> orbitRecipients = new ArrayList<>(allUserIds);
+        orbitRecipients.add(userId);
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        if (dto.getOrbitPlans() != null && !orbitRecipients.isEmpty()) {
+            for (OrbitPlanExportVO plan : dto.getOrbitPlans()) {
+                try {
+                    LocalDateTime inTime = LocalDateTime.parse(plan.getInTime(), df);
+                    for (int m = 60; m >= 0; m -= 15) {
+                        LocalDateTime run = inTime.minusMinutes(m);
+                        if (run.isAfter(LocalDateTime.now())) {
+                            JSONObject payload = new JSONObject();
+                            payload.put("taskId", taskId);
+                            payload.put("taskName", dto.getTaskName());
+                            payload.put("orbitNo", plan.getOrbitNo());
+                            payload.put("inTime", plan.getInTime());
+                            payload.put("remainMin", m);
+                            String dedup = "ORBIT_REMIND_" + taskId + "_" + plan.getOrbitNo() + "_" + m;
+                            notifyService.enqueue((byte) BizTypeEnum.ORBIT_REMIND.getCode(), taskId,
+                                    (byte) ChannelEnum.DINGTALK.getCode(), payload, orbitRecipients,
+                                    dedup, run, userId);
+                        }
+                    }
+                } catch (Exception ignore) {
+                    // ignore parse errors
+                }
+            }
+        }
+
+        // 8. 返回任务ID
         return taskId;
     }
 
@@ -573,6 +628,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 tcTaskManagerMapper.updateTaskAbort(dto.getTaskId(), userId);
                 taskNodeInstMapper.updateNodeInstAbort(dto.getTaskId(), userId);
                 taskWorkItemMapper.updateWorkItemAbort(dto.getTaskId(), userId);
+                List<String> users = getAllUserIds(dto.getTaskId(), true);
+                if (!users.isEmpty()) {
+                    JSONObject payload = new JSONObject();
+                    payload.put("taskId", dto.getTaskId());
+                    notifyService.enqueue((byte) BizTypeEnum.TASK_ABNORMAL.getCode(), dto.getTaskId(),
+                            (byte) ChannelEnum.DINGTALK.getCode(), payload, users,
+                            "TASK_ABNORMAL_" + dto.getTaskId(), LocalDateTime.now(), userId);
+                }
                 return;
             }
 
@@ -590,13 +653,19 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     int activated = taskNodeInstMapper.activateNodeInst(nextId, userId);
                     if (activated > 0) {
                         // 为激活的节点创建待办工作项
-                        String nextRolesJson = taskNodeInstMapper.selectHandlerRoleIds(nextId);
-                        List<String> nextRoleIds = JSON.parseArray(nextRolesJson, String.class);
-                        if (nextRoleIds != null && !nextRoleIds.isEmpty()) {
-                            List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(nextRoleIds);
-                            for (String uid : userIds) {
-                                taskWorkItemMapper.insertWorkItem(dto.getTaskId(), nextId, uid, 1, userId);
-                            }
+                        List<String> userIds = getNodeUserIds(nextId);
+                        for (String uid : userIds) {
+                            taskWorkItemMapper.insertWorkItem(dto.getTaskId(), nextId, uid, 1, userId);
+                        }
+                        if (!userIds.isEmpty()) {
+                            JSONObject payload = new JSONObject();
+                            payload.put("taskId", dto.getTaskId());
+                            payload.put("nodeInstId", nextId);
+                            notifyService.enqueue((byte) BizTypeEnum.NODE_DONE.getCode(), nextId,
+                                    (byte) ChannelEnum.DINGTALK.getCode(), payload, userIds,
+                                    "NODE_DONE_" + nextId, LocalDateTime.now(), userId);
+                            Integer maxDur = taskNodeInstMapper.selectMaxDuration(nextId);
+                            scheduleNodeTimeout(nextId, maxDur, userIds, userId);
                         }
                     }
                 }
@@ -606,6 +675,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             Long ongoing = taskNodeInstMapper.countOngoingNodeInst(dto.getTaskId());
             if (ongoing != null && ongoing == 0) {
                 tcTaskManagerMapper.updateTaskComplete(dto.getTaskId(), userId);
+                List<String> users = getAllUserIds(dto.getTaskId(), true);
+                if (!users.isEmpty()) {
+                    JSONObject payload = new JSONObject();
+                    payload.put("taskId", dto.getTaskId());
+                    notifyService.enqueue((byte) BizTypeEnum.TASK_FINISHED.getCode(), dto.getTaskId(),
+                            (byte) ChannelEnum.DINGTALK.getCode(), payload, users,
+                            "TASK_FINISHED_" + dto.getTaskId(), LocalDateTime.now(), userId);
+                }
             }
         }
     }
@@ -916,6 +993,56 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         return new ArrayList<>(map.values());
+    }
+
+    /**
+     * 获取任务中所有节点相关用户ID
+     */
+    private List<String> getAllUserIds(Long taskId, boolean includeCreator) {
+        List<TaskNodeVO> insts = taskNodeInstMapper.selectNodeInstsByTaskId(taskId);
+        Set<String> roleIds = new HashSet<>();
+        for (TaskNodeVO inst : insts) {
+            if (StringUtils.isNotBlank(inst.getHandlerRoleIds())) {
+                List<String> ids = JSON.parseArray(inst.getHandlerRoleIds(), String.class);
+                if (ids != null) {
+                    roleIds.addAll(ids);
+                }
+            }
+        }
+        List<String> users = roleIds.isEmpty() ? new ArrayList<>()
+                : tcTaskManagerMapper.selectUserIdsByRoleIds(new ArrayList<>(roleIds));
+        if (includeCreator) {
+            TaskManagerEditInfo info = tcTaskManagerMapper.selectTaskForEdit(taskId);
+            if (info != null && StringUtils.isNotBlank(info.getCreateBy())) {
+                users.add(info.getCreateBy());
+            }
+        }
+        return users;
+    }
+
+    /**
+     * 获取节点责任人用户ID列表
+     */
+    private List<String> getNodeUserIds(Long nodeInstId) {
+        String rolesJson = taskNodeInstMapper.selectHandlerRoleIds(nodeInstId);
+        List<String> roleIds = JSON.parseArray(rolesJson, String.class);
+        if (roleIds == null || roleIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
+    }
+
+    private void scheduleNodeTimeout(Long nodeInstId, Integer maxDuration,
+                                     List<String> userIds, String operator) {
+        if (maxDuration == null || maxDuration <= 0 || userIds == null || userIds.isEmpty()) {
+            return;
+        }
+        LocalDateTime runTime = LocalDateTime.now().plusMinutes(maxDuration);
+        JSONObject payload = new JSONObject();
+        payload.put("nodeInstId", nodeInstId);
+        notifyService.enqueue((byte) BizTypeEnum.NODE_TIMEOUT.getCode(), nodeInstId,
+                (byte) ChannelEnum.DINGTALK.getCode(), payload, userIds,
+                "NODE_TIMEOUT_" + nodeInstId, runTime, operator);
     }
 
 }

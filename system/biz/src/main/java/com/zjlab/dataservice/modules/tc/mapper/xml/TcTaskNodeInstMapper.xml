@@ -149,6 +149,11 @@
         WHERE id = #{nodeInstId} AND del_flag = 0
     </select>
 
+    <select id="selectMaxDuration" resultType="int">
+        SELECT max_duration FROM tc_task_node_inst
+        WHERE id = #{nodeInstId} AND del_flag = 0
+    </select>
+
     <select id="countOngoingNodeInst" resultType="long">
         SELECT COUNT(*) FROM tc_task_node_inst
         WHERE task_id = #{taskId} AND del_flag = 0 AND status IN (0,1)
