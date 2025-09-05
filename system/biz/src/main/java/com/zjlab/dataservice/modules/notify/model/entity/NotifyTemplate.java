@@ -14,8 +14,8 @@ import lombok.Data;
 @ApiModel(value = "NotifyTemplate", description = "通知模板配置")
 public class NotifyTemplate extends BasePo {
 
-    private static final long serialVersionUID = 1L;
 
+    private static final long serialVersionUID = 2281835906780779999L;
     @ApiModelProperty("业务类型")
     private Byte bizType;
 

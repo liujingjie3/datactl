@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
 @ApiModel(value = "NotifyJob", description = "通知任务")
 public class NotifyJob extends BasePo {
 
-    private static final long serialVersionUID = 1L;
 
+    private static final long serialVersionUID = 1181807558798720880L;
     @ApiModelProperty("业务类型")
     private Byte bizType;
 

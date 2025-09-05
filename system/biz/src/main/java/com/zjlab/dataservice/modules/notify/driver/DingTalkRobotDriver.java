@@ -16,7 +16,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
 
     @Override
     public SendResult send(String userId, String title, String content, JSONObject payload) {
-        // 这里简化为直接成功返回
+        // todo 这里简化为直接成功返回,后续需要接入具体send逻辑
         return SendResult.success();
     }
 }

@@ -14,8 +14,8 @@ import lombok.Data;
 @ApiModel(value = "NotifyChannelConfig", description = "通知渠道配置")
 public class NotifyChannelConfig extends BasePo {
 
-    private static final long serialVersionUID = 1L;
 
+    private static final long serialVersionUID = -2852282620881529837L;
     @ApiModelProperty("渠道")
     private Byte channel;
 

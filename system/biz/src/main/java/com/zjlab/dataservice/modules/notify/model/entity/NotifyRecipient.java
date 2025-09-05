@@ -14,8 +14,8 @@ import lombok.Data;
 @ApiModel(value = "NotifyRecipient", description = "通知收件人明细")
 public class NotifyRecipient extends BasePo {
 
-    private static final long serialVersionUID = 1L;
 
+    private static final long serialVersionUID = -5788599433990527415L;
     @ApiModelProperty("任务ID")
     private Long jobId;
 
