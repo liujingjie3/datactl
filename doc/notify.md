@@ -40,6 +40,8 @@
 
 存放“要发”的一条通知任务（收件人由模板展开后写入明细表）。
 
+> 该模块为单租户设计，表结构中不包含 `tenant_id` 字段。
+
 ```sql
 CREATE TABLE `tc_notify_job` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '通知任务ID',
