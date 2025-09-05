@@ -3,7 +3,7 @@
 <mapper namespace="com.zjlab.dataservice.modules.notify.mapper.NotifyTemplateMapper">
 
     <select id="selectByBizAndChannel" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyTemplate">
-        SELECT id, tenant_id, del_flag, create_by, create_time, update_by, update_time,
+        SELECT id, del_flag, create_by, create_time, update_by, update_time,
                biz_type, channel, title_tpl, content_tpl, enabled
         FROM tc_notify_template
         WHERE biz_type = #{bizType}

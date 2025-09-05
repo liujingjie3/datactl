@@ -21,7 +21,7 @@
     </select>
 
     <select id="lockDueJobs" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyJob">
-        SELECT id, tenant_id, del_flag, create_by, create_time, update_by, update_time,
+        SELECT id, del_flag, create_by, create_time, update_by, update_time,
                biz_type, biz_id, dedup_key, payload, channel, status, retry_count, next_run_time, remark
         FROM tc_notify_job
         WHERE status = 0

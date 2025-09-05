@@ -11,7 +11,7 @@
     </insert>
 
     <select id="findByJobId" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyRecipient">
-        SELECT id, tenant_id, del_flag, create_by, create_time, update_by, update_time,
+        SELECT id, del_flag, create_by, create_time, update_by, update_time,
                job_id, user_id, status, last_error
         FROM tc_notify_recipient
         WHERE job_id = #{jobId}
