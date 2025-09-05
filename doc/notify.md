@@ -140,29 +140,29 @@ CREATE TABLE `tc_notify_channel_config` (
 
 ● 触发：TaskService.createTask() 事务成功后。
 ● 受众：该任务下所有节点实例的办理人（handler\_role\_ids → sys\_user\_role 展开），排除发起人。
-● 去重：dedup\_key = 'TASK\_CREATED:' || taskId || ':' || channel。
+● 去重：dedup\_key = '0\_' || taskId || '\_' || channel。
 ● biz\_id=task\_id，next\_run\_time=NOW()。
-● 例如，当taskId=1,OA触发，任务创建，则dedup\_key=0:1:0
+● 例如，当taskId=1,OA触发，任务创建，则dedup\_key=0\_1\_0
 
 ### 3.2 当前节点完成（biz\_type=1）
 
 ● 触发：TaskService.submitAction() 节点由 1→2 成功后。
 ● 受众：所有“下一节点”实例的办理人。
-● 去重：dedup\_key = 'NODE\_DONE:' || taskId || ':' || nodeInstId || ':' || channel。
+● 去重：dedup\_key = '1\_' || taskId || '\_' || nodeInstId || '\_' || channel。
 ● biz\_id=node\_inst\_id，next\_run\_time=NOW()。
 
 ### 3.3 进站前提醒（biz\_type=2）
 
 ● 触发：定时规划器（见 §6.2）根据 tc\_task.orbit\_plans 切片生成多个时点。
 ● 受众：工作流全体（含发起人）。
-● 去重：dedup\_key = 'ORBIT:' || taskId || ':' || orbitId || ':' || slotTime || ':' || channel。
+● 去重：dedup\_key = '2\_' || taskId || '\_' || orbitNo || '\_' || remainMin || '\_' || channel。
 ● biz\_id=task\_id，next\_run\_time=slotTime。
 
 ### 3.4 任务完成/异常（biz\_type=3/4）
 
 ● 触发：任务 status 由 0→1 / 0→2。
 ● 受众：工作流全体（含发起人）。
-● 去重：'TASK\_FINISHED:'||taskId / 'TASK\_ABNORMAL:'||taskId。
+● 去重：'3\_'||taskId||'\_'||channel / '4\_'||taskId||'\_'||channel。
 ● biz\_id=task\_id，next\_run\_time=NOW()。
 
 ### 3.5 超时提醒（biz\_type=5）
@@ -170,7 +170,7 @@ CREATE TABLE `tc_notify_channel_config` (
 ● 触发：定时扫描（见 §6.3）。
 ● 条件：ni.status=1 AND ni.max\_duration IS NOT NULL AND NOW() > ni.started\_at + INTERVAL max\_duration MINUTE。
 ● 受众：该节点当前办理人（建议以 tc\_task\_work\_item 的 phase\_status=1 定位）。
-● 去重：'NODE\_TIMEOUT:'||nodeInstId||':'||slotKey（slotKey 可按 15/30/60 分钟分片）。
+● 去重：dedup\_key = '5\_'||nodeInstId||'\_'||channel。
 ● biz\_id=node\_inst\_id，next\_run\_time=NOW() 或下一次提醒时点。
 
 ## 4. 核心组件与接口
@@ -256,7 +256,7 @@ Java 流程：
 ### 4.7 规划器/扫描器（Scheduler）
 
 ● OrbitRemindPlanner：解析 tc\_task.orbit\_plans，为每个圈次生成 T-60/T-45/T-30/T-15/T-0 的 tc\_notify\_job（若不存在 dedup\_key）。
-● NodeTimeoutScanner：扫描超时节点，按策略写 tc\_notify\_job，dedup\_key 使用 nodeInstId+slotKey。
+● NodeTimeoutScanner：扫描超时节点，按策略写 tc\_notify\_job，dedup\_key 使用 '5\_'||nodeInstId||'\_'||channel。
 
 ## 5. 模板与 payload 规范
 

@@ -232,9 +232,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             JSONObject payload = new JSONObject();
             payload.put("taskId", taskId);
             payload.put("taskName", dto.getTaskName());
+            int channelCode = ChannelEnum.DINGTALK.getCode();
+            String dedupKey = BizTypeEnum.TASK_CREATED.getCode() + "_" + taskId + "_" + channelCode;
             notifyService.enqueue((byte) BizTypeEnum.TASK_CREATED.getCode(), taskId,
-                    (byte) ChannelEnum.DINGTALK.getCode(), payload, recipients,
-                    "TASK_CREATED_" + taskId, LocalDateTime.now(), userId);
+                    (byte) channelCode, payload, recipients,
+                    dedupKey, LocalDateTime.now(), userId);
         }
 
         // 7.1 进站前提醒：对所有圈次定时通知
@@ -254,9 +256,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             payload.put("orbitNo", plan.getOrbitNo());
                             payload.put("inTime", plan.getInTime());
                             payload.put("remainMin", m);
-                            String dedup = "ORBIT_REMIND_" + taskId + "_" + plan.getOrbitNo() + "_" + m;
+                            int channelCode = ChannelEnum.DINGTALK.getCode();
+                            String dedup = BizTypeEnum.ORBIT_REMIND.getCode() + "_" + taskId + "_" +
+                                    plan.getOrbitNo() + "_" + m + "_" + channelCode;
                             notifyService.enqueue((byte) BizTypeEnum.ORBIT_REMIND.getCode(), taskId,
-                                    (byte) ChannelEnum.DINGTALK.getCode(), payload, orbitRecipients,
+                                    (byte) channelCode, payload, orbitRecipients,
                                     dedup, run, userId);
                         }
                     }
@@ -632,9 +636,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 if (!users.isEmpty()) {
                     JSONObject payload = new JSONObject();
                     payload.put("taskId", dto.getTaskId());
+                    int channelCode = ChannelEnum.DINGTALK.getCode();
+                    String dedupKey = BizTypeEnum.TASK_ABNORMAL.getCode() + "_" + dto.getTaskId() + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.TASK_ABNORMAL.getCode(), dto.getTaskId(),
-                            (byte) ChannelEnum.DINGTALK.getCode(), payload, users,
-                            "TASK_ABNORMAL_" + dto.getTaskId(), LocalDateTime.now(), userId);
+                            (byte) channelCode, payload, users,
+                            dedupKey, LocalDateTime.now(), userId);
                 }
                 return;
             }
@@ -661,9 +667,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             JSONObject payload = new JSONObject();
                             payload.put("taskId", dto.getTaskId());
                             payload.put("nodeInstId", nextId);
+                            int channelCode = ChannelEnum.DINGTALK.getCode();
+                            String dedupKey = BizTypeEnum.NODE_DONE.getCode() + "_" + dto.getTaskId() + "_" +
+                                    nextId + "_" + channelCode;
                             notifyService.enqueue((byte) BizTypeEnum.NODE_DONE.getCode(), nextId,
-                                    (byte) ChannelEnum.DINGTALK.getCode(), payload, userIds,
-                                    "NODE_DONE_" + nextId, LocalDateTime.now(), userId);
+                                    (byte) channelCode, payload, userIds,
+                                    dedupKey, LocalDateTime.now(), userId);
                             Integer maxDur = taskNodeInstMapper.selectMaxDuration(nextId);
                             scheduleNodeTimeout(nextId, maxDur, userIds, userId);
                         }
@@ -679,9 +688,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 if (!users.isEmpty()) {
                     JSONObject payload = new JSONObject();
                     payload.put("taskId", dto.getTaskId());
+                    int channelCode = ChannelEnum.DINGTALK.getCode();
+                    String dedupKey = BizTypeEnum.TASK_FINISHED.getCode() + "_" + dto.getTaskId() + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.TASK_FINISHED.getCode(), dto.getTaskId(),
-                            (byte) ChannelEnum.DINGTALK.getCode(), payload, users,
-                            "TASK_FINISHED_" + dto.getTaskId(), LocalDateTime.now(), userId);
+                            (byte) channelCode, payload, users,
+                            dedupKey, LocalDateTime.now(), userId);
                 }
             }
         }
@@ -1040,9 +1051,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         LocalDateTime runTime = LocalDateTime.now().plusMinutes(maxDuration);
         JSONObject payload = new JSONObject();
         payload.put("nodeInstId", nodeInstId);
+        int channelCode = ChannelEnum.DINGTALK.getCode();
+        String dedupKey = BizTypeEnum.NODE_TIMEOUT.getCode() + "_" + nodeInstId + "_" + channelCode;
         notifyService.enqueue((byte) BizTypeEnum.NODE_TIMEOUT.getCode(), nodeInstId,
-                (byte) ChannelEnum.DINGTALK.getCode(), payload, userIds,
-                "NODE_TIMEOUT_" + nodeInstId, runTime, operator);
+                (byte) channelCode, payload, userIds,
+                dedupKey, runTime, operator);
     }
 
 }
