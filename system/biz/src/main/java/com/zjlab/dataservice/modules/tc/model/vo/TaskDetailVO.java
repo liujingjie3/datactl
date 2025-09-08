@@ -16,6 +16,7 @@ public class TaskDetailVO extends TaskBaseVO {
     @JsonIgnore
     private String satellitesJson;
     private String taskRequirement;
+    private String imagingArea;
     private List<TaskHistoryNodeVO> history;
     private List<TaskWorkflowNodeVO> workflow;
 }

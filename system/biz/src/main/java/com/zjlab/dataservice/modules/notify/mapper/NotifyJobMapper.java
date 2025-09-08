@@ -16,14 +16,6 @@ public interface NotifyJobMapper extends BaseMapper<NotifyJob> {
 
     Long selectIdByDedupKey(@Param("dedupKey") String dedupKey);
 
-    Long insertJob(@Param("bizType") byte bizType,
-                   @Param("bizId") long bizId,
-                   @Param("channel") byte channel,
-                   @Param("payload") String payload,
-                   @Param("dedupKey") String dedupKey,
-                   @Param("nextRunTime") LocalDateTime nextRunTime,
-                   @Param("operator") String operator);
-
     List<NotifyJob> lockDueJobs(@Param("limit") int limit);
 
     int markSuccess(@Param("id") long id);
