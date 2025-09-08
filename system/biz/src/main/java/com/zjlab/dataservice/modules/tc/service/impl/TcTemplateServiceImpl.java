@@ -66,7 +66,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     private static final String BUCKET_NAME = "dspp";
     private static final String FOLDER_NAME = "/TJEOS/WORKDIR/FILE/command";
     private static final String adminRoleId = "f6817f48af4fb3af11b9e8bf182f618b";
-
+    private static final String ztzRoleId = "2";
 
     @Override
     public PageResult<TemplateQueryListVO> qryTemplateList(QueryListDto queryListDto) {
@@ -76,6 +76,7 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         String userId = UserThreadLocal.getUserId(); // 获取当前用户ID
         List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
         boolean isAdmin = roles.contains(adminRoleId);
+//        boolean isZTZ = roles.contains(ztzRoleId);
 
         IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto, userId, isAdmin);
 

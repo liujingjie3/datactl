@@ -45,9 +45,9 @@
         del_flag = 0
 
         <!-- 非特殊用户才限制 create_by -->
-        <if test="!isAdmin">
-            AND create_by = #{userId}
-        </if>
+<!--        <if test="!isAdmin">-->
+<!--            AND create_by = #{userId}-->
+<!--        </if>-->
         <if test="request.keyword != null and request.keyword != ''">
             AND (template_name LIKE CONCAT('%', #{request.keyword}, '%')
             OR remark LIKE CONCAT('%', #{request.keyword}, '%'))

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zjlab.dataservice.modules.tc.mapper.SatellitePassesMapper">
+
+    <resultMap id="BaseResultMap" type="com.zjlab.dataservice.modules.tc.model.entity.SatellitePasses">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="sat" column="sat" jdbcType="VARCHAR"/>
+        <result property="station" column="station" jdbcType="VARCHAR"/>
+        <result property="aos" column="aos" jdbcType="TIMESTAMP"/>
+        <result property="los" column="los" jdbcType="TIMESTAMP"/>
+        <result property="maxElevDeg" column="max_elev_deg" jdbcType="DOUBLE"/>
+        <result property="maxAzDeg" column="max_az_deg" jdbcType="DOUBLE"/>
+        <result property="maxElevTime" column="max_elev_time" jdbcType="TIMESTAMP"/>
+        <result property="aosAltDeg" column="aos_alt_deg" jdbcType="DOUBLE"/>
+        <result property="aosAzDeg" column="aos_az_deg" jdbcType="DOUBLE"/>
+        <result property="aosDis" column="aos_dis" jdbcType="DOUBLE"/>
+        <result property="losAltDeg" column="los_alt_deg" jdbcType="DOUBLE"/>
+        <result property="losAzDeg" column="los_az_deg" jdbcType="DOUBLE"/>
+        <result property="losDis" column="los_dis" jdbcType="DOUBLE"/>
+        <result property="durationS" column="duration_s" jdbcType="INTEGER"/>
+        <result property="duration" column="duration" jdbcType="VARCHAR"/>
+        <result property="daylight" column="daylight" jdbcType="BOOLEAN"/>
+        <result property="dopplerHzAtAos" column="doppler_hz_at_aos" jdbcType="DOUBLE"/>
+        <result property="dopplerHzAtTca" column="doppler_hz_at_tca" jdbcType="DOUBLE"/>
+        <result property="dopplerHzAtLos" column="doppler_hz_at_los" jdbcType="DOUBLE"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,sat,station,
+        aos,los,max_elev_deg,
+        max_az_deg,max_elev_time,aos_alt_deg,
+        aos_az_deg,aos_dis,los_alt_deg,
+        los_az_deg,los_dis,duration_s,
+        duration,daylight,doppler_hz_at_aos,
+        doppler_hz_at_tca,doppler_hz_at_los
+    </sql>
+
+    <!-- 查询当前时间到未来三天的数据，按 aos 升序 -->
+    <select id="queryPassInfo" resultType="com.zjlab.dataservice.modules.tc.model.entity.SatellitePasses">
+        SELECT *
+        FROM satellite_passes
+        WHERE aos <![CDATA[ >= ]]> NOW()
+          AND aos <![CDATA[ < ]]> NOW() + INTERVAL '3 days'
+        <if test="satIds != null and satIds.size > 0">
+            AND sat IN
+            <foreach collection="satIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY aos ASC, sat ASC   </select>
+</mapper>

@@ -1,17 +1,17 @@
 package com.zjlab.dataservice.modules.tc.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
-import com.zjlab.dataservice.modules.tc.model.dto.QueryListDto;
-import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateDto;
-import com.zjlab.dataservice.modules.tc.model.dto.TodoTemplateQueryDto;
+import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
 import com.zjlab.dataservice.modules.tc.model.vo.CommandVO;
+import com.zjlab.dataservice.modules.tc.model.vo.SatellitePassesVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
+import com.zjlab.dataservice.modules.tc.service.SatellitePassesService;
+import com.zjlab.dataservice.modules.tc.service.TcSatellitepassesService;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +27,12 @@ import java.util.List;
 public class TcTemplateController {
     @Autowired
     private TcTemplateService tcTemplateService;
+
+    @Autowired
+    private SatellitePassesService satellitePassesService;
+
+    @Autowired
+    private TcSatellitepassesService tcSatellitepassesService;
 
     /**
      * 自定义分页 实例模板信息表
@@ -116,8 +122,28 @@ public class TcTemplateController {
     @GetMapping("/parse/{id}")
     @ApiOperation(value = "解析指令单")
     public Result<List<CommandVO>> parse(@PathVariable Long id) throws Exception {
-        List<CommandVO> commandVOList =tcTemplateService.parse(id);
+        List<CommandVO> commandVOList = tcTemplateService.parse(id);
         return Result.ok(commandVOList);
     }
+
+    //卫星轨迹信息接口
+    @GetMapping("/passinfo")
+    @ApiOperation(value = "获取当下时刻往后三天的卫星轨道")
+    public Result<List<SatellitePassesVO>> passInfo(@RequestBody @Valid PassInfoQueryDto dto) {
+        List<SatellitePassesVO> satellitePassesVoList = satellitePassesService.passinfo(dto);
+        return Result.ok(satellitePassesVoList);
+    }
+
+    @PostMapping("/addpassinfo")
+    @ApiOperation(value = "添加到中间信息表")
+    public Result addPassInfo(@RequestBody(required = false) List<SatellitePassesDto> satellitePassesDtoList) {
+        if (satellitePassesDtoList == null || satellitePassesDtoList.isEmpty()) {
+            return Result.OK("no data");
+        }
+        tcSatellitepassesService.addPassInfo(satellitePassesDtoList);
+        return Result.ok();
+    }
+
+
 }
 
