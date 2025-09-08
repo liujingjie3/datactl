@@ -3,6 +3,7 @@ package com.zjlab.dataservice.modules.notify.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.zjlab.dataservice.modules.notify.mapper.NotifyJobMapper;
 import com.zjlab.dataservice.modules.notify.mapper.NotifyRecipientMapper;
+import com.zjlab.dataservice.modules.notify.model.entity.NotifyJob;
 import com.zjlab.dataservice.modules.notify.service.NotifyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,8 +35,18 @@ public class NotifyServiceImpl implements NotifyService {
         if (jobId != null) {
             return jobId;
         }
-        jobId = notifyJobMapper.insertJob(bizType, bizId, channel, payload.toJSONString(),
-                dedupKey, nextRunTime, operator);
+        NotifyJob job = new NotifyJob();
+        job.setBizType(bizType);
+        job.setBizId(bizId);
+        job.setChannel(channel);
+        job.setPayload(payload.toJSONString());
+        job.setDedupKey(dedupKey);
+        job.setNextRunTime(nextRunTime);
+        job.setStatus((byte) 0);
+        job.setRetryCount(0);
+        job.initBase(true, operator);
+        notifyJobMapper.insert(job);
+        jobId = job.getId().longValue();
         List<String> distinctUsers = userIds.stream().distinct().collect(Collectors.toList());
         notifyRecipientMapper.batchInsert(jobId, distinctUsers, operator);
         return jobId;

@@ -126,6 +126,7 @@
         <result column="createTime" property="createTime"/>
         <result column="status" property="status"/>
         <result column="taskRequirement" property="taskRequirement"/>
+        <result column="imagingArea" property="imagingArea"/>
     </resultMap>
 
     <select id="selectTaskDetail" resultMap="TaskDetailResultMap">
@@ -135,7 +136,8 @@
                t.satellites AS satellites,
                t.create_time AS createTime,
                t.status AS status,
-               t.task_requirement AS taskRequirement
+               t.task_requirement AS taskRequirement,
+               t.imaging_area AS imagingArea
         FROM tc_task t
         LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
         WHERE t.id = #{taskId} AND t.del_flag = 0
