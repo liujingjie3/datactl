@@ -23,6 +23,9 @@ public class SatellitePassesServiceImpl extends ServiceImpl<SatellitePassesMappe
     public List<SatellitePassesVO> passinfo(PassInfoQueryDto dto) {
 
         List<String> satIds = extractSatIds(dto);
+        if (satIds.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<SatellitePasses> satellitePasses = baseMapper.queryPassInfo(satIds);
 
         List<SatellitePassesVO> collect = satellitePasses.stream()
