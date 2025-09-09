@@ -4,35 +4,27 @@ import lombok.Data;
 
 @Data
 public class CommandVO {
-    private Integer id;
 
+    private Integer index;
 
-    /**
-     * 模版ID
-     */
-    private String templateId;
     /**
      * 指令代号
      */
-    private String code;
+    private String cmdCode;
     /**
      * 指令名称
      */
-    private String name;
+    private String cmdName;
     /**
      * 时序
      */
-    private String timeOrder;
+    private String execSequence;
     /**
      * 执行判据
      */
-    private String execution;
+    private String execCriteria;
     /**
      * 备注
      */
-    private String description;
-    /**
-     * 删除标记（0=正常，1=删除）
-     */
-
+    private String remark;
 }

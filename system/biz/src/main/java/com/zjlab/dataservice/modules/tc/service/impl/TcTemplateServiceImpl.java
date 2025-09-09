@@ -379,12 +379,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
                 if (row == null) continue;
 //                if (row.getCell(0) == null) continue;
                 CommandVO cmd = new CommandVO();
-                cmd.setId(i);
-                cmd.setCode(row.getCell(0).getStringCellValue());
-                cmd.setName(row.getCell(1).getStringCellValue());
-                cmd.setTimeOrder(row.getCell(2).getStringCellValue());
-                cmd.setExecution(row.getCell(3).getStringCellValue());
-                cmd.setDescription(row.getCell(4).getStringCellValue());
+                cmd.setIndex(i);
+                cmd.setCmdCode(row.getCell(0).getStringCellValue());
+                cmd.setCmdName(row.getCell(1).getStringCellValue());
+                cmd.setExecSequence(row.getCell(2).getStringCellValue());
+                cmd.setExecCriteria(row.getCell(3).getStringCellValue());
+                cmd.setRemark(row.getCell(4).getStringCellValue());
                 list.add(cmd);
             }
         }

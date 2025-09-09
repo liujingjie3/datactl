@@ -30,11 +30,11 @@ public class SatellitePassesServiceImpl extends ServiceImpl<SatellitePassesMappe
 
         List<SatellitePassesVO> collect = satellitePasses.stream()
                 .map(e -> SatellitePassesVO.builder()
-                        .id(e.getId())
-                        .aos(e.getAos())
-                        .los(e.getLos())
-                        .sat(e.getSat())
-                        .station(e.getStation())
+                        .orbitNo(String.valueOf(e.getId()))
+                        .inTime(e.getAos())
+                        .outTime(e.getLos())
+                        .satelliteCode(e.getSat())
+                        .groundStation(e.getStation())
                         .duration(Duration.between(e.getAos(), e.getLos()).getSeconds()) // 秒数
                         .build()
                 )

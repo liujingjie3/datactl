@@ -13,12 +13,12 @@ import java.time.LocalDateTime;
 @Builder
 public class SatellitePassesVO {
 
-    private Integer id;//圈次
-    private LocalDateTime aos;
-    private LocalDateTime los;
+    private String orbitNo;//圈次
+    private LocalDateTime inTime;
+    private LocalDateTime outTime;
 
-    private String sat;//卫星代号
-    private String station;//地面站
+    private String satelliteCode;//卫星代号
+    private String groundStation;//地面站
 
     private Long duration; //时长（秒）
 }

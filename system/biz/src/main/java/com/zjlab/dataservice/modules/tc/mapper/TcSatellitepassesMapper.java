@@ -1,4 +1,4 @@
-package com.zjlab.dataservice.modules.tc.mapper.xml;
+package com.zjlab.dataservice.modules.tc.mapper;
 
 import com.zjlab.dataservice.modules.tc.model.entity.TcSatellitepasses;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

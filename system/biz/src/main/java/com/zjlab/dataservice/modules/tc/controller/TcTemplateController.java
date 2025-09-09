@@ -127,7 +127,7 @@ public class TcTemplateController {
     }
 
     //卫星轨迹信息接口
-    @GetMapping("/passinfo")
+    @PostMapping("/passinfo")
     @ApiOperation(value = "获取当下时刻往后三天的卫星轨道")
     public Result<List<SatellitePassesVO>> passInfo(@RequestBody @Valid PassInfoQueryDto dto) {
         List<SatellitePassesVO> satellitePassesVoList = satellitePassesService.passinfo(dto);
@@ -136,7 +136,8 @@ public class TcTemplateController {
 
     @PostMapping("/addpassinfo")
     @ApiOperation(value = "添加到中间信息表")
-    public Result addPassInfo(@RequestBody(required = false) List<SatellitePassesDto> satellitePassesDtoList) {
+    public Result addPassInfo(@RequestBody(required = false) PassInfoAddDto passInfoAddDto) {
+        List<SatellitePassesDto> satellitePassesDtoList = passInfoAddDto.getSatellitePassesDtoList();
         if (satellitePassesDtoList == null || satellitePassesDtoList.isEmpty()) {
             return Result.OK("no data");
         }
