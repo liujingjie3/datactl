@@ -123,6 +123,8 @@
         <result column="taskName" property="taskName"/>
         <result column="taskType" property="taskType"/>
         <result column="satellites" property="satellitesJson"/>
+        <result column="remoteCmds" property="remoteCmdsJson"/>
+        <result column="orbitPlans" property="orbitPlansJson"/>
         <result column="createTime" property="createTime"/>
         <result column="status" property="status"/>
         <result column="taskRequirement" property="taskRequirement"/>
@@ -134,6 +136,8 @@
                t.task_name AS taskName,
                tt.template_name AS taskType,
                t.satellites AS satellites,
+               t.remote_cmds AS remoteCmds,
+               t.orbit_plans AS orbitPlans,
                t.create_time AS createTime,
                t.status AS status,
                t.task_requirement AS taskRequirement,

@@ -711,6 +711,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (StringUtils.isNotBlank(detail.getSatellitesJson())) {
             detail.setSatellites(JSON.parseArray(detail.getSatellitesJson(), SatelliteGroupVO.class));
         }
+        if (StringUtils.isNotBlank(detail.getRemoteCmdsJson())) {
+            detail.setRemoteCmds(JSON.parseArray(detail.getRemoteCmdsJson(), RemoteCmdExportVO.class));
+        }
+        if (StringUtils.isNotBlank(detail.getOrbitPlansJson())) {
+            detail.setOrbitPlans(JSON.parseArray(detail.getOrbitPlansJson(), OrbitPlanExportVO.class));
+        }
 
         // 3. 查询当前节点信息
         List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(Collections.singletonList(taskId));
@@ -803,28 +809,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         List<TaskNodeActionRecord> records = actionRecordMapper.selectList(
                 new QueryWrapper<TaskNodeActionRecord>().eq("task_id", taskId).orderByAsc("create_time"));
         if (!records.isEmpty()) {
-            Set<String> userIds = records.stream().map(TaskNodeActionRecord::getCreateBy)
-                    .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
-            Map<String, String> userNameMap = new HashMap<>();
-            if (!userIds.isEmpty()) {
-                List<SysUser> users = sysUserService.listByIds(userIds);
-                if (users != null) {
-                    for (SysUser u : users) {
-                        userNameMap.put(u.getId(), u.getRealname());
-                    }
-                }
-            }
             for (TaskNodeActionRecord r : records) {
                 // 组装单条操作日志
                 TaskNodeActionVO av = new TaskNodeActionVO();
                 av.setNodeInstId(r.getNodeInstId());
                 av.setActionType(r.getActionType());
                 av.setActionPayload(r.getActionPayload());
-                av.setActionTime(r.getCreateTime());
-                av.setOperatorId(r.getCreateBy());
-                if (StringUtils.isNotBlank(r.getCreateBy())) {
-                    av.setOperatorName(userNameMap.get(r.getCreateBy()));
-                }
                 TaskHistoryNodeVO hv = historyMap.get(r.getNodeInstId());
                 if (hv != null) {
                     hv.getActionLogs().add(av);
