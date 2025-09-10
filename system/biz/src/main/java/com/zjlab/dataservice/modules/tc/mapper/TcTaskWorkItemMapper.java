@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.tc.mapper;
 
 import org.apache.ibatis.annotations.Param;
+import java.util.List;
 
 /**
  * 任务工作项相关操作
@@ -39,5 +40,14 @@ public interface TcTaskWorkItemMapper {
     Long countActiveWorkItem(@Param("taskId") Long taskId,
                              @Param("nodeInstId") Long nodeInstId,
                              @Param("assigneeId") String assigneeId);
+
+    /** 激活节点时更新工作项状态 */
+    int activateWorkItem(@Param("taskId") Long taskId,
+                         @Param("nodeInstId") Long nodeInstId,
+                         @Param("userId") String userId);
+
+    /** 查询节点的处理人 */
+    List<String> selectAssigneeIds(@Param("taskId") Long taskId,
+                                   @Param("nodeInstId") Long nodeInstId);
 }
 
