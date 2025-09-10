@@ -53,6 +53,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import com.zjlab.dataservice.modules.storage.service.impl.MinioFileServiceImpl;
+import com.zjlab.dataservice.common.util.storage.MinioUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +73,8 @@ import java.util.stream.Collectors;
 import java.util.Comparator;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 任务相关服务实现
@@ -103,6 +108,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private NotifyService notifyService;
+
+    @Autowired
+    private MinioFileServiceImpl minioFileService;
+
+    private static final String BUCKET_NAME = "dspp";
+    private static final String TASK_FOLDER = "/TJEOS/WORKDIR/FILE/task";
 
 
     /**
@@ -580,9 +591,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
      */
     @Override
     @Transactional
-    public void submitAction(NodeActionSubmitDto dto) {
+    public void submitAction(NodeActionSubmitDto dto, MultipartFile[] files) {
         // 1. 参数校验
-        if (dto == null || dto.getTaskId() == null || dto.getNodeInstId() == null || dto.getActionType() == null) {
+        if (dto == null || dto.getTaskId() == null || dto.getNodeInstId() == null
+                || dto.getActions() == null || dto.getActions().isEmpty()) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
         // 2. 获取当前用户
@@ -603,22 +615,70 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
         }
 
+        String folder = TASK_FOLDER + "/" + dto.getTaskId() + "/" + dto.getNodeInstId();
+
         // 4. 记录本次操作
-        TaskNodeActionRecord record = new TaskNodeActionRecord();
-        record.setTaskId(dto.getTaskId());
-        record.setNodeInstId(dto.getNodeInstId());
-        record.setActionType(dto.getActionType());
-        record.setActionPayload(dto.getActionPayload());
-        record.setCreateBy(userId);
-        record.setUpdateBy(userId);
-        actionRecordMapper.insert(record);
+        for (TaskNodeActionVO action : dto.getActions()) {
+            Integer type = action.getActionType();
+            if (type != null) {
+                if (type == 0) {
+                    List<Map<String, String>> attachments = new ArrayList<>();
+                    if (files != null) {
+                        for (MultipartFile file : files) {
+                            try {
+                                String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, folder);
+                                Map<String, String> att = new HashMap<>();
+                                att.put("filename", file.getOriginalFilename());
+                                att.put("url", objectName);
+                                attachments.add(att);
+                            } catch (Exception e) {
+                                throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+                            }
+                        }
+                    }
+                    JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
+                            ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
+                    payload.put("attachments", attachments);
+                    action.setActionPayload(payload.toJSONString());
+                } else if (type == 4) {
+                    JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
+                            ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
+                    String fileName = UUID.randomUUID().toString().replace("-", "") + ".json";
+                    String objectName = folder + "/" + fileName;
+                    try {
+                        MinioUtil.uploadFile(BUCKET_NAME, objectName,
+                                new ByteArrayInputStream(payload.toJSONString().getBytes(StandardCharsets.UTF_8)));
+                    } catch (Exception e) {
+                        throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+                    }
+                    List<Map<String, String>> attachments = new ArrayList<>();
+                    Map<String, String> att = new HashMap<>();
+                    att.put("filename", fileName);
+                    att.put("url", objectName);
+                    attachments.add(att);
+                    payload.put("attachments", attachments);
+                    action.setActionPayload(payload.toJSONString());
+                }
+            }
+            TaskNodeActionRecord record = new TaskNodeActionRecord();
+            record.setTaskId(dto.getTaskId());
+            record.setNodeInstId(dto.getNodeInstId());
+            record.setActionType(action.getActionType());
+            record.setActionPayload(action.getActionPayload());
+            record.setCreateBy(userId);
+            record.setUpdateBy(userId);
+            actionRecordMapper.insert(record);
+        }
 
         // 5. 处理决策操作
-        if (dto.getActionType() == 2) {
+        TaskNodeActionVO decisionAction = dto.getActions().stream()
+                .filter(a -> a.getActionType() != null && a.getActionType() == 2)
+                .findFirst().orElse(null);
+        if (decisionAction != null) {
             boolean processed = true;
-            if (dto.getActionPayload() != null) {
+            if (decisionAction.getActionPayload() != null) {
                 try {
-                    JSONObject obj = JSON.parseObject(dto.getActionPayload());
+                    JSONObject obj = JSON.parseObject(decisionAction.getActionPayload());
                     String decision = obj.getString("decision");
                     if (decision != null && !"yes".equalsIgnoreCase(decision)) {
                         processed = false;

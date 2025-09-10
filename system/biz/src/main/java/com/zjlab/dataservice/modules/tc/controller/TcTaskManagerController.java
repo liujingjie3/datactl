@@ -13,11 +13,14 @@ import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateNodeFlowVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
+import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeActionVO;
+import com.alibaba.fastjson.JSON;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.multipart.MultipartFile;
 import org.jeecgframework.poi.excel.entity.ExportParams;
 import org.jeecgframework.poi.excel.def.NormalExcelConstants;
 import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
@@ -138,11 +142,18 @@ public class TcTaskManagerController {
         return Result.ok(flows);
     }
 
-    @PostMapping("/node/submit")
+    @PostMapping(value = "/node/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperationSupport(order = 7)
     @ApiOperation(value = "提交节点操作", notes = "节点办理操作提交")
-    public Result<Void> submitNodeAction(@RequestBody @Valid NodeActionSubmitDto dto) {
-        taskManagerService.submitAction(dto);
+    public Result<Void> submitNodeAction(@RequestParam Long taskId,
+                                         @RequestParam Long nodeInstId,
+                                         @RequestParam String actions,
+                                         @RequestParam(value = "files", required = false) MultipartFile[] files) {
+        NodeActionSubmitDto dto = new NodeActionSubmitDto();
+        dto.setTaskId(taskId);
+        dto.setNodeInstId(nodeInstId);
+        dto.setActions(JSON.parseArray(actions, TaskNodeActionVO.class));
+        taskManagerService.submitAction(dto, files);
         return Result.ok();
     }
 
