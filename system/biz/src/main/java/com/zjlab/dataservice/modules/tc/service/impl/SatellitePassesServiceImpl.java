@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zjlab.dataservice.modules.tc.model.dto.PassInfoQueryDto;
 import com.zjlab.dataservice.modules.tc.model.entity.SatellitePasses;
 import com.zjlab.dataservice.modules.tc.model.entity.SatellitePassesinfo;
+import com.zjlab.dataservice.modules.tc.model.vo.SatelliteGroupVO;
 import com.zjlab.dataservice.modules.tc.model.vo.SatellitePassesVO;
 import com.zjlab.dataservice.modules.tc.service.SatellitePassesService;
 import com.zjlab.dataservice.modules.tc.mapper.SatellitePassesMapper;
@@ -20,9 +21,9 @@ public class SatellitePassesServiceImpl extends ServiceImpl<SatellitePassesMappe
         implements SatellitePassesService {
 
     @Override
-    public List<SatellitePassesVO> passinfo(PassInfoQueryDto dto) {
+    public List<SatellitePassesVO> passinfo(List<SatelliteGroupVO> voList) {
 
-        List<String> satIds = extractSatIds(dto);
+        List<String> satIds = extractSatIds(voList);
         if (satIds.isEmpty()) {
             return Collections.emptyList();
         }
@@ -42,12 +43,11 @@ public class SatellitePassesServiceImpl extends ServiceImpl<SatellitePassesMappe
         return collect;
     }
 
-    public List<String> extractSatIds(PassInfoQueryDto dto) {
-        if (dto == null || dto.getSatellites() == null) {
+    public List<String> extractSatIds(List<SatelliteGroupVO> dto) {
+        if (dto == null) {
             return Collections.emptyList();
         }
-        return dto.getSatellites()
-                .stream()
+        return dto.stream()
                 .filter(Objects::nonNull) // 过滤掉 null 分组
                 .flatMap(group -> group.getSatIds().stream()) // 展开成一个流
                 .filter(Objects::nonNull) // 过滤掉 null 的 satId

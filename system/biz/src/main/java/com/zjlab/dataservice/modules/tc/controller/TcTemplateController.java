@@ -6,10 +6,7 @@ import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
-import com.zjlab.dataservice.modules.tc.model.vo.CommandVO;
-import com.zjlab.dataservice.modules.tc.model.vo.SatellitePassesVO;
-import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
-import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
+import com.zjlab.dataservice.modules.tc.model.vo.*;
 import com.zjlab.dataservice.modules.tc.service.SatellitePassesService;
 import com.zjlab.dataservice.modules.tc.service.TcSatellitepassesService;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
@@ -129,22 +126,20 @@ public class TcTemplateController {
     //卫星轨迹信息接口
     @PostMapping("/passinfo")
     @ApiOperation(value = "获取当下时刻往后三天的卫星轨道")
-    public Result<List<SatellitePassesVO>> passInfo(@RequestBody @Valid PassInfoQueryDto dto) {
+    public Result<List<SatellitePassesVO>> passInfo(@RequestBody(required = false) List<SatelliteGroupVO> dto) {
         List<SatellitePassesVO> satellitePassesVoList = satellitePassesService.passinfo(dto);
         return Result.ok(satellitePassesVoList);
     }
 
     @PostMapping("/addpassinfo")
     @ApiOperation(value = "添加到中间信息表")
-    public Result addPassInfo(@RequestBody(required = false) PassInfoAddDto passInfoAddDto) {
-        List<SatellitePassesDto> satellitePassesDtoList = passInfoAddDto.getSatellitePassesDtoList();
+    public Result addPassInfo(@RequestBody(required = false) List<SatellitePassesDto> satellitePassesDtoList) {
         if (satellitePassesDtoList == null || satellitePassesDtoList.isEmpty()) {
             return Result.OK("no data");
         }
         tcSatellitepassesService.addPassInfo(satellitePassesDtoList);
         return Result.ok();
     }
-
 
 }
 
