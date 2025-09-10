@@ -182,7 +182,8 @@
                ni.handler_role_ids AS handlerRoleIds,
                ni.started_at AS startedAt,
                ni.completed_at AS completedAt,
-               ni.completed_by AS completedBy
+               ni.completed_by AS completedBy,
+               ni.actions AS actions
         FROM tc_task_node_inst ni
         JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
         WHERE ni.task_id = #{taskId} AND ni.del_flag = 0

@@ -794,6 +794,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         List<TaskWorkflowNodeVO> overview = new ArrayList<>();
         List<TaskHistoryNodeVO> history = new ArrayList<>();
         Map<Long, TaskHistoryNodeVO> historyMap = new HashMap<>();
+        Map<Long, Map<Integer, NodeActionDto>> nodeActionMap = new HashMap<>();
         Set<String> roleIds = new HashSet<>();
         for (TaskNodeVO inst : insts) {
             // 概况信息
@@ -847,6 +848,19 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 history.add(hv);
                 historyMap.put(inst.getNodeInstId(), hv);
             }
+
+            if (StringUtils.isNotBlank(inst.getActions())) {
+                List<NodeActionDto> actList = JSON.parseArray(inst.getActions(), NodeActionDto.class);
+                if (actList != null) {
+                    Map<Integer, NodeActionDto> map = new HashMap<>();
+                    for (NodeActionDto a : actList) {
+                        if (a != null && a.getType() != null) {
+                            map.put(a.getType(), a);
+                        }
+                    }
+                    nodeActionMap.put(inst.getNodeInstId(), map);
+                }
+            }
         }
 
         if (!roleIds.isEmpty()) {
@@ -870,11 +884,86 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 new QueryWrapper<TaskNodeActionRecord>().eq("task_id", taskId).orderByAsc("create_time"));
         if (!records.isEmpty()) {
             for (TaskNodeActionRecord r : records) {
-                // 组装单条操作日志
                 TaskNodeActionVO av = new TaskNodeActionVO();
                 av.setNodeInstId(r.getNodeInstId());
                 av.setActionType(r.getActionType());
                 av.setActionPayload(r.getActionPayload());
+
+                String operatorName = null;
+                if (StringUtils.isNotBlank(r.getCreateBy())) {
+                    SysUser user = sysUserService.getById(r.getCreateBy());
+                    if (user != null) {
+                        operatorName = user.getRealname();
+                    }
+                }
+                Map<Integer, NodeActionDto> actCfg = nodeActionMap.get(r.getNodeInstId());
+                NodeActionDto cfg = actCfg == null ? null : actCfg.get(r.getActionType());
+                String actionName = cfg != null ? cfg.getName() : null;
+                String detail = "";
+                try {
+                    JSONObject payload = StringUtils.isNotBlank(r.getActionPayload())
+                            ? JSON.parseObject(r.getActionPayload()) : new JSONObject();
+                    switch (r.getActionType() == null ? -1 : r.getActionType()) {
+                        case 0: {
+                            JSONArray arr = payload.getJSONArray("attachments");
+                            int count = arr == null ? 0 : arr.size();
+                            detail = "上传" + count + "个附件，点击查看具体附件";
+                            break;
+                        }
+                        case 1: {
+                            detail = "点击查看轨道计划";
+                            break;
+                        }
+                        case 2: {
+                            String yesText = "是";
+                            String noText = "否";
+                            if (cfg != null && StringUtils.isNotBlank(cfg.getConfig())) {
+                                JSONObject c = JSON.parseObject(cfg.getConfig());
+                                yesText = c.getString("yesText") == null ? yesText : c.getString("yesText");
+                                noText = c.getString("noText") == null ? noText : c.getString("noText");
+                            }
+                            String decision = payload.getString("decision");
+                            if (decision != null) {
+                                if ("yes".equalsIgnoreCase(decision)) {
+                                    detail = "决策：" + yesText;
+                                } else if ("no".equalsIgnoreCase(decision)) {
+                                    detail = "决策：" + noText;
+                                } else {
+                                    detail = "决策：" + decision;
+                                }
+                            } else {
+                                detail = "决策：";
+                            }
+                            break;
+                        }
+                        case 3: {
+                            String text = payload.getString("text");
+                            detail = "填写说明：" + (text == null ? "" : text);
+                            break;
+                        }
+                        case 4: {
+                            detail = "点击查看遥控指令单";
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                } catch (Exception ignore) {
+                    // ignore parse errors
+                }
+                if (StringUtils.isBlank(actionName)) {
+                    actionName = "";
+                }
+                StringBuilder log = new StringBuilder();
+                if (StringUtils.isNotBlank(operatorName)) {
+                    log.append(operatorName);
+                }
+                log.append("进行了").append(actionName).append("操作");
+                if (StringUtils.isNotBlank(detail)) {
+                    log.append("，").append(detail);
+                }
+                av.setOperateLog(log.toString());
+
                 TaskHistoryNodeVO hv = historyMap.get(r.getNodeInstId());
                 if (hv != null) {
                     hv.getActionLogs().add(av);

@@ -657,8 +657,8 @@ Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无�
 异常结束任务 `POST /task/abort?taskId=...`
 Resp：`{ success: true }`
 
-任务详情 `GET /task/detail?taskId=...`
-Resp：任务主信息 + 当前激活节点ID集合（可选）
+任务详情 `GET /tc/taskManager/detail?taskId=...`
+Resp：任务主信息 + 当前激活节点信息、节点历史及操作日志
 
 查询遥控指令单 `GET /task/remoteCmds?taskId=...`
 Resp：`[RemoteCmdExportVO]`
@@ -677,13 +677,14 @@ Resp：`[TemplateNodeFlowVO]` 按 `orderNo` 升序排列（resultDisplayNeeded=1
 
 ### 3.2 节点办理
 
-提交动作 `POST /task/node/submit`
-Body(JSON)：
+提交动作 `POST /tc/taskManager/node/submit`
+表单字段（`multipart/form-data`）：
 
 ```
-taskId*, nodeInstId*, actionType* (0/1/2/3), actionPayload* (JSON)
+taskId*, nodeInstId*, actions* (JSON字符串), files? (文件数组)
 ```
 
+说明：`actions` 为 `[{actionType,payload}]` 列表，可一次提交多个动作；上传类动作的附件通过 `files` 字段传输。
 行为：按 §2.3 完成节点、推进后继、发放待办。
 Resp：`{ success: true }`（仅当前节点操作人可提交）
 
@@ -1615,13 +1616,14 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 ### 9.1 返回位置与结构
 
 * `GET /tc/taskManager/detail?taskId={taskId}`
-* 在返回体的 `actions[]` 中，为每个节点实例增加 `logs` 字段；日志数组中元素结构统一为：
+* 在返回体的 `history[]` 中，为每个节点实例增加 `actionLogs` 字段；日志数组中元素结构统一为：
 
 ```json
 {
   "nodeInstId": 8881,
   "actionType": 4,
-  "operateLog": "李雷进行了修改遥控指令单操作：上传1个附件"
+  "actionPayload": "{...}",
+  "operateLog": "李雷进行了修改遥控指令单操作，上传1个附件"
 }
 ```
 
