@@ -15,4 +15,6 @@ public class TaskNodeActionVO implements Serializable {
     private Integer actionType;
     /** 提交内容JSON */
     private String actionPayload;
+    /** 操作日志 */
+    private String operateLog;
 }

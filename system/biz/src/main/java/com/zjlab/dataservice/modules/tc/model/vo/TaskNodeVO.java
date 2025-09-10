@@ -48,4 +48,6 @@ public class TaskNodeVO implements Serializable {
     private String prevNodeIdsJson;
     @JsonIgnore
     private String nextNodeIdsJson;
+    @JsonIgnore
+    private String actions;
 }
