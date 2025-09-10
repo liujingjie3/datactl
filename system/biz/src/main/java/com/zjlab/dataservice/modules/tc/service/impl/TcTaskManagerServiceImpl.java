@@ -899,7 +899,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 Map<Integer, NodeActionDto> actCfg = nodeActionMap.get(r.getNodeInstId());
                 NodeActionDto cfg = actCfg == null ? null : actCfg.get(r.getActionType());
                 String actionName = cfg != null ? cfg.getName() : null;
-                String detail = "";
+                String detailDesc = "";
                 try {
                     JSONObject payload = StringUtils.isNotBlank(r.getActionPayload())
                             ? JSON.parseObject(r.getActionPayload()) : new JSONObject();
@@ -907,11 +907,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         case 0: {
                             JSONArray arr = payload.getJSONArray("attachments");
                             int count = arr == null ? 0 : arr.size();
-                            detail = "上传" + count + "个附件，点击查看具体附件";
+                            detailDesc = "上传" + count + "个附件，点击查看具体附件";
                             break;
                         }
                         case 1: {
-                            detail = "点击查看轨道计划";
+                            detailDesc = "点击查看轨道计划";
                             break;
                         }
                         case 2: {
@@ -925,24 +925,24 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             String decision = payload.getString("decision");
                             if (decision != null) {
                                 if ("yes".equalsIgnoreCase(decision)) {
-                                    detail = "决策：" + yesText;
+                                    detailDesc = "决策：" + yesText;
                                 } else if ("no".equalsIgnoreCase(decision)) {
-                                    detail = "决策：" + noText;
+                                    detailDesc = "决策：" + noText;
                                 } else {
-                                    detail = "决策：" + decision;
+                                    detailDesc = "决策：" + decision;
                                 }
                             } else {
-                                detail = "决策：";
+                                detailDesc = "决策：";
                             }
                             break;
                         }
                         case 3: {
                             String text = payload.getString("text");
-                            detail = "填写说明：" + (text == null ? "" : text);
+                            detailDesc = "填写说明：" + (text == null ? "" : text);
                             break;
                         }
                         case 4: {
-                            detail = "点击查看遥控指令单";
+                            detailDesc = "点击查看遥控指令单";
                             break;
                         }
                         default:
@@ -959,8 +959,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     log.append(operatorName);
                 }
                 log.append("进行了").append(actionName).append("操作");
-                if (StringUtils.isNotBlank(detail)) {
-                    log.append("，").append(detail);
+                if (StringUtils.isNotBlank(detailDesc)) {
+                    log.append("，").append(detailDesc);
                 }
                 av.setOperateLog(log.toString());
 
