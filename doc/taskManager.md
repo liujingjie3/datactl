@@ -1394,3 +1394,246 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
   ]
 }
 
+## 8. 任务管理模块节点操作
+
+###  8.1. 标准化操作项（节点配置 actions）
+
+系统支持五种标准化操作类型（type）：
+
+1. **上传操作**（type=0）
+
+* 用途：文件上传处理
+* 配置项（`config`）：
+
+```json
+{
+  "allowTypes": [".pdf",".docx",".xlsx"],
+  "maxFileSize": 10,
+  "multiple": true
+}
+```
+
+* payload 规范（前端提交）：
+
+```json
+{}
+```
+
+* 存库示例（后端在保存时填写 `attachments`）：
+
+```json
+{
+  "attachments": [
+    {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"}
+  ]
+}
+```
+
+2. **选择圈次计划**（type=1）
+
+* 用途：从系统生成的圈次计划中选择（仅展示**已启用**的计划）
+* 配置项：无需额外配置（系统自动生成选项）
+* 数据来源与过滤：创建任务时写入的 **仿真轨道计划**（`tc_task.orbit_plans` 原始 JSON）；节点办理端**只取其中 ************************************************************************************`used="是"`************************************************************************************ 的计划**作为可选项展示。
+* payload 规范（提交时带上 orbit\_plans 标识和用户勾选结果）：
+
+```json
+{
+  "orbit_plans": [
+        {"task":"京津冀区域成像任务","used":"是","orbitNo":"001"},
+        {"task":"长三角区域成像任务","used":"否","orbitNo":"002"}
+      ]
+}
+```
+
+3. **决策操作**（type=2）
+
+* 用途：二元决策处理
+* 配置项（`config`）：
+
+```json
+{
+  "yesText": "是",
+  "noText": "否"
+}
+```
+
+* payload 规范：
+
+```json
+{"decision":"yes"}
+```
+
+4. **文本填写操作**（type=3）
+
+* 用途：文本内容输入
+* 配置项（`config`）：
+
+```json
+{
+  "placeholder": "请输入说明…",
+  "maxChars": 100,
+  "required": false,
+  "allowMultipleLine": false
+}
+```
+
+* payload 规范：
+
+```json
+{"text":"执行记录……"}
+```
+
+5. **修改遥控指令单**（type=4）
+
+* 用途：上传并存储新版遥控指令单
+* 配置项：无
+* **重要：不回写 ************************************************************************************`tc_task.remote_cmds`************************************************************************************；办理阶段仅作为历史记录保存在 ************************************************************************************`tc_task_node_action_record.action_payload`************************************************************************************，用于日志展示。**
+* payload 规范（提交时，前端仅传指令数据）：
+
+```json
+{
+  "remote_cmds": [
+    {"index": 1, "remark": "首次开机", "cmdCode": "CMD001", "cmdName": "开机指令", "execCriteria": "电源状态=OFF", "execSequence": "SEQ-001"},
+    {"index": 2, "remark": "调整俯仰角 +3°", "cmdCode": "CMD002", "cmdName": "姿态调整", "execCriteria": "开机完成", "execSequence": "SEQ-002"}
+  ]
+}
+```
+
+* 存库示例（后端根据前端传来的remote\_cmds生成文件上传，在保存时补充 `attachments`，）：
+
+```json
+{
+  "attachments": [
+    {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"}
+  ],
+  "remote_cmds": [
+    {"index": 1, "remark": "首次开机", "cmdCode": "CMD001", "cmdName": "开机指令", "execCriteria": "电源状态=OFF", "execSequence": "SEQ-001"},
+    {"index": 2, "remark": "调整俯仰角 +3°", "cmdCode": "CMD002", "cmdName": "姿态调整", "execCriteria": "开机完成", "execSequence": "SEQ-002"}
+  ]
+}
+```
+
+---
+
+### 8.2. 上传文件存放设计
+
+* **统一存储**：所有上传文件统一存储到对象存储（MinIO/S3/OBS），不区分节点类型。
+* **统一路径规范**：`/TJEOS/WORKDIR/FILE/task/{taskId}/{nodeInstId}/{uuid}_{filename}`。
+
+  * 每个节点配置有多个 action，但**必须且仅有一个“决策（type=2）”**。**点击决策时**，将该节点的**所有操作项结果**一次性提交，上送形式为**若干个 ************************************************************************************`{actionType, payload}`************************************************************************************ 组合**（见下文 2.1）。
+  * `attachments` 字段**不由前端提交**，而是后端在文件上传成功后生成并回填到 `action_payload`（用于日志与回放）。
+
+#### 8.2.1 决策提交的一次性上传 + 落库（简化方案）
+
+> 点击\*\*决策（type=2）\*\*时，**一次性**提交本节点所有操作项结果与需要上传的文件，后端在同一事务中：校验 → 保存文件到最终路径 → 生成 `attachments` → 写入 `tc_task_node_action_record` → 办理节点。
+
+**请求协议（推荐）**：`multipart/form-data`
+
+* 表单字段：
+
+  * `taskId`: number
+  * `nodeInstId`: number
+  * `actions`: string（JSON，包含本节点所有动作的 `{actionType,payload}` 列表，包括上传/选择圈次计划/文本填写/修改遥控指令单/决策等；其中上传类动作的 payload 中前端只传元数据或空，文件本身随 multipart 一起提交）
+
+**actions 字段（JSON 示例）**
+
+```json
+{
+  "actions": [
+    { "actionType": 1, "payload": { "orbit_plans": [
+      {"task":"京津冀区域成像任务","used":"是","orbitNo":"001"},
+      {"task":"长三角区域成像任务","used":"否","orbitNo":"002"}
+    ]}},
+    { "actionType": 3, "payload": { "text": "执行记录……" } },
+    { "actionType": 4, "payload": { "remote_cmds": [
+      { "index": 1, "remark": "首次开机", "cmdCode": "CMD001", "cmdName": "开机指令", "execCriteria": "电源状态=OFF", "execSequence": "SEQ-001" },
+      { "index": 2, "remark": "调整俯仰角 +3°", "cmdCode": "CMD002", "cmdName": "姿态调整", "execCriteria": "开机完成", "execSequence": "SEQ-002" }
+    ] } },
+    { "actionType": 2, "payload": { "decision": "yes" } }
+  ]
+}
+```
+
+**后端处理（同一事务内）**
+
+1. 校验节点状态/权限、校验各 action 的 `config`（`maxFileSize`、`allowTypes`、`maxChars` 等）。
+2. 对于上传类动作，根据 actionType 区分处理：
+
+   * **type=0（上传操作）**：前端随 multipart 提交一个或多个文件，payload 可为空。后端保存文件后生成 `attachments` 数组并回填到 payload。
+   * **type=4（修改遥控指令单）**：前端仅在 payload 中提交结构化的 `remote`\*`cmds 列表，不再上传文件。后端直接根据remote`\_cmds生成文件上传，生成 `attachments`落库。
+3. 为各自动作生成 `attachments` 数组（filename/url）。
+4. 写入 `tc_task_node_action_record`（一动作一记录，或汇总为一条，按实现选型）。
+5. 办理节点：执行或异常流程、推进后继、更新工作项与日志。
+
+**落库示例**
+
+* **type=0（上传操作）**：
+
+```json
+{
+  "actionType": 0,
+  "payload": {
+    "attachments": [
+      {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"},
+      {"filename":"B影像.tif","url":"https://obj/.../b.tif"}
+    ]
+  }
+}
+```
+
+* **type=4（修改遥控指令单）**：
+
+```json
+{
+  "actionType": 4,
+  "payload": {
+    "remote_cmds": [
+      {"index":1,"remark":"首次开机","cmdCode":"CMD001","cmdName":"开机指令","execCriteria":"电源状态=OFF","execSequence":"SEQ-001"},
+      {"index":2,"remark":"调整俯仰角 +3°","cmdCode":"CMD002","cmdName":"姿态调整","execCriteria":"开机完成","execSequence":"SEQ-002"}
+    ],
+    "attachments": [
+    {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"}
+  ]
+  }
+}
+```
+
+**幂等与校验**
+
+* 决策提交为**单次原子事务**：任一校验/保存失败则整体回滚；客户端可使用 `Idempotency-Key`（请求头）配合服务端去重。
+* 仍需校验：
+
+  * 节点 `status=1` 且操作者具备待办权限；
+  * `allowTypes`、`maxFileSize`、`multiple`、`maxChars` 等配置；
+
+---
+
+## 9. 日志拼装逻辑（后端）
+
+> 日志仅来源于 **tc\_task\_node\_action\_record**（不包含系统事件）。由后端在 `TcTaskManagerController.detail` 中拼装好后返回，前端仅负责渲染。
+
+### 9.1 返回位置与结构
+
+* `GET /tc/taskManager/detail?taskId={taskId}`
+* 在返回体的 `actions[]` 中，为每个节点实例增加 `logs` 字段；日志数组中元素结构统一为：
+
+```json
+{
+  "nodeInstId": 8881,
+  "actionType": 4,
+  "operateLog": "李雷进行了修改遥控指令单操作：上传1个附件"
+}
+```
+
+### 9.2 拼装规则
+
+* 每条 `tc_task_node_action_record` → 一条日志。
+* operateLog 拼接规则：`【operatorName】+ "进行了" + actionName + "操作" + "，" + 具体操作详情`
+
+### 9.3 示例 operateLog
+
+* **type=0 上传操作**：`上传操作：李雷进行了上传文件操作，上传2个附件，点击查看具体附件` （点击后可下载附件列表）
+* **type=1 选择圈次计划**：`选择圈次计划：韩梅梅进行了选择圈次计划操作，点击查看轨道计划` （点击后展示轨道计划 List）
+* **type=2 决策**：决策：`王五进行了决策操作，决策：是` （其中“是”或“否”取自 action 配置的 yesText/noText）
+* **type=3 文本填写**：文本填写：`赵六进行了文本填写操作，填写说明：执行过程顺利`
+* **type=4 修改遥控指令单**：**修改遥控指令单：**`李雷进行了修改遥控指令单操作，点击查看遥控指令单` （点击后展示遥控指令单 List）
