@@ -43,6 +43,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
 import com.zjlab.dataservice.modules.tc.service.TcTaskManagerService;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerTabEnum;
 import com.zjlab.dataservice.modules.tc.enums.TaskManagerStatusEnum;
+import com.zjlab.dataservice.modules.tc.enums.NodeActionTypeEnum;
 import com.zjlab.dataservice.modules.system.entity.SysRole;
 import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.service.ISysUserService;
@@ -619,9 +620,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
         // 4. 记录本次操作
         for (TaskNodeActionVO action : dto.getActions()) {
-            Integer type = action.getActionType();
+            NodeActionTypeEnum type = NodeActionTypeEnum.fromCode(action.getActionType());
             if (type != null) {
-                if (type == 0) {
+                if (type == NodeActionTypeEnum.UPLOAD) {
                     List<Map<String, String>> attachments = new ArrayList<>();
                     if (files != null) {
                         for (MultipartFile file : files) {
@@ -640,7 +641,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
                     payload.put("attachments", attachments);
                     action.setActionPayload(payload.toJSONString());
-                } else if (type == 4) {
+                } else if (type == NodeActionTypeEnum.MODIFY_REMOTE_CMD) {
                     JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
                             ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
                     String fileName = UUID.randomUUID().toString().replace("-", "") + ".json";
@@ -672,7 +673,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
         // 5. 处理决策操作
         TaskNodeActionVO decisionAction = dto.getActions().stream()
-                .filter(a -> a.getActionType() != null && a.getActionType() == 2)
+                .filter(a -> a.getActionType() != null && a.getActionType() == NodeActionTypeEnum.DECISION.getCode())
                 .findFirst().orElse(null);
         if (decisionAction != null) {
             boolean processed = true;
@@ -903,50 +904,53 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 try {
                     JSONObject payload = StringUtils.isNotBlank(r.getActionPayload())
                             ? JSON.parseObject(r.getActionPayload()) : new JSONObject();
-                    switch (r.getActionType() == null ? -1 : r.getActionType()) {
-                        case 0: {
-                            JSONArray arr = payload.getJSONArray("attachments");
-                            int count = arr == null ? 0 : arr.size();
-                            detailDesc = "上传" + count + "个附件，点击查看具体附件";
-                            break;
-                        }
-                        case 1: {
-                            detailDesc = "点击查看轨道计划";
-                            break;
-                        }
-                        case 2: {
-                            String yesText = "是";
-                            String noText = "否";
-                            if (cfg != null && StringUtils.isNotBlank(cfg.getConfig())) {
-                                JSONObject c = JSON.parseObject(cfg.getConfig());
-                                yesText = c.getString("yesText") == null ? yesText : c.getString("yesText");
-                                noText = c.getString("noText") == null ? noText : c.getString("noText");
+                    NodeActionTypeEnum recordType = NodeActionTypeEnum.fromCode(r.getActionType());
+                    if (recordType != null) {
+                        switch (recordType) {
+                            case UPLOAD: {
+                                JSONArray arr = payload.getJSONArray("attachments");
+                                int count = arr == null ? 0 : arr.size();
+                                detailDesc = "上传" + count + "个附件，点击查看具体附件";
+                                break;
                             }
-                            String decision = payload.getString("decision");
-                            if (decision != null) {
-                                if ("yes".equalsIgnoreCase(decision)) {
-                                    detailDesc = "决策：" + yesText;
-                                } else if ("no".equalsIgnoreCase(decision)) {
-                                    detailDesc = "决策：" + noText;
-                                } else {
-                                    detailDesc = "决策：" + decision;
+                            case SELECT_ORBIT_PLAN: {
+                                detailDesc = "点击查看轨道计划";
+                                break;
+                            }
+                            case DECISION: {
+                                String yesText = "是";
+                                String noText = "否";
+                                if (cfg != null && StringUtils.isNotBlank(cfg.getConfig())) {
+                                    JSONObject c = JSON.parseObject(cfg.getConfig());
+                                    yesText = c.getString("yesText") == null ? yesText : c.getString("yesText");
+                                    noText = c.getString("noText") == null ? noText : c.getString("noText");
                                 }
-                            } else {
-                                detailDesc = "决策：";
+                                String decision = payload.getString("decision");
+                                if (decision != null) {
+                                    if ("yes".equalsIgnoreCase(decision)) {
+                                        detailDesc = "决策：" + yesText;
+                                    } else if ("no".equalsIgnoreCase(decision)) {
+                                        detailDesc = "决策：" + noText;
+                                    } else {
+                                        detailDesc = "决策：" + decision;
+                                    }
+                                } else {
+                                    detailDesc = "决策：";
+                                }
+                                break;
                             }
-                            break;
+                            case TEXT: {
+                                String text = payload.getString("text");
+                                detailDesc = "填写说明：" + (text == null ? "" : text);
+                                break;
+                            }
+                            case MODIFY_REMOTE_CMD: {
+                                detailDesc = "点击查看遥控指令单";
+                                break;
+                            }
+                            default:
+                                break;
                         }
-                        case 3: {
-                            String text = payload.getString("text");
-                            detailDesc = "填写说明：" + (text == null ? "" : text);
-                            break;
-                        }
-                        case 4: {
-                            detailDesc = "点击查看遥控指令单";
-                            break;
-                        }
-                        default:
-                            break;
                     }
                 } catch (Exception ignore) {
                     // ignore parse errors
