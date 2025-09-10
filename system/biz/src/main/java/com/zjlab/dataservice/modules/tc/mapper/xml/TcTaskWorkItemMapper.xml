@@ -60,4 +60,21 @@
           AND del_flag = 0 AND phase_status IN (0,1)
     </select>
 
+    <update id="activateWorkItem">
+        UPDATE tc_task_work_item
+        SET phase_status = 1,
+            update_by = #{userId},
+            update_time = NOW()
+        WHERE task_id = #{taskId}
+          AND node_inst_id = #{nodeInstId}
+          AND phase_status = 0 AND del_flag = 0
+    </update>
+
+    <select id="selectAssigneeIds" resultType="string">
+        SELECT assignee_id FROM tc_task_work_item
+        WHERE task_id = #{taskId}
+          AND node_inst_id = #{nodeInstId}
+          AND del_flag = 0
+    </select>
+
 </mapper>

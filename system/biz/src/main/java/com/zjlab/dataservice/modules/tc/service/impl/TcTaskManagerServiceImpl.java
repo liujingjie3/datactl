@@ -719,11 +719,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     taskNodeInstMapper.increaseArrivedCount(nextId, userId);
                     int activated = taskNodeInstMapper.activateNodeInst(nextId, userId);
                     if (activated > 0) {
-                        // 为激活的节点创建待办工作项
-                        List<String> userIds = getNodeUserIds(nextId);
-                        for (String uid : userIds) {
-                            taskWorkItemMapper.insertWorkItem(dto.getTaskId(), nextId, uid, 1, userId);
-                        }
+                        // 为激活的节点更新待办工作项状态
+                        taskWorkItemMapper.activateWorkItem(dto.getTaskId(), nextId, userId);
+                        List<String> userIds = taskWorkItemMapper.selectAssigneeIds(dto.getTaskId(), nextId);
                         if (!userIds.isEmpty()) {
                             JSONObject payload = new JSONObject();
                             payload.put("taskId", dto.getTaskId());
@@ -1172,18 +1170,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
         }
         return users;
-    }
-
-    /**
-     * 获取节点责任人用户ID列表
-     */
-    private List<String> getNodeUserIds(Long nodeInstId) {
-        String rolesJson = taskNodeInstMapper.selectHandlerRoleIds(nodeInstId);
-        List<String> roleIds = JSON.parseArray(rolesJson, String.class);
-        if (roleIds == null || roleIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-        return tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
     }
 
     private void scheduleNodeTimeout(Long nodeInstId, Integer maxDuration,
