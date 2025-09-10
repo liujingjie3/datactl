@@ -11,6 +11,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.vo.RemoteCmdExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -60,9 +61,10 @@ public interface TcTaskManagerService {
     /**
      * 提交节点操作
      *
-     * @param dto 节点操作参数
+     * @param dto   节点操作参数
+     * @param files 上传的文件列表（用于 actionType=0 的上传操作）
      */
-    void submitAction(NodeActionSubmitDto dto);
+    void submitAction(NodeActionSubmitDto dto, MultipartFile[] files);
 
     /**
      * 查询任务详情

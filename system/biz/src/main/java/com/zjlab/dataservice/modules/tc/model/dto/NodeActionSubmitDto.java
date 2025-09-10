@@ -1,9 +1,12 @@
 package com.zjlab.dataservice.modules.tc.model.dto;
 
+import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeActionVO;
 import lombok.Data;
 
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 节点操作提交参数
@@ -17,9 +20,7 @@ public class NodeActionSubmitDto implements Serializable {
     /** 节点实例ID */
     @NotNull
     private Long nodeInstId;
-    /** 操作类型(0上传,1选择计划,2决策,3文本等) */
-    @NotNull
-    private Integer actionType;
-    /** 提交内容JSON */
-    private String actionPayload;
+    /** 操作列表 */
+    @NotEmpty
+    private List<TaskNodeActionVO> actions;
 }
