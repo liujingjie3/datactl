@@ -61,7 +61,7 @@ DDL 详见ddl.md。
 
 * **tc\_task\_node\_action\_record**
   task\_id, node\_inst\_id, action\_type, action\_payload(JSON), create\_by, create\_time
-  action\_payload.attachments：\[{ filename, url, sizeBytes?, contentType? }]
+  action\_payload.attachments：\[{ filename, storedFilename, url, sizeBytes?, contentType? }]
 
 ---
 
@@ -562,7 +562,7 @@ COMMIT;
 {
   "comment": "补充材料",
   "attachments": [
-    {"filename": "A报告.pdf", "url": "https://.../a.pdf", "sizeBytes": 123456, "contentType": "application/pdf"}
+    {"filename": "A报告.pdf", "storedFilename": "uuid_A报告.pdf", "url": "https://.../a.pdf", "sizeBytes": 123456, "contentType": "application/pdf"}
   ]
 }
 ```
@@ -721,10 +721,11 @@ WHERE ni.id = :nodeInstId;
 **节点附件清单**
 
 ```sql
-SELECT r.id AS action_record_id, a.filename, a.url
+SELECT r.id AS action_record_id, a.filename, a.storedFilename, a.url
 FROM tc_task_node_action_record r,
 JSON_TABLE(r.action_payload, '$.attachments[*]' COLUMNS (
   filename VARCHAR(255) PATH '$.filename',
+  storedFilename VARCHAR(255) PATH '$.storedFilename',
   url      VARCHAR(500) PATH '$.url'
 )) a
 WHERE r.node_inst_id = :nodeInstId
@@ -1425,7 +1426,7 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 ```json
 {
   "attachments": [
-    {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"}
+    {"filename":"A报告.pdf","storedFilename":"uuid_A报告.pdf","url":"https://obj/.../a.pdf"}
   ]
 }
 ```
@@ -1505,7 +1506,7 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 ```json
 {
   "attachments": [
-    {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"}
+    {"filename":"A报告.pdf","storedFilename":"uuid_A报告.pdf","url":"https://obj/.../a.pdf"}
   ],
   "remote_cmds": [
     {"index": 1, "remark": "首次开机", "cmdCode": "CMD001", "cmdName": "开机指令", "execCriteria": "电源状态=OFF", "execSequence": "SEQ-001"},
@@ -1562,7 +1563,7 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 
    * **type=0（上传操作）**：前端随 multipart 提交一个或多个文件，payload 可为空。后端保存文件后生成 `attachments` 数组并回填到 payload。
    * **type=4（修改遥控指令单）**：前端仅在 payload 中提交结构化的 `remote`\*`cmds 列表，不再上传文件。后端直接根据remote`\_cmds生成文件上传，生成 `attachments`落库。
-3. 为各自动作生成 `attachments` 数组（filename/url）。
+3. 为各自动作生成 `attachments` 数组（filename/storedFilename/url）。
 4. 写入 `tc_task_node_action_record`（一动作一记录，或汇总为一条，按实现选型）。
 5. 办理节点：执行或异常流程、推进后继、更新工作项与日志。
 
@@ -1575,8 +1576,8 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
   "actionType": 0,
   "payload": {
     "attachments": [
-      {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"},
-      {"filename":"B影像.tif","url":"https://obj/.../b.tif"}
+      {"filename":"A报告.pdf","storedFilename":"uuid_A报告.pdf","url":"https://obj/.../a.pdf"},
+      {"filename":"B影像.tif","storedFilename":"uuid_B影像.tif","url":"https://obj/.../b.tif"}
     ]
   }
 }
@@ -1593,7 +1594,7 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
       {"index":2,"remark":"调整俯仰角 +3°","cmdCode":"CMD002","cmdName":"姿态调整","execCriteria":"开机完成","execSequence":"SEQ-002"}
     ],
     "attachments": [
-    {"filename":"A报告.pdf","url":"https://obj/.../a.pdf"}
+    {"filename":"A报告.pdf","storedFilename":"uuid_A报告.pdf","url":"https://obj/.../a.pdf"}
   ]
   }
 }
