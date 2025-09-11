@@ -49,5 +49,8 @@ public interface TcTaskWorkItemMapper {
     /** 查询节点的处理人 */
     List<String> selectAssigneeIds(@Param("taskId") Long taskId,
                                    @Param("nodeInstId") Long nodeInstId);
+
+    /** 查询任务所有处理人 */
+    List<String> selectAssigneeIdsByTaskId(@Param("taskId") Long taskId);
 }
 

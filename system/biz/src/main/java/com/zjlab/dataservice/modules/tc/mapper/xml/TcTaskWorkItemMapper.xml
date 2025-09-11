@@ -77,4 +77,10 @@
           AND del_flag = 0
     </select>
 
+    <select id="selectAssigneeIdsByTaskId" resultType="string">
+        SELECT DISTINCT assignee_id FROM tc_task_work_item
+        WHERE task_id = #{taskId}
+          AND del_flag = 0
+    </select>
+
 </mapper>

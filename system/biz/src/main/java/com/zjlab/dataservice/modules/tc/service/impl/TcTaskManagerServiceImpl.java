@@ -51,6 +51,8 @@ import com.zjlab.dataservice.modules.system.entity.SysUser;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import org.apache.commons.lang3.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import org.jeecgframework.poi.excel.ExcelExportUtil;
+import org.jeecgframework.poi.excel.entity.ExportParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +77,9 @@ import java.util.Comparator;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import org.apache.poi.ss.usermodel.Workbook;
 
 /**
  * 任务相关服务实现
@@ -628,8 +632,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         for (MultipartFile file : files) {
                             try {
                                 String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, folder);
+                                String newFileName = objectName.substring(objectName.lastIndexOf('/') + 1);
                                 Map<String, String> att = new HashMap<>();
                                 att.put("filename", file.getOriginalFilename());
+                                att.put("storedFilename", newFileName);
                                 att.put("url", objectName);
                                 attachments.add(att);
                             } catch (Exception e) {
@@ -641,20 +647,42 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
                     payload.put("attachments", attachments);
                     action.setActionPayload(payload.toJSONString());
+                } else if (type == NodeActionTypeEnum.SELECT_ORBIT_PLAN) {
+                    JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
+                            ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
+                    JSONArray orbitPlans = payload.getJSONArray("orbit_plans");
+                    JSONObject newPayload = new JSONObject();
+                    newPayload.put("orbit_plans", orbitPlans);
+                    action.setActionPayload(newPayload.toJSONString());
                 } else if (type == NodeActionTypeEnum.MODIFY_REMOTE_CMD) {
                     JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
                             ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
-                    String fileName = UUID.randomUUID().toString().replace("-", "") + ".json";
+                    JSONArray cmdArray = payload.getJSONArray("remote_cmds");
+                    List<RemoteCmdExportVO> list = cmdArray == null
+                            ? Collections.emptyList()
+                            : cmdArray.toJavaList(RemoteCmdExportVO.class);
+                    Workbook workbook = ExcelExportUtil.exportExcel(
+                            new ExportParams("遥控指令单", "遥控指令单"),
+                            RemoteCmdExportVO.class, list);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try {
+                        workbook.write(baos);
+                        workbook.close();
+                    } catch (Exception e) {
+                        throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+                    }
+                    String fileName = UUID.randomUUID().toString().replace("-", "") + ".xlsx";
                     String objectName = folder + "/" + fileName;
                     try {
                         MinioUtil.uploadFile(BUCKET_NAME, objectName,
-                                new ByteArrayInputStream(payload.toJSONString().getBytes(StandardCharsets.UTF_8)));
+                                new ByteArrayInputStream(baos.toByteArray()));
                     } catch (Exception e) {
                         throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
                     }
                     List<Map<String, String>> attachments = new ArrayList<>();
                     Map<String, String> att = new HashMap<>();
                     att.put("filename", fileName);
+                    att.put("storedFilename", fileName);
                     att.put("url", objectName);
                     attachments.add(att);
                     payload.put("attachments", attachments);
@@ -902,12 +930,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 try {
                     JSONObject payload = StringUtils.isNotBlank(r.getActionPayload())
                             ? JSON.parseObject(r.getActionPayload()) : new JSONObject();
+                    JSONArray attArr = payload.getJSONArray("attachments");
                     NodeActionTypeEnum recordType = NodeActionTypeEnum.fromCode(r.getActionType());
                     if (recordType != null) {
                         switch (recordType) {
                             case UPLOAD: {
-                                JSONArray arr = payload.getJSONArray("attachments");
-                                int count = arr == null ? 0 : arr.size();
+                                int count = attArr == null ? 0 : attArr.size();
                                 detailDesc = "上传" + count + "个附件，点击查看具体附件";
                                 break;
                             }
@@ -1151,18 +1179,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
      * 获取任务中所有节点相关用户ID
      */
     private List<String> getAllUserIds(Long taskId, boolean includeCreator) {
-        List<TaskNodeVO> insts = taskNodeInstMapper.selectNodeInstsByTaskId(taskId);
-        Set<String> roleIds = new HashSet<>();
-        for (TaskNodeVO inst : insts) {
-            if (StringUtils.isNotBlank(inst.getHandlerRoleIds())) {
-                List<String> ids = JSON.parseArray(inst.getHandlerRoleIds(), String.class);
-                if (ids != null) {
-                    roleIds.addAll(ids);
-                }
-            }
+        List<String> users = taskWorkItemMapper.selectAssigneeIdsByTaskId(taskId);
+        if (users == null) {
+            users = new ArrayList<>();
         }
-        List<String> users = roleIds.isEmpty() ? new ArrayList<>()
-                : tcTaskManagerMapper.selectUserIdsByRoleIds(new ArrayList<>(roleIds));
         if (includeCreator) {
             TaskManagerEditInfo info = tcTaskManagerMapper.selectTaskForEdit(taskId);
             if (info != null && StringUtils.isNotBlank(info.getCreateBy())) {
