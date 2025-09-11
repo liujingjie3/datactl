@@ -620,7 +620,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
         }
 
-        String folder = TASK_FOLDER + "/" + dto.getTaskId() + "/" + dto.getNodeInstId();
+        String folder = TASK_FOLDER + "/taskId_" + dto.getTaskId() + "/nodeInstId_" + dto.getNodeInstId();
 
         // 4. 记录本次操作
         for (TaskNodeActionVO action : dto.getActions()) {
