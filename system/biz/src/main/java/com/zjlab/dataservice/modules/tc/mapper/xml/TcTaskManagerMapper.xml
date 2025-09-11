@@ -34,12 +34,12 @@
     <insert id="insertTask">
         INSERT INTO tc_task(
             task_code, task_name, task_requirement, template_id,
-            need_imaging, imaging_area, result_display_needed,
+            need_imaging, imaging_area_id, result_display_needed,
             satellites, remote_cmds, orbit_plans, status,
             create_by, create_time, update_by, update_time
         ) VALUES (
             #{taskCode}, #{dto.taskName}, #{dto.taskRequirement}, #{dto.templateId},
-            #{dto.needImaging}, #{dto.imagingArea}, #{dto.resultDisplayNeeded},
+            #{dto.needImaging}, #{dto.imagingAreaId,jdbcType=BIGINT}, #{dto.resultDisplayNeeded},
             #{dto.satellitesJson}, #{dto.remoteCmdsJson}, #{dto.orbitPlansJson}, 0,
             #{userId}, NOW(), #{userId}, NOW()
         )
@@ -128,7 +128,7 @@
         <result column="createTime" property="createTime"/>
         <result column="status" property="status"/>
         <result column="taskRequirement" property="taskRequirement"/>
-        <result column="imagingArea" property="imagingArea"/>
+        <result column="imagingAreaId" property="imagingAreaId"/>
     </resultMap>
 
     <select id="selectTaskDetail" resultMap="TaskDetailResultMap">
@@ -141,7 +141,7 @@
                t.create_time AS createTime,
                t.status AS status,
                t.task_requirement AS taskRequirement,
-               t.imaging_area AS imagingArea
+               t.imaging_area_id AS imagingAreaId
         FROM tc_task t
         LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
         WHERE t.id = #{taskId} AND t.del_flag = 0

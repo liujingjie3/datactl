@@ -130,7 +130,7 @@ public class MinioFileServiceImpl extends ServiceImpl<FileMapper, FilePo> implem
 	}
 
 	@Override
-	public String uploadReturnObjectName(MultipartFile file, String bucketName, String folder) throws Exception {
+        public String uploadReturnObjectName(MultipartFile file, String bucketName, String folder) throws Exception {
 		// 原文件名
 		String originalName = file.getOriginalFilename();
 		String contentType = file.getContentType();
@@ -158,8 +158,30 @@ public class MinioFileServiceImpl extends ServiceImpl<FileMapper, FilePo> implem
 		}
 
 		// 返回新文件名
-		return objectName;
-	}
+                return objectName;
+        }
+
+        @Override
+        public String uploadReturnObjectNameWithOriginal(MultipartFile file, String bucketName, String folder) throws Exception {
+                // 原文件名
+                String originalName = file.getOriginalFilename();
+                String contentType = file.getContentType();
+                String md5 = DigestUtils.md5Hex(file.getInputStream());
+
+                String newFileName = UUID.randomUUID().toString().replace("-", "") + "_" + originalName;
+
+                String objectName = folder + "/" + newFileName;
+
+                MinioUtil.uploadFile(bucketName, file, objectName, contentType);
+
+                ObjectVo objectInfo = getObjectInfo(bucketName, objectName);
+
+                if (!StringUtils.equals(md5, objectInfo.getMd5())) {
+                        throw new JeecgBootException("上传文件的md5值不同");
+                }
+
+                return objectName;
+        }
 
 
 	@Override

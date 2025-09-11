@@ -146,11 +146,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         // 2. 校验是否需要成像以及成像区域
         if (dto.getNeedImaging() != null) {
-            if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingArea())) {
+            if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingAreaId())) {
                 throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
             }
             if (dto.getNeedImaging() == 0) {
-                dto.setImagingArea(null);
+                dto.setImagingAreaId(null);
             }
         }
         //todo 成像区域这里需要跳转到外部平台，这边的交互，是存json还是存成像ID等后面需要进一步沟通，暂时先mock一个json
@@ -631,7 +631,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     if (files != null) {
                         for (MultipartFile file : files) {
                             try {
-                                String objectName = minioFileService.uploadReturnObjectName(file, BUCKET_NAME, folder);
+                                String objectName = minioFileService.uploadReturnObjectNameWithOriginal(file, BUCKET_NAME, folder);
                                 String newFileName = objectName.substring(objectName.lastIndexOf('/') + 1);
                                 Map<String, String> att = new HashMap<>();
                                 att.put("filename", file.getOriginalFilename());
@@ -671,7 +671,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     } catch (Exception e) {
                         throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
                     }
-                    String fileName = UUID.randomUUID().toString().replace("-", "") + ".xlsx";
+                    String fileName = UUID.randomUUID().toString().replace("-", "") + "_遥控指令单.xlsx";
                     String objectName = folder + "/" + fileName;
                     try {
                         MinioUtil.uploadFile(BUCKET_NAME, objectName,

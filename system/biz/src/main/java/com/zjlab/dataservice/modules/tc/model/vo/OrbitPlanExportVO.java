@@ -4,6 +4,7 @@ import lombok.Data;
 import org.jeecgframework.poi.excel.annotation.Excel;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 /**
@@ -46,6 +47,6 @@ public class OrbitPlanExportVO implements Serializable {
     private String task;
 
     @Excel(name = "圈次是否使用")
-    @NotBlank(message = "used不能为空")
-    private String used;
+    @NotNull(message = "used不能为空")
+    private Boolean used;
 }

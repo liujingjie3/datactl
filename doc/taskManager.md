@@ -72,7 +72,7 @@ DDL 详见ddl.md。
 **入参（JSON）**
 
 taskName\*, taskRequirement\*, templateId\*,
-needImaging(0/1), imagingArea(JSON|null), resultDisplayNeeded(0/1),
+needImaging(0/1), imagingAreaId(Long|null), resultDisplayNeeded(0/1),
 satellites(JSON，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remoteCmds(List<RemoteCmdExportVO>), orbitPlans(List<OrbitPlanExportVO>)。
 
 **事务流程（伪代码）**
@@ -636,11 +636,11 @@ Body(JSON)：
 
 ```
 taskName*, taskRequirement*, templateId*,
-needImaging(0|1), imagingArea, resultDisplayNeeded(0|1),
+needImaging(0|1), imagingAreaId(Long|null), resultDisplayNeeded(0|1),
 satellites(JSON，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remoteCmds(List<RemoteCmdExportVO>), orbitPlans(List<OrbitPlanExportVO>)
 ```
 
-Resp：`{ id }`（needImaging=1 时 imagingArea 必填；仅管理员或总体部成员〔角色ID为1或2，或角色名为“总体组组长”“总体组组员”〕可创建）
+Resp：`{ id }`（needImaging=1 时 imagingAreaId 必填；仅管理员或总体部成员〔角色ID为1或2，或角色名为“总体组组长”“总体组组员”〕可创建）
 
 取消任务 `POST /task/cancel?taskId=...`
 Resp：`{ success: true }`（仅发起人或管理员且尚无人完成节点时允许；不满足条件报 TASKMANAGE\_NO\_PERMISSION 或 TASKMANAGE\_CANNOT\_CANCEL）
@@ -752,7 +752,7 @@ ORDER BY r.create_time DESC;
 
 **校验点：**
 
-  * 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingArea 必填。
+  * 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingAreaId 必填。
   * 列表：管理员只能查询 `tab=all`，非管理员禁止 `tab=all`。
   * 提交：节点必须处理中且提交者为该节点当前操作人（存在待办工作项）。
   * 取消/编辑：任务 status=0 且无节点已完成，且仅发起人或管理员可操作。
@@ -1435,14 +1435,14 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 
 * 用途：从系统生成的圈次计划中选择（仅展示**已启用**的计划）
 * 配置项：无需额外配置（系统自动生成选项）
-* 数据来源与过滤：创建任务时写入的 **仿真轨道计划**（`tc_task.orbit_plans` 原始 JSON）；节点办理端**只取其中 ************************************************************************************`used="是"`************************************************************************************ 的计划**作为可选项展示。
+* 数据来源与过滤：创建任务时写入的 **仿真轨道计划**（`tc_task.orbit_plans` 原始 JSON）；节点办理端**只取其中 `used=true` 的计划**作为可选项展示。
 * payload 规范（提交时带上 orbit\_plans 标识和用户勾选结果）：
 
 ```json
 {
   "orbit_plans": [
-        {"task":"京津冀区域成像任务","used":"是","orbitNo":"001"},
-        {"task":"长三角区域成像任务","used":"否","orbitNo":"002"}
+        {"task":"京津冀区域成像任务","used":true,"orbitNo":"001"},
+        {"task":"长三角区域成像任务","used":false,"orbitNo":"002"}
       ]
 }
 ```
@@ -1543,8 +1543,8 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 {
   "actions": [
     { "actionType": 1, "payload": { "orbit_plans": [
-      {"task":"京津冀区域成像任务","used":"是","orbitNo":"001"},
-      {"task":"长三角区域成像任务","used":"否","orbitNo":"002"}
+      {"task":"京津冀区域成像任务","used":true,"orbitNo":"001"},
+      {"task":"长三角区域成像任务","used":false,"orbitNo":"002"}
     ]}},
     { "actionType": 3, "payload": { "text": "执行记录……" } },
     { "actionType": 4, "payload": { "remote_cmds": [
