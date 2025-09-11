@@ -146,7 +146,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         // 2. 校验是否需要成像以及成像区域
         if (dto.getNeedImaging() != null) {
-            if (dto.getNeedImaging() == 1 && StringUtils.isBlank(dto.getImagingAreaId())) {
+            if (dto.getNeedImaging() == 1 && dto.getImagingAreaId() == null) {
                 throw new BaseException(ResultCode.TASKMANAGE_IMAGING_AREA_REQUIRED);
             }
             if (dto.getNeedImaging() == 0) {
