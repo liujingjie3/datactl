@@ -21,6 +21,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.*;
 import com.zjlab.dataservice.modules.tc.model.entity.*;
 import com.zjlab.dataservice.modules.tc.model.vo.NodeStatsVO;
 import com.zjlab.dataservice.modules.tc.service.TcNodeService;
+import com.zjlab.dataservice.modules.tc.enums.NodeActionTypeEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -240,6 +241,14 @@ public class TcNodeServiceImpl implements TcNodeService {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
 
+        long decisionCount = dto.getActions() == null ? 0 :
+                dto.getActions().stream()
+                        .filter(a -> a.getType() != null && a.getType() == NodeActionTypeEnum.DECISION.getCode())
+                        .count();
+        if (decisionCount != 1) {
+            throw new BaseException(ResultCode.PARA_ERROR.getCode(), "有且只能有一个决策");
+        }
+
         // 2. 转换DTO为实体并补充通用字段
         NodeInfo node = new NodeInfo();
         BeanUtil.copyProperties(dto, node);
@@ -291,6 +300,14 @@ public class TcNodeServiceImpl implements TcNodeService {
                 || dto.getExpectedDuration() == null || dto.getExpectedDuration() < 0
                 || dto.getTimeoutRemind() == null || dto.getTimeoutRemind() < 0) {
             throw new BaseException(ResultCode.PARA_ERROR);
+        }
+
+        long decisionCount = dto.getActions() == null ? 0 :
+                dto.getActions().stream()
+                        .filter(a -> a.getType() != null && a.getType() == NodeActionTypeEnum.DECISION.getCode())
+                        .count();
+        if (decisionCount != 1) {
+            throw new BaseException(ResultCode.PARA_ERROR.getCode(), "有且只能有一个决策");
         }
 
         NodeInfo exist = nodeInfoMapper.selectById(id);

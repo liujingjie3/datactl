@@ -127,7 +127,7 @@ CREATE TABLE `tc_task` (
   `task_requirement` VARCHAR(255) COMMENT '任务需求',
   `template_id` varchar(128) NOT NULL COMMENT '任务模板ID',
   `need_imaging` TINYINT DEFAULT 0 COMMENT '是否需要成像(0否,1是)',
-  `imaging_area` JSON NULL COMMENT '成像区域JSON',
+  `imaging_area_id` BIGINT NULL COMMENT '成像区域ID',
   `result_display_needed` TINYINT DEFAULT 0 COMMENT '结果是否展示(0否,1是)',
   `satellites` JSON COMMENT '执行卫星JSON，例如 [{"group": "阿联酋星座", "satIds": ["4","5"]}]',
   `remote_cmds` JSON COMMENT '遥控指令单JSON数组',
@@ -138,7 +138,6 @@ CREATE TABLE `tc_task` (
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_by` varchar(32) DEFAULT NULL COMMENT '更新人ID',
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CHECK (`imaging_area` IS NULL OR JSON_VALID(`imaging_area`)),
   CHECK (`satellites` IS NULL OR JSON_VALID(`satellites`)),
   CHECK (`remote_cmds` IS NULL OR JSON_VALID(`remote_cmds`)),
   CHECK (`orbit_plans` IS NULL OR JSON_VALID(`orbit_plans`))

@@ -22,8 +22,8 @@ public class TaskManagerBaseDto implements Serializable {
     /** 是否成像(0否,1是) */
     @NotNull(message = "needImaging不能为空")
     private Integer needImaging;
-    /** 成像区域(JSON) */
-    private String imagingArea;
+    /** 成像区域ID */
+    private Long imagingAreaId;
     /** 是否展示结果(0否,1是) */
     @NotNull(message = "resultDisplayNeeded不能为空")
     private Integer resultDisplayNeeded;
