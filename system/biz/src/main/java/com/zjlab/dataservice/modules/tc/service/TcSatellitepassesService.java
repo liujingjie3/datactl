@@ -9,4 +9,6 @@ import java.util.List;
 public interface TcSatellitepassesService extends IService<TcSatellitepasses> {
 
     void addPassInfo(List<SatellitePassesDto> passesList);
+
+    List<TcSatellitepasses> getPassInfo(Long id);
 }

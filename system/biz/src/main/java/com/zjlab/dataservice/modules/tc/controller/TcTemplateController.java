@@ -5,6 +5,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
 import com.zjlab.dataservice.modules.tc.model.dto.*;
+import com.zjlab.dataservice.modules.tc.model.entity.TcSatellitepasses;
 import com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate;
 import com.zjlab.dataservice.modules.tc.model.vo.*;
 import com.zjlab.dataservice.modules.tc.service.SatellitePassesService;
@@ -140,6 +141,20 @@ public class TcTemplateController {
         tcSatellitepassesService.addPassInfo(satellitePassesDtoList);
         return Result.ok();
     }
+
+    @GetMapping("/passinfo/{id}")
+    @ApiOperation(value = "获取任务对应的卫星轨迹信息")
+    public Result<List<TcSatellitepasses>> getPassInfo(@PathVariable Long id) {
+        List<TcSatellitepasses> tcSatellitepassesList =tcSatellitepassesService.getPassInfo(id);
+        return Result.ok(tcSatellitepassesList);
+    }
+
+//    @PostMapping("/addpassinfo")
+//    @ApiOperation(value = "编辑任务相关的轨道信息")
+//    public Result  editPassInfo(@RequestBody(required = false) List<SatellitePassesDto> satellitePassesDtoList) {
+//        List<TcSatellitepasses> tcSatellitepassesList =tcSatellitepassesService.editPassInfo(id);
+//        return Result.ok(tcSatellitepassesList);
+//    }
 
 }
 

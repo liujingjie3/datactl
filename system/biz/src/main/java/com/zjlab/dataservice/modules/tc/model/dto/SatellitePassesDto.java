@@ -15,5 +15,5 @@ public class SatellitePassesDto {
     private String companyName;//地面站
     private String task;//地面站
     private Integer duration; //时长（秒）
-    private Boolean delFlag;
+    private Boolean used;
 }

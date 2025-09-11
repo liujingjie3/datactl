@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class SatellitePassesServiceImpl extends ServiceImpl<SatellitePassesMapper, SatellitePasses>
@@ -29,17 +30,20 @@ public class SatellitePassesServiceImpl extends ServiceImpl<SatellitePassesMappe
         }
         List<SatellitePasses> satellitePasses = baseMapper.queryPassInfo(satIds);
 
-        List<SatellitePassesVO> collect = satellitePasses.stream()
-                .map(e -> SatellitePassesVO.builder()
-                        .orbitNo(String.valueOf(e.getId()))
-                        .inTime(e.getAos())
-                        .outTime(e.getLos())
-                        .satelliteCode(e.getSat())
-                        .groundStation(e.getStation())
-                        .duration(Duration.between(e.getAos(), e.getLos()).getSeconds()) // 秒数
-                        .build()
-                )
+        List<SatellitePassesVO> collect = IntStream.range(0, satellitePasses.size())
+                .mapToObj(i -> {
+                    SatellitePasses e = satellitePasses.get(i);
+                    return SatellitePassesVO.builder()
+                            .orbitNo(String.valueOf(i + 1)) // 从1开始递增：1,2,3...
+                            .inTime(e.getAos())
+                            .outTime(e.getLos())
+                            .satelliteCode(e.getSat())
+                            .groundStation(e.getStation())
+                            .duration(Duration.between(e.getAos(), e.getLos()).getSeconds()) // 秒数
+                            .build();
+                })
                 .collect(Collectors.toList());
+
         return collect;
     }
 

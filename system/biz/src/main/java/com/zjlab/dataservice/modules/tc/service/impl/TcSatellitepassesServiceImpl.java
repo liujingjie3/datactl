@@ -1,5 +1,6 @@
 package com.zjlab.dataservice.modules.tc.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zjlab.dataservice.common.threadlocal.UserThreadLocal;
 import com.zjlab.dataservice.modules.tc.model.dto.SatellitePassesDto;
@@ -34,7 +35,7 @@ public class TcSatellitepassesServiceImpl extends ServiceImpl<TcSatellitepassesM
             entity.setCompanyName(dto.getCompanyName());
             entity.setTask(dto.getTask());
             entity.setDuration(dto.getDuration());
-            entity.setDelFlag(dto.getDelFlag() != null ? dto.getDelFlag() : false);
+            entity.setUsed(dto.getUsed() != null ? dto.getUsed() : false);
             entity.setCreateTime(LocalDateTime.now());
             entity.setCreateBy(userId);
             entity.setUpdateBy(userId);
@@ -44,6 +45,16 @@ public class TcSatellitepassesServiceImpl extends ServiceImpl<TcSatellitepassesM
         // MyBatis-Plus 批量保存
         this.saveBatch(entityList);
     }
+
+    @Override
+    public List<TcSatellitepasses> getPassInfo(Long id) {
+        return  baseMapper.selectList(new LambdaQueryWrapper<TcSatellitepasses>()
+                .eq(TcSatellitepasses::getTaskId, id)
+                .eq(TcSatellitepasses::getUsed, true)
+                .orderByAsc(TcSatellitepasses::getId));
+    }
+
+
 }
 
 
