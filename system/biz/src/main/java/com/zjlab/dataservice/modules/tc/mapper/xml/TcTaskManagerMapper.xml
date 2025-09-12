@@ -128,6 +128,7 @@
         <result column="createTime" property="createTime"/>
         <result column="status" property="status"/>
         <result column="taskRequirement" property="taskRequirement"/>
+        <result column="needImaging" property="needImaging"/>
         <result column="imagingAreaId" property="imagingAreaId"/>
     </resultMap>
 
@@ -141,6 +142,7 @@
                t.create_time AS createTime,
                t.status AS status,
                t.task_requirement AS taskRequirement,
+               t.need_imaging AS needImaging,
                t.imaging_area_id AS imagingAreaId
         FROM tc_task t
         LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
