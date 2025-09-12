@@ -22,6 +22,7 @@ public class TaskDetailVO extends TaskBaseVO {
     @JsonIgnore
     private String orbitPlansJson;
     private String taskRequirement;
+    private Integer needImaging;
     private Long imagingAreaId;
     private List<TaskHistoryNodeVO> history;
     private List<TaskWorkflowNodeVO> workflow;

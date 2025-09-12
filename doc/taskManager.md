@@ -658,7 +658,7 @@ Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无�
 Resp：`{ success: true }`
 
 任务详情 `GET /tc/taskManager/detail?taskId=...`
-Resp：任务主信息 + 当前激活节点信息、节点历史及操作日志
+Resp：任务主信息（含 needImaging） + 当前激活节点信息、节点历史及操作日志
 
 查询遥控指令单 `GET /task/remoteCmds?taskId=...`
 Resp：`[RemoteCmdExportVO]`
