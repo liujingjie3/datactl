@@ -87,6 +87,7 @@ public enum ResultCode {
     TASKMANAGE_IMAGING_AREA_REQUIRED(210006, "成像区域不能为空"),
     NODE_ASSOCIATED_TEMPLATE(210007, "节点已关联任务模板，无法删除或禁用"),
     NODE_ONLY_ONE_DECISION_ACTION(210008, "节点必须且只能有一个决策action"),
+    TASKMANAGE_UPLOAD_ONLY_ONE_FILE(210009, "上传操作只支持一个文件"),
 
     ;
     //返回码

@@ -602,6 +602,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 || dto.getActions() == null || dto.getActions().isEmpty()) {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
+        // files入参只能上传一个
+        if (files != null && files.length > 1) {
+            throw new BaseException(ResultCode.TASKMANAGE_UPLOAD_ONLY_ONE_FILE);
+        }
         // 2. 获取当前用户
         String userId = UserThreadLocal.getUserId();
         if (userId == null) {
