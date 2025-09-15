@@ -86,6 +86,7 @@ public enum ResultCode {
     TASKMANAGE_CANNOT_EDIT(210005, "已有节点处理，不能编辑"),
     TASKMANAGE_IMAGING_AREA_REQUIRED(210006, "成像区域不能为空"),
     NODE_ASSOCIATED_TEMPLATE(210007, "节点已关联任务模板，无法删除或禁用"),
+    NODE_ONLY_ONE_DECISION_ACTION(210008, "节点必须且只能有一个决策action"),
 
     ;
     //返回码

@@ -246,7 +246,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                         .filter(a -> a.getType() != null && a.getType() == NodeActionTypeEnum.DECISION.getCode())
                         .count();
         if (decisionCount != 1) {
-            throw new BaseException(ResultCode.PARA_ERROR.getCode(), "有且只能有一个决策");
+            throw new BaseException(ResultCode.NODE_ONLY_ONE_DECISION_ACTION);
         }
 
         // 2. 转换DTO为实体并补充通用字段
@@ -307,7 +307,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                         .filter(a -> a.getType() != null && a.getType() == NodeActionTypeEnum.DECISION.getCode())
                         .count();
         if (decisionCount != 1) {
-            throw new BaseException(ResultCode.PARA_ERROR.getCode(), "有且只能有一个决策");
+            throw new BaseException(ResultCode.NODE_ONLY_ONE_DECISION_ACTION);
         }
 
         NodeInfo exist = nodeInfoMapper.selectById(id);
