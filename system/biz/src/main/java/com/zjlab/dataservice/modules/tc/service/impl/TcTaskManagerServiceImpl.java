@@ -952,14 +952,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                                     fileName = first == null ? null : first.getString("filename");
                                 }
                                 if (StringUtils.isNotBlank(fileName)) {
-                                    detailDesc = "上传了附件：" + fileName + "，点击查看具体附件";
+                                    detailDesc = "上传了附件：" + fileName;
                                 } else {
-                                    detailDesc = "上传了附件，点击查看具体附件";
+                                    detailDesc = "上传了附件";
                                 }
                                 break;
                             }
                             case SELECT_ORBIT_PLAN: {
-                                detailDesc = "点击查看轨道计划";
+                                detailDesc = "";
                                 break;
                             }
                             case DECISION: {
@@ -989,7 +989,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                                 break;
                             }
                             case MODIFY_REMOTE_CMD: {
-                                detailDesc = "点击查看遥控指令单";
+                                detailDesc = "";
                                 break;
                             }
                             default:
