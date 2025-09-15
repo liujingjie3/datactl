@@ -681,10 +681,10 @@ Resp：`[TemplateNodeFlowVO]` 按 `orderNo` 升序排列（resultDisplayNeeded=1
 表单字段（`multipart/form-data`）：
 
 ```
-taskId*, nodeInstId*, actions* (JSON字符串), files? (文件数组)
+taskId*, nodeInstId*, actions* (JSON字符串), files? (文件数组，仅支持单个文件)
 ```
 
-说明：`actions` 为 `[{actionType,payload}]` 列表，可一次提交多个动作；上传类动作的附件通过 `files` 字段传输。
+说明：`actions` 为 `[{actionType,payload}]` 列表，可一次提交多个动作；上传类动作的附件通过 `files` 字段传输（仅允许一个文件）。
 行为：按 §2.3 完成节点、推进后继、发放待办。
 Resp：`{ success: true }`（仅当前节点操作人可提交）
 
