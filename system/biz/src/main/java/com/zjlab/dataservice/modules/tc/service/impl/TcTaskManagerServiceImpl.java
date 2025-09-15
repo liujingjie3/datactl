@@ -1154,7 +1154,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 queue.offer(e.getKey());
             }
         }
-        int level = 0;
+        // orderNo 从 1 开始
+        int level = 1;
         while (!queue.isEmpty()) {
             int size = queue.size();
             for (int i = 0; i < size; i++) {
