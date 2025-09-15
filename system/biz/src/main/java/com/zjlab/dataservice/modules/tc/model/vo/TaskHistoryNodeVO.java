@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.tc.model.vo;
 
 import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleDto;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeActionDto;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -28,4 +29,6 @@ public class TaskHistoryNodeVO implements Serializable {
     private List<NodeRoleDto> roles;
     /** 操作日志 */
     private List<TaskNodeActionVO> actionLogs;
+    /** 操作配置列表 */
+    private List<NodeActionDto> actionConfig;
 }
