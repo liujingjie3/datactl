@@ -13,6 +13,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.OrbitPlanExportVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskCountVO;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -103,5 +104,13 @@ public interface TcTaskManagerService {
      * @return 任务数量统计
      */
     TaskCountVO countTasks();
+
+    /**
+     * 根据url下载节点附件
+     *
+     * @param url      附件在minio中的路径
+     * @param response 响应对象
+     */
+    void downloadAttachment(String url, HttpServletResponse response);
 
 }

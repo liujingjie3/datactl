@@ -35,6 +35,7 @@ import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 /** 任务列表接口 */
 @RestController
@@ -162,5 +163,12 @@ public class TcTaskManagerController {
     @ApiOperation(value = "任务统计", notes = "获取总任务数、运行中、已完成和已取消任务数")
     public Result<TaskCountVO> statistics() {
         return Result.ok(taskManagerService.countTasks());
+    }
+
+    @GetMapping("/download")
+    @ApiOperationSupport(order = 13)
+    @ApiOperation(value = "下载节点附件", notes = "根据附件URL下载文件")
+    public void download(@RequestParam String url, HttpServletResponse response) {
+        taskManagerService.downloadAttachment(url, response);
     }
 }

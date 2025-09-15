@@ -59,6 +59,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import com.zjlab.dataservice.modules.storage.service.impl.MinioFileServiceImpl;
 import com.zjlab.dataservice.common.util.storage.MinioUtil;
+import com.zjlab.dataservice.modules.storage.model.dto.ObjectDownloadDto;
+
+import javax.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1080,6 +1083,21 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         vo.setCompleted(completed);
         vo.setCanceled(canceled);
         return vo;
+    }
+
+    @Override
+    public void downloadAttachment(String url, HttpServletResponse response) {
+        if (StringUtils.isBlank(url)) {
+            throw new BaseException(ResultCode.PARA_ERROR);
+        }
+        try {
+            ObjectDownloadDto dto = new ObjectDownloadDto();
+            dto.setBucketName(BUCKET_NAME);
+            dto.setPath(url);
+            minioFileService.download(dto, response);
+        } catch (Exception e) {
+            throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
