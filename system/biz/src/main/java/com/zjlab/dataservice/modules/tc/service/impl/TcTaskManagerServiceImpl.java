@@ -993,6 +993,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     log.append("，").append(detailDesc);
                 }
                 av.setOperateLog(log.toString());
+                av.setActionConfig(cfg);
 
                 TaskHistoryNodeVO hv = historyMap.get(r.getNodeInstId());
                 if (hv != null) {
