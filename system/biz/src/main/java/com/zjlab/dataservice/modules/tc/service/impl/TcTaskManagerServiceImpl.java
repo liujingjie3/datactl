@@ -969,28 +969,20 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                                     noText = StringUtils.defaultIfBlank(c.getString("noText"), noText);
                                 }
                                 if (placeholderDecision != null) {
+                                    String chose = placeholderDecision;
                                     if ("yes".equalsIgnoreCase(placeholderDecision)) {
-                                        detailDesc = yesText + "：" + placeholderDecision;
+                                        chose = yesText;
                                     } else if ("no".equalsIgnoreCase(placeholderDecision)) {
-                                        detailDesc = noText + "：" + placeholderDecision;
-                                    } else {
-                                        detailDesc = placeholderDecision;
+                                        chose = noText;
                                     }
+                                    detailDesc = "选择了：" + chose;
                                 }
                                 break;
                             }
                             case TEXT: {
                                 String text = payload.getString("text");
-                                String placeholder = "填写说明";
-                                if (cfg != null && StringUtils.isNotBlank(cfg.getConfig())) {
-                                    try {
-                                        JSONObject c = JSON.parseObject(cfg.getConfig());
-                                        placeholder = c.getString("placeholder") == null ? placeholder : c.getString("placeholder");
-                                    } catch (Exception ignore2) {
-                                        // ignore parse errors
-                                    }
-                                }
-                                detailDesc = placeholder + "：" + (text == null ? "" : text);
+                                String placeholder = payload.getString("placeholder");
+                                detailDesc = (placeholder == null ? "" : placeholder) + "：" + (text == null ? "" : text);
                                 break;
                             }
                             case MODIFY_REMOTE_CMD: {
