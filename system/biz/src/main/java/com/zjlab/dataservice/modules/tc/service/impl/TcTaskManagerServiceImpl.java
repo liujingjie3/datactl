@@ -943,8 +943,16 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     if (recordType != null) {
                         switch (recordType) {
                             case UPLOAD: {
-                                int count = attArr == null ? 0 : attArr.size();
-                                detailDesc = "上传" + count + "个附件，点击查看具体附件";
+                                String fileName = null;
+                                if (attArr != null && !attArr.isEmpty()) {
+                                    JSONObject first = attArr.getJSONObject(0);
+                                    fileName = first == null ? null : first.getString("filename");
+                                }
+                                if (StringUtils.isNotBlank(fileName)) {
+                                    detailDesc = "上传了附件：" + fileName + "，点击查看具体附件";
+                                } else {
+                                    detailDesc = "上传了附件，点击查看具体附件";
+                                }
                                 break;
                             }
                             case SELECT_ORBIT_PLAN: {
@@ -954,28 +962,35 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             case DECISION: {
                                 String yesText = "是";
                                 String noText = "否";
+                                String placeholderDecision = payload.getString("decision");
                                 if (cfg != null && StringUtils.isNotBlank(cfg.getConfig())) {
                                     JSONObject c = JSON.parseObject(cfg.getConfig());
-                                    yesText = c.getString("yesText") == null ? yesText : c.getString("yesText");
-                                    noText = c.getString("noText") == null ? noText : c.getString("noText");
+                                    yesText = StringUtils.defaultIfBlank(c.getString("yesText"), yesText);
+                                    noText = StringUtils.defaultIfBlank(c.getString("noText"), noText);
                                 }
-                                String decision = payload.getString("decision");
-                                if (decision != null) {
-                                    if ("yes".equalsIgnoreCase(decision)) {
-                                        detailDesc = "决策：" + yesText;
-                                    } else if ("no".equalsIgnoreCase(decision)) {
-                                        detailDesc = "决策：" + noText;
+                                if (placeholderDecision != null) {
+                                    if ("yes".equalsIgnoreCase(placeholderDecision)) {
+                                        detailDesc = yesText + "：" + placeholderDecision;
+                                    } else if ("no".equalsIgnoreCase(placeholderDecision)) {
+                                        detailDesc = noText + "：" + placeholderDecision;
                                     } else {
-                                        detailDesc = "决策：" + decision;
+                                        detailDesc = placeholderDecision;
                                     }
-                                } else {
-                                    detailDesc = "决策：";
                                 }
                                 break;
                             }
                             case TEXT: {
                                 String text = payload.getString("text");
-                                detailDesc = "填写说明：" + (text == null ? "" : text);
+                                String placeholder = "填写说明";
+                                if (cfg != null && StringUtils.isNotBlank(cfg.getConfig())) {
+                                    try {
+                                        JSONObject c = JSON.parseObject(cfg.getConfig());
+                                        placeholder = c.getString("placeholder") == null ? placeholder : c.getString("placeholder");
+                                    } catch (Exception ignore2) {
+                                        // ignore parse errors
+                                    }
+                                }
+                                detailDesc = placeholder + "：" + (text == null ? "" : text);
                                 break;
                             }
                             case MODIFY_REMOTE_CMD: {
@@ -990,7 +1005,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     // ignore parse errors
                 }
                 if (StringUtils.isBlank(actionName)) {
-                    actionName = "";
+                    NodeActionTypeEnum typeEnum = NodeActionTypeEnum.fromCode(r.getActionType());
+                    actionName = typeEnum == null ? "" : typeEnum.getDesc();
                 }
                 StringBuilder log = new StringBuilder();
                 if (StringUtils.isNotBlank(operatorName)) {
