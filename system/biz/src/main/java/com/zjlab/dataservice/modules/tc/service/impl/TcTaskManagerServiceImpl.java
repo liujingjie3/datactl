@@ -886,6 +886,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         }
                     }
                     nodeActionMap.put(inst.getNodeInstId(), map);
+                    TaskHistoryNodeVO hv = historyMap.get(inst.getNodeInstId());
+                    if (hv != null) {
+                        hv.setActionConfig(actList);
+                    }
                 }
             }
         }
@@ -993,8 +997,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     log.append("，").append(detailDesc);
                 }
                 av.setOperateLog(log.toString());
-                av.setActionConfig(cfg);
-
                 TaskHistoryNodeVO hv = historyMap.get(r.getNodeInstId());
                 if (hv != null) {
                     hv.getActionLogs().add(av);
