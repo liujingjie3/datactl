@@ -4,6 +4,8 @@ import lombok.Data;
 
 import java.io.Serializable;
 
+import com.zjlab.dataservice.modules.tc.model.dto.NodeActionDto;
+
 /** 节点操作记录信息 */
 @Data
 public class TaskNodeActionVO implements Serializable {
@@ -17,4 +19,7 @@ public class TaskNodeActionVO implements Serializable {
     private String actionPayload;
     /** 操作日志 */
     private String operateLog;
+
+    /** 操作配置 */
+    private NodeActionDto actionConfig;
 }
