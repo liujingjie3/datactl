@@ -25,7 +25,6 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TemplateNode;
-import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleUserDto;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.entity.TaskNodeActionRecord;
@@ -411,23 +410,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
             for (Map<Long, CurrentNodeVO> nodeMap : taskNodeMap.values()) {
                 for (CurrentNodeVO node : nodeMap.values()) {
-                    // 同一个节点下的办理人需要同步到该节点的所有角色
                     List<String> assignees = nodeAssigneeIdMap.get(node.getNodeInstId());
-                    List<NodeRoleUserDto> usersForRole = Collections.emptyList();
-                    if (assignees != null && !assignees.isEmpty()) {
-                        usersForRole = assignees.stream()
-                                .map(uid -> {
-                                    NodeRoleUserDto user = new NodeRoleUserDto();
-                                    user.setUserId(uid);
-                                    String realName = userNameMap.get(uid);
-                                    user.setRealName(realName != null ? realName : uid);
-                                    return user;
-                                })
-                                .collect(Collectors.toList());
-                    }
-                    for (NodeRoleDto role : node.getRoles()) {
-                        role.setUsers(usersForRole.isEmpty() ? Collections.emptyList() : new ArrayList<>(usersForRole));
-                    }
+                    node.setRealNameList(resolveRealNames(assignees, userNameMap));
                 }
             }
             // 4.4 将节点信息附加到结果中
@@ -948,39 +932,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 }
             }
         }
-        Map<Long, List<NodeRoleUserDto>> currentNodeAssignees = new HashMap<>();
-        for (Map.Entry<Long, List<String>> entry : currentNodeAssigneeIds.entrySet()) {
-            List<NodeRoleUserDto> usersForNode = entry.getValue().stream()
-                    .map(uid -> {
-                        NodeRoleUserDto user = new NodeRoleUserDto();
-                        user.setUserId(uid);
-                        String realName = currentUserNameMap.get(uid);
-                        user.setRealName(realName != null ? realName : uid);
-                        return user;
-                    })
-                    .collect(Collectors.toList());
-            currentNodeAssignees.put(entry.getKey(), usersForNode);
-        }
         for (CurrentNodeVO node : currentNodes) {
-            List<NodeRoleUserDto> usersForNode = currentNodeAssignees.get(node.getNodeInstId());
-            List<NodeRoleUserDto> roleUsers;
-            if (usersForNode == null || usersForNode.isEmpty()) {
-                roleUsers = Collections.emptyList();
-            } else {
-                roleUsers = usersForNode.stream()
-                        .map(u -> {
-                            NodeRoleUserDto copy = new NodeRoleUserDto();
-                            copy.setUserId(u.getUserId());
-                            copy.setRealName(u.getRealName());
-                            return copy;
-                        })
-                        .collect(Collectors.toList());
-            }
-            if (node.getRoles() != null) {
-                for (NodeRoleDto role : node.getRoles()) {
-                    role.setUsers(roleUsers.isEmpty() ? Collections.emptyList() : new ArrayList<>(roleUsers));
-                }
-            }
+            List<String> assigneeIds = currentNodeAssigneeIds.get(node.getNodeInstId());
+            node.setRealNameList(resolveRealNames(assigneeIds, currentUserNameMap));
         }
 
         detail.setCurrentNodes(currentNodes);
@@ -1018,6 +972,12 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 hv.setNodeName(inst.getNodeName());
                 hv.setOrderNo(inst.getOrderNo());
                 hv.setStatus(inst.getStatus());
+                List<String> assigneeIds = currentNodeAssigneeIds.get(inst.getNodeInstId());
+                if (assigneeIds == null || assigneeIds.isEmpty()) {
+                    hv.setCurrentUserIdList(Collections.emptyList());
+                } else {
+                    hv.setCurrentUserIdList(new ArrayList<>(assigneeIds));
+                }
                 if (inst.getStatus() == 2) {
                     hv.setProcessTime(inst.getCompletedAt());
                     if (StringUtils.isNotBlank(inst.getCompletedBy())) {
@@ -1038,23 +998,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                                 roleIds.add(rid);
                             }
                         }
-                    }
-                    List<NodeRoleUserDto> usersForNode = currentNodeAssignees.get(inst.getNodeInstId());
-                    List<NodeRoleUserDto> roleUsers;
-                    if (usersForNode == null || usersForNode.isEmpty()) {
-                        roleUsers = Collections.emptyList();
-                    } else {
-                        roleUsers = usersForNode.stream()
-                                .map(u -> {
-                                    NodeRoleUserDto copy = new NodeRoleUserDto();
-                                    copy.setUserId(u.getUserId());
-                                    copy.setRealName(u.getRealName());
-                                    return copy;
-                                })
-                                .collect(Collectors.toList());
-                    }
-                    for (NodeRoleDto role : hv.getRoles()) {
-                        role.setUsers(roleUsers.isEmpty() ? Collections.emptyList() : new ArrayList<>(roleUsers));
                     }
                 }
                 hv.setActionLogs(new ArrayList<>());
@@ -1386,6 +1329,18 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         return new ArrayList<>(map.values());
+    }
+
+    private List<String> resolveRealNames(List<String> userIds, Map<String, String> userNameMap) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return userIds.stream()
+                .map(uid -> {
+                    String realName = userNameMap.get(uid);
+                    return realName != null ? realName : uid;
+                })
+                .collect(Collectors.toList());
     }
 
     /**
