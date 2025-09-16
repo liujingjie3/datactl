@@ -27,6 +27,8 @@ public class TaskHistoryNodeVO implements Serializable {
     private String operatorName;
     /** 当前节点待处理角色 */
     private List<NodeRoleDto> roles;
+    /** 当前节点待处理用户ID列表 */
+    private List<String> currentUserIdList;
     /** 操作日志 */
     private List<TaskNodeActionVO> actionLogs;
     /** 操作配置列表 */

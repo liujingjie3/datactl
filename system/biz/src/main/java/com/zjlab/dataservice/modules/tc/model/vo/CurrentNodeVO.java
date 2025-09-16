@@ -13,4 +13,5 @@ public class CurrentNodeVO implements Serializable {
     private Long nodeInstId;
     private String nodeName;
     private List<NodeRoleDto> roles;
+    private List<String> realNameList;
 }
