@@ -192,20 +192,24 @@ Tab 值：
       "nodeInstId": 8881,
       "nodeName": "飞控准备",
       "roles": [
-        {"roleId":"1","roleName":"总体部"},
-        {"roleId":"3","roleName":"测运控组组长"}
+        {"roleId":"1","roleName":"总体部","users":[{"userId":"u001","realName":"张三"}]},
+        {"roleId":"3","roleName":"测运控组组长","users":[{"userId":"u002","realName":"李四"},{"userId":"u003","realName":"王五"}]}
       ]
     },
     {
       "nodeInstId": 8882,
       "nodeName": "资源确认",
       "roles": [
-        {"roleId":"3","roleName":"测运控组组长"}
+        {"roleId":"3","roleName":"测运控组组长","users":[]}
       ]
     }
   ]
 }
 ````
+
+`roles[].users`：办理人对象列表（来源于 `tc_task_work_item` 快照，若为空返回 `[]`）。
+`roles[].users[].userId`：办理人用户 ID。
+`roles[].users[].realName`：办理人姓名（若找不到用户，则回落为用户 ID）。
 
 #### 2.2.4 接口设计（单接口 + tab 参数）
 
@@ -658,7 +662,7 @@ Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无�
 Resp：`{ success: true }`
 
 任务详情 `GET /tc/taskManager/detail?taskId=...`
-Resp：任务主信息（含 needImaging） + 当前激活节点信息、节点历史及操作日志
+Resp：任务主信息（含 needImaging） + 当前激活节点信息、节点历史及操作日志（`roles[].users` 与列表保持一致；`history[]` 中状态为处理中(`status=1`) 的节点会在 `roles[]` 内返回 `users`）
 
 查询遥控指令单 `GET /task/remoteCmds?taskId=...`
 Resp：`[RemoteCmdExportVO]`
@@ -748,6 +752,7 @@ ORDER BY r.create_time DESC;
   * **210006 TASKMANAGE_IMAGING_AREA_REQUIRED**：成像区域不能为空
   * **200004 INSTANCE_IS_NOT_EXISTS**：实例对象不存在
   * **122000 STATUS_INVALID**：传入状态不合法
+  * **210013 TASKMANAGE_NO_ACTIVE_WORKITEM**：当前用户没有可操作节点
   * **510 SC_JEECG_NO_AUTHZ**：访问权限认证未通过
 
 **校验点：**
@@ -1447,6 +1452,20 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 }
 ```
 
+* 存库示例（后端根据 orbit\_plans 生成 Excel 上传对象存储，并补齐 `attachments` 字段）：
+
+```json
+{
+  "attachments": [
+    {"filename":"uuid_轨道计划.xlsx","storedFilename":"uuid_轨道计划.xlsx","url":"https://obj/.../orbit.xlsx"}
+  ],
+  "orbit_plans": [
+    {"task":"京津冀区域成像任务","used":true,"orbitNo":"001"},
+    {"task":"长三角区域成像任务","used":false,"orbitNo":"002"}
+  ]
+}
+```
+
 3. **决策操作**（type=2）
 
 * 用途：二元决策处理
@@ -1562,6 +1581,7 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
 2. 对于上传类动作，根据 actionType 区分处理：
 
    * **type=0（上传操作）**：前端随 multipart 提交一个或多个文件，payload 可为空。后端保存文件后生成 `attachments` 数组并回填到 payload。
+   * **type=1（选择圈次计划）**：前端提交结构化圈次数据，后端根据 `orbit_plans` 生成轨道计划 Excel 上传对象存储，并写入 `attachments`。
    * **type=4（修改遥控指令单）**：前端仅在 payload 中提交结构化的 `remote`\*`cmds 列表，不再上传文件。后端直接根据remote`\_cmds生成文件上传，生成 `attachments`落库。
 3. 为各自动作生成 `attachments` 数组（filename/storedFilename/url）。
 4. 写入 `tc_task_node_action_record`（一动作一记录，或汇总为一条，按实现选型）。
@@ -1578,6 +1598,22 @@ template_attr保存LogicFlow的节点与连线信息，其中节点配置位于 
     "attachments": [
       {"filename":"A报告.pdf","storedFilename":"uuid_A报告.pdf","url":"https://obj/.../a.pdf"},
       {"filename":"B影像.tif","storedFilename":"uuid_B影像.tif","url":"https://obj/.../b.tif"}
+    ]
+  }
+}
+```
+
+* **type=1（选择圈次计划）**：
+
+```json
+{
+  "actionType": 1,
+  "payload": {
+    "orbit_plans": [
+      {"task":"京津冀区域成像任务","used":true,"orbitNo":"001"}
+    ],
+    "attachments": [
+      {"filename":"uuid_轨道计划.xlsx","storedFilename":"uuid_轨道计划.xlsx","url":"https://obj/.../orbit.xlsx"}
     ]
   }
 }

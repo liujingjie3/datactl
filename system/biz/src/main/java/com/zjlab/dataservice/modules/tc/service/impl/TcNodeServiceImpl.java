@@ -110,6 +110,39 @@ public class TcNodeServiceImpl implements TcNodeService {
     }
 
     /**
+     * 统计指定类型操作数量
+     */
+    private long countActionType(List<NodeActionDto> actions, NodeActionTypeEnum type) {
+        if (actions == null || actions.isEmpty() || type == null) {
+            return 0L;
+        }
+        return actions.stream()
+                .filter(action -> action != null
+                        && action.getType() != null
+                        && action.getType() == type.getCode())
+                .count();
+    }
+
+    /**
+     * 校验节点操作配置
+     */
+    private void validateNodeActions(List<NodeActionDto> actions) {
+        long decisionCount = countActionType(actions, NodeActionTypeEnum.DECISION);
+        if (decisionCount != 1) {
+            throw new BaseException(ResultCode.NODE_ONLY_ONE_DECISION_ACTION);
+        }
+        if (countActionType(actions, NodeActionTypeEnum.MODIFY_REMOTE_CMD) > 1) {
+            throw new BaseException(ResultCode.NODE_ONLY_ONE_MODIFY_REMOTE_CMD_ACTION);
+        }
+        if (countActionType(actions, NodeActionTypeEnum.SELECT_ORBIT_PLAN) > 1) {
+            throw new BaseException(ResultCode.NODE_ONLY_ONE_SELECT_ORBIT_ACTION);
+        }
+        if (countActionType(actions, NodeActionTypeEnum.UPLOAD) > 1) {
+            throw new BaseException(ResultCode.NODE_ONLY_ONE_UPLOAD_ACTION);
+        }
+    }
+
+    /**
      * 统计节点数量。
      *
      * @return 节点统计信息
@@ -241,13 +274,7 @@ public class TcNodeServiceImpl implements TcNodeService {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
 
-        long decisionCount = dto.getActions() == null ? 0 :
-                dto.getActions().stream()
-                        .filter(a -> a.getType() != null && a.getType() == NodeActionTypeEnum.DECISION.getCode())
-                        .count();
-        if (decisionCount != 1) {
-            throw new BaseException(ResultCode.NODE_ONLY_ONE_DECISION_ACTION);
-        }
+        validateNodeActions(dto.getActions());
 
         // 2. 转换DTO为实体并补充通用字段
         NodeInfo node = new NodeInfo();
@@ -302,13 +329,7 @@ public class TcNodeServiceImpl implements TcNodeService {
             throw new BaseException(ResultCode.PARA_ERROR);
         }
 
-        long decisionCount = dto.getActions() == null ? 0 :
-                dto.getActions().stream()
-                        .filter(a -> a.getType() != null && a.getType() == NodeActionTypeEnum.DECISION.getCode())
-                        .count();
-        if (decisionCount != 1) {
-            throw new BaseException(ResultCode.NODE_ONLY_ONE_DECISION_ACTION);
-        }
+        validateNodeActions(dto.getActions());
 
         NodeInfo exist = nodeInfoMapper.selectById(id);
         if (exist != null && exist.getStatus() == 1 && dto.getStatus() == 0) {

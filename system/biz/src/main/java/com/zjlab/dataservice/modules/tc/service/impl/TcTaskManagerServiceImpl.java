@@ -25,6 +25,7 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TemplateNode;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeRoleUserDto;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.entity.TaskNodeActionRecord;
@@ -65,6 +66,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -378,7 +380,57 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     }
                 }
             }
-            // 4.3 将节点信息附加到结果中
+            // 4.3 填充节点处理人信息。当前节点下的办理人全部来源于 tc_task_work_item。
+            Map<Long, List<String>> nodeAssigneeIdMap = new HashMap<>();
+            Set<String> allAssigneeIds = new HashSet<>();
+            for (TaskManagerListItemVO vo : vos) {
+                Map<Long, CurrentNodeVO> nodeMap = taskNodeMap.get(vo.getTaskId());
+                if (nodeMap == null) {
+                    continue;
+                }
+                for (CurrentNodeVO node : nodeMap.values()) {
+                    // 逐个节点查询仍在处理中的工作项，拿到分配到该节点的用户 ID
+                    List<String> assignees = taskWorkItemMapper.selectAssigneeIds(vo.getTaskId(), node.getNodeInstId());
+                    if (assignees != null && !assignees.isEmpty()) {
+                        nodeAssigneeIdMap.put(node.getNodeInstId(), assignees);
+                        allAssigneeIds.addAll(assignees);
+                    }
+                }
+            }
+            // 将用户 ID 统一换成姓名，避免重复的数据库查询
+            Map<String, String> userNameMap = new HashMap<>();
+            if (!allAssigneeIds.isEmpty()) {
+                Collection<SysUser> users = sysUserService.listByIds(allAssigneeIds);
+                if (users != null) {
+                    for (SysUser user : users) {
+                        if (user != null) {
+                            userNameMap.put(user.getId(), user.getRealname());
+                        }
+                    }
+                }
+            }
+            for (Map<Long, CurrentNodeVO> nodeMap : taskNodeMap.values()) {
+                for (CurrentNodeVO node : nodeMap.values()) {
+                    // 同一个节点下的办理人需要同步到该节点的所有角色
+                    List<String> assignees = nodeAssigneeIdMap.get(node.getNodeInstId());
+                    List<NodeRoleUserDto> usersForRole = Collections.emptyList();
+                    if (assignees != null && !assignees.isEmpty()) {
+                        usersForRole = assignees.stream()
+                                .map(uid -> {
+                                    NodeRoleUserDto user = new NodeRoleUserDto();
+                                    user.setUserId(uid);
+                                    String realName = userNameMap.get(uid);
+                                    user.setRealName(realName != null ? realName : uid);
+                                    return user;
+                                })
+                                .collect(Collectors.toList());
+                    }
+                    for (NodeRoleDto role : node.getRoles()) {
+                        role.setUsers(usersForRole.isEmpty() ? Collections.emptyList() : new ArrayList<>(usersForRole));
+                    }
+                }
+            }
+            // 4.4 将节点信息附加到结果中
             for (TaskManagerListItemVO vo : vos) {
                 Map<Long, CurrentNodeVO> nodeMap = taskNodeMap.get(vo.getTaskId());
                 if (nodeMap != null) {
@@ -624,7 +676,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         Long cnt = taskWorkItemMapper.countActiveWorkItem(dto.getTaskId(), dto.getNodeInstId(), userId);
         if (cnt == null || cnt == 0) {
-            throw new BaseException(ResultCode.SC_JEECG_NO_AUTHZ);
+            throw new BaseException(ResultCode.TASKMANAGE_NO_ACTIVE_WORKITEM);
         }
 
         String folder = TASK_FOLDER + "/taskId_" + dto.getTaskId() + "/nodeInstId_" + dto.getNodeInstId();
@@ -658,9 +710,35 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
                             ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
                     JSONArray orbitPlans = payload.getJSONArray("orbit_plans");
-                    JSONObject newPayload = new JSONObject();
-                    newPayload.put("orbit_plans", orbitPlans);
-                    action.setActionPayload(newPayload.toJSONString());
+                    List<OrbitPlanExportVO> list = orbitPlans == null
+                            ? Collections.emptyList()
+                            : orbitPlans.toJavaList(OrbitPlanExportVO.class);
+                    Workbook workbook = ExcelExportUtil.exportExcel(
+                            new ExportParams("测运控仿真轨道计划", "轨道计划"),
+                            OrbitPlanExportVO.class, list);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try {
+                        workbook.write(baos);
+                        workbook.close();
+                    } catch (Exception e) {
+                        throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+                    }
+                    String fileName = UUID.randomUUID().toString().replace("-", "") + "_轨道计划.xlsx";
+                    String objectName = folder + "/" + fileName;
+                    try {
+                        MinioUtil.uploadFile(BUCKET_NAME, objectName,
+                                new ByteArrayInputStream(baos.toByteArray()));
+                    } catch (Exception e) {
+                        throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+                    }
+                    List<Map<String, String>> attachments = new ArrayList<>();
+                    Map<String, String> att = new HashMap<>();
+                    att.put("filename", fileName);
+                    att.put("storedFilename", fileName);
+                    att.put("url", objectName);
+                    attachments.add(att);
+                    payload.put("attachments", attachments);
+                    action.setActionPayload(payload.toJSONString());
                 } else if (type == NodeActionTypeEnum.MODIFY_REMOTE_CMD) {
                     JSONObject payload = StringUtils.isNotBlank(action.getActionPayload())
                             ? JSON.parseObject(action.getActionPayload()) : new JSONObject();
@@ -815,12 +893,96 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         // 3. 查询当前节点信息
         List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(Collections.singletonList(taskId));
         List<CurrentNodeVO> currentNodes = new ArrayList<>();
+        Set<String> currentRoleIds = new HashSet<>();
+        Map<Long, List<String>> currentNodeAssigneeIds = new HashMap<>();
+        Set<String> currentAssigneeIds = new HashSet<>();
         for (CurrentNodeRow row : rows) {
             CurrentNodeVO cn = new CurrentNodeVO();
             cn.setNodeInstId(row.getNodeInstId());
             cn.setNodeName(row.getNodeName());
+            List<NodeRoleDto> nodeRoles = new ArrayList<>();
+            if (StringUtils.isNotBlank(row.getHandlerRoleIds())) {
+                List<String> ids = JSON.parseArray(row.getHandlerRoleIds(), String.class);
+                if (ids != null) {
+                    for (String rid : ids) {
+                        NodeRoleDto role = new NodeRoleDto();
+                        role.setRoleId(rid);
+                        nodeRoles.add(role);
+                        currentRoleIds.add(rid);
+                    }
+                }
+            }
+            cn.setRoles(nodeRoles);
+            List<String> assignees = taskWorkItemMapper.selectAssigneeIds(row.getTaskId(), row.getNodeInstId());
+            if (assignees != null && !assignees.isEmpty()) {
+                currentNodeAssigneeIds.put(row.getNodeInstId(), assignees);
+                currentAssigneeIds.addAll(assignees);
+            }
             currentNodes.add(cn);
         }
+
+        if (!currentRoleIds.isEmpty()) {
+            List<SysRole> roleList = sysRoleMapper.selectBatchIds(currentRoleIds);
+            Map<String, String> roleNameMap = roleList.stream()
+                    .collect(Collectors.toMap(SysRole::getId, SysRole::getRoleName));
+            for (CurrentNodeVO node : currentNodes) {
+                if (node.getRoles() != null) {
+                    for (NodeRoleDto role : node.getRoles()) {
+                        String roleName = roleNameMap.get(role.getRoleId());
+                        if (roleName != null) {
+                            role.setRoleName(roleName);
+                        }
+                    }
+                }
+            }
+        }
+
+        Map<String, String> currentUserNameMap = new HashMap<>();
+        if (!currentAssigneeIds.isEmpty()) {
+            Collection<SysUser> users = sysUserService.listByIds(currentAssigneeIds);
+            if (users != null) {
+                for (SysUser user : users) {
+                    if (user != null) {
+                        currentUserNameMap.put(user.getId(), user.getRealname());
+                    }
+                }
+            }
+        }
+        Map<Long, List<NodeRoleUserDto>> currentNodeAssignees = new HashMap<>();
+        for (Map.Entry<Long, List<String>> entry : currentNodeAssigneeIds.entrySet()) {
+            List<NodeRoleUserDto> usersForNode = entry.getValue().stream()
+                    .map(uid -> {
+                        NodeRoleUserDto user = new NodeRoleUserDto();
+                        user.setUserId(uid);
+                        String realName = currentUserNameMap.get(uid);
+                        user.setRealName(realName != null ? realName : uid);
+                        return user;
+                    })
+                    .collect(Collectors.toList());
+            currentNodeAssignees.put(entry.getKey(), usersForNode);
+        }
+        for (CurrentNodeVO node : currentNodes) {
+            List<NodeRoleUserDto> usersForNode = currentNodeAssignees.get(node.getNodeInstId());
+            List<NodeRoleUserDto> roleUsers;
+            if (usersForNode == null || usersForNode.isEmpty()) {
+                roleUsers = Collections.emptyList();
+            } else {
+                roleUsers = usersForNode.stream()
+                        .map(u -> {
+                            NodeRoleUserDto copy = new NodeRoleUserDto();
+                            copy.setUserId(u.getUserId());
+                            copy.setRealName(u.getRealName());
+                            return copy;
+                        })
+                        .collect(Collectors.toList());
+            }
+            if (node.getRoles() != null) {
+                for (NodeRoleDto role : node.getRoles()) {
+                    role.setUsers(roleUsers.isEmpty() ? Collections.emptyList() : new ArrayList<>(roleUsers));
+                }
+            }
+        }
+
         detail.setCurrentNodes(currentNodes);
 
         // 4. 构建工作流概况和历史记录
@@ -876,6 +1038,23 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                                 roleIds.add(rid);
                             }
                         }
+                    }
+                    List<NodeRoleUserDto> usersForNode = currentNodeAssignees.get(inst.getNodeInstId());
+                    List<NodeRoleUserDto> roleUsers;
+                    if (usersForNode == null || usersForNode.isEmpty()) {
+                        roleUsers = Collections.emptyList();
+                    } else {
+                        roleUsers = usersForNode.stream()
+                                .map(u -> {
+                                    NodeRoleUserDto copy = new NodeRoleUserDto();
+                                    copy.setUserId(u.getUserId());
+                                    copy.setRealName(u.getRealName());
+                                    return copy;
+                                })
+                                .collect(Collectors.toList());
+                    }
+                    for (NodeRoleDto role : hv.getRoles()) {
+                        role.setUsers(roleUsers.isEmpty() ? Collections.emptyList() : new ArrayList<>(roleUsers));
                     }
                 }
                 hv.setActionLogs(new ArrayList<>());
