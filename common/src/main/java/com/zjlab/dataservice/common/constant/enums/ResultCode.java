@@ -88,6 +88,10 @@ public enum ResultCode {
     NODE_ASSOCIATED_TEMPLATE(210007, "节点已关联任务模板，无法删除或禁用"),
     NODE_ONLY_ONE_DECISION_ACTION(210008, "节点必须且只能有一个决策action"),
     TASKMANAGE_UPLOAD_ONLY_ONE_FILE(210009, "上传操作只支持一个文件"),
+    NODE_ONLY_ONE_UPLOAD_ACTION(210010, "节点上传action最多一个"),
+    NODE_ONLY_ONE_SELECT_ORBIT_ACTION(210011, "节点选择轨道圈次action最多一个"),
+    NODE_ONLY_ONE_MODIFY_REMOTE_CMD_ACTION(210012, "节点修改遥控指令action最多一个"),
+    TASKMANAGE_NO_ACTIVE_WORKITEM(210013, "当前用户没有可操作节点"),
 
     ;
     //返回码
