@@ -156,7 +156,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 dto.setImagingAreaId(null);
             }
         }
-        //todo 成像区域这里需要跳转到外部平台，这边的交互，是存json还是存成像ID等后面需要进一步沟通，暂时先mock一个json
+
 
 
         // 3. 新建任务记录
