@@ -123,6 +123,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     private static final String BUCKET_NAME = "dspp";
     private static final String TASK_FOLDER = "/TJEOS/WORKDIR/FILE/task";
+    private static final DateTimeFormatter ORBIT_PLAN_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 
     /**
@@ -164,8 +165,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         String taskCode = UUID.randomUUID().toString().replace("-", "");
         String satellitesJson = dto.getSatellites() == null ? null : JSON.toJSONString(dto.getSatellites());
         String remoteCmdsJson = dto.getRemoteCmds() == null ? null : JSON.toJSONString(dto.getRemoteCmds());
+        List<OrbitPlanExportVO> normalizedOrbitPlans = normalizeOrbitPlans(dto.getOrbitPlans());
+        dto.setOrbitPlans(normalizedOrbitPlans);
         //todo 遥感指令这里需要根据测运控数据计算，怎么存，存什么等后面需要进一步沟通，暂时先mock一个json
-        String orbitPlansJson = dto.getOrbitPlans() == null ? null : JSON.toJSONString(dto.getOrbitPlans());
+        String orbitPlansJson = normalizedOrbitPlans == null ? null : JSON.toJSONString(normalizedOrbitPlans);
         dto.setSatellitesJson(satellitesJson);
         dto.setRemoteCmdsJson(remoteCmdsJson);
         dto.setOrbitPlansJson(orbitPlansJson);
@@ -262,7 +265,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         // 7.1 进站前提醒：对所有圈次定时通知
         List<String> orbitRecipients = new ArrayList<>(allUserIds);
         orbitRecipients.add(userId);
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        DateTimeFormatter df = ORBIT_PLAN_TIME_FORMATTER;
         if (dto.getOrbitPlans() != null && !orbitRecipients.isEmpty()) {
             for (OrbitPlanExportVO plan : dto.getOrbitPlans()) {
                 try {
@@ -697,9 +700,14 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     List<OrbitPlanExportVO> list = orbitPlans == null
                             ? Collections.emptyList()
                             : orbitPlans.toJavaList(OrbitPlanExportVO.class);
+                    List<OrbitPlanExportVO> workbookData = normalizeOrbitPlans(list);
+                    if (workbookData == null) {
+                        workbookData = new ArrayList<>();
+                    }
+                    payload.put("orbit_plans", workbookData);
                     Workbook workbook = ExcelExportUtil.exportExcel(
                             new ExportParams("测运控仿真轨道计划", "轨道计划"),
-                            OrbitPlanExportVO.class, list);
+                            OrbitPlanExportVO.class, workbookData);
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     try {
                         workbook.write(baos);
@@ -1219,6 +1227,77 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             minioFileService.download(dto, response);
         } catch (Exception e) {
             throw new BaseException(ResultCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private List<OrbitPlanExportVO> normalizeOrbitPlans(List<OrbitPlanExportVO> plans) {
+        if (plans == null) {
+            return null;
+        }
+        List<OrbitPlanExportVO> normalized = new ArrayList<>();
+        for (OrbitPlanExportVO plan : plans) {
+            if (plan != null) {
+                normalized.add(plan);
+            }
+        }
+        if (normalized.isEmpty()) {
+            return normalized;
+        }
+        normalized.sort(this::compareOrbitPlanByInTime);
+        for (int i = 0; i < normalized.size(); i++) {
+            OrbitPlanExportVO plan = normalized.get(i);
+            plan.setOrbitNo(String.valueOf(i + 1));
+        }
+        return normalized;
+    }
+
+    private int compareOrbitPlanByInTime(OrbitPlanExportVO first, OrbitPlanExportVO second) {
+        LocalDateTime firstTime = parseOrbitPlanTime(first.getInTime());
+        LocalDateTime secondTime = parseOrbitPlanTime(second.getInTime());
+        if (firstTime != null && secondTime != null) {
+            int cmp = firstTime.compareTo(secondTime);
+            if (cmp != 0) {
+                return cmp;
+            }
+        } else if (firstTime != null) {
+            return -1;
+        } else if (secondTime != null) {
+            return 1;
+        }
+
+        String firstIn = first.getInTime();
+        String secondIn = second.getInTime();
+        if (firstIn != null && secondIn != null) {
+            int cmp = firstIn.compareTo(secondIn);
+            if (cmp != 0) {
+                return cmp;
+            }
+        } else if (firstIn != null) {
+            return -1;
+        } else if (secondIn != null) {
+            return 1;
+        }
+
+        String firstOrbit = first.getOrbitNo();
+        String secondOrbit = second.getOrbitNo();
+        if (firstOrbit != null && secondOrbit != null) {
+            return firstOrbit.compareTo(secondOrbit);
+        } else if (firstOrbit != null) {
+            return -1;
+        } else if (secondOrbit != null) {
+            return 1;
+        }
+        return 0;
+    }
+
+    private LocalDateTime parseOrbitPlanTime(String time) {
+        if (StringUtils.isBlank(time)) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(time, ORBIT_PLAN_TIME_FORMATTER);
+        } catch (Exception e) {
+            return null;
         }
     }
 
