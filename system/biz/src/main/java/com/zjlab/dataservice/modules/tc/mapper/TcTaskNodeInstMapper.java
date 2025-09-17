@@ -32,6 +32,8 @@ public interface TcTaskNodeInstMapper {
 
     List<CurrentNodeRow> selectCurrentNodes(@Param("taskIds") List<Long> taskIds);
 
+    List<Long> selectTaskIdsWithProcessedNodes(@Param("taskIds") List<Long> taskIds);
+
     Long countDoneNodeInst(@Param("taskId") Long taskId);
 
     int updateNodeInstCancel(@Param("taskId") Long taskId, @Param("userId") String userId);

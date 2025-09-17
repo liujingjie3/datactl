@@ -17,4 +17,5 @@ public class TaskManagerListItemVO extends TaskBaseVO {
     private List<SatelliteGroupVO> satellites;
     @JsonIgnore
     private String satellitesJson;
+    private boolean editable;
 }

@@ -187,6 +187,7 @@ Tab 值：
   "satellites": [{"group":"三体星座","satIds":["1","2"]}],
   "createTime": "2025-08-01 10:20:30",
   "status": 0,
+  "editable": true,
   "currentNodes": [
     {
       "nodeInstId": 8881,
@@ -210,6 +211,7 @@ Tab 值：
 `roles[].users`：办理人对象列表（来源于 `tc_task_work_item` 快照，若为空返回 `[]`）。
 `roles[].users[].userId`：办理人用户 ID。
 `roles[].users[].realName`：办理人姓名（若找不到用户，则回落为用户 ID）。
+`editable`：任务是否可在前端展示“编辑”“取消”等操作按钮。判定规则：任务处于运行中（status=0）且所有节点均未被办理过时为 `true`，否则为 `false`。
 
 #### 2.2.4 接口设计（单接口 + tab 参数）
 
@@ -535,7 +537,7 @@ taskId\*, taskName\*, taskRequirement, resultDisplayNeeded(0/1)
 BEGIN;
 
 -- A. 权限 & 状态校验（服务层）
--- 仅发起人或管理员；任务 status=0 且无节点已完成
+-- 仅管理员或总体部成员；任务 status=0 且无节点已完成
 
 -- B. 更新任务主表
 UPDATE tc_task
@@ -588,7 +590,7 @@ COMMIT;
 ### 2.6 取消任务（只要“尚无人完成任何节点”）
 
 允许起点在创建时即激活为“处理中(1)”（形成待办并开始计时）。
-取消条件：任务 status=0 且不存在任何节点 status=2，且只有发起人或管理员可以执行取消。
+取消条件：任务 status=0 且不存在任何节点 status=2，且只有管理员可以执行取消。
 
 **事务脚本**
 
@@ -647,7 +649,7 @@ satellites(JSON，如 [{"group":"阿联酋星座","satIds":["4","5"]}]), remoteC
 Resp：`{ id }`（needImaging=1 时 imagingAreaId 必填；仅管理员或总体部成员〔角色ID为1或2，或角色名为“总体组组长”“总体组组员”〕可创建）
 
 取消任务 `POST /task/cancel?taskId=...`
-Resp：`{ success: true }`（仅发起人或管理员且尚无人完成节点时允许；不满足条件报 TASKMANAGE\_NO\_PERMISSION 或 TASKMANAGE\_CANNOT\_CANCEL）
+Resp：`{ success: true }`（仅管理员且尚无人完成节点时允许；不满足条件报 TASKMANAGE\_NO\_PERMISSION 或 TASKMANAGE\_CANNOT\_CANCEL）
 
 编辑任务 `POST /task/edit`
 Body(JSON)：
@@ -656,7 +658,7 @@ Body(JSON)：
 taskId*, taskName*, taskRequirement, resultDisplayNeeded(0|1)
 ```
 
-Resp：`{ success: true }`（仅发起人或管理员且任务 status=0 且无节点已完成时允许；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
+Resp：`{ success: true }`（仅管理员或总体部成员且任务 status=0 且无节点已完成时允许；若 resultDisplayNeeded 状态改变，将同步增删“查看影像结果”节点实例及工作项）
 
 异常结束任务 `POST /task/abort?taskId=...`
 Resp：`{ success: true }`
@@ -747,7 +749,7 @@ ORDER BY r.create_time DESC;
 * **210001 TASKMANAGE_ADMIN_ONLY_ALL**：管理员只能查看所有任务
 * **210002 TASKMANAGE_ONLY_ADMIN_ALL**：只有管理员可以查看所有任务
 * **210003 TASKMANAGE_CANNOT_CANCEL**：已有节点完成，不能取消
-  * **210004 TASKMANAGE_NO_PERMISSION**：只有发起人或管理员可以编辑或取消任务
+  * **210004 TASKMANAGE_NO_PERMISSION**：权限受限（创建/编辑需管理员或总体部成员；取消需管理员）
   * **210005 TASKMANAGE_CANNOT_EDIT**：已有节点处理，不能编辑
   * **210006 TASKMANAGE_IMAGING_AREA_REQUIRED**：成像区域不能为空
   * **200004 INSTANCE_IS_NOT_EXISTS**：实例对象不存在
@@ -760,7 +762,8 @@ ORDER BY r.create_time DESC;
   * 创建：templateId 有效；模板节点非空；needImaging=1 时 imagingAreaId 必填。
   * 列表：管理员只能查询 `tab=all`，非管理员禁止 `tab=all`。
   * 提交：节点必须处理中且提交者为该节点当前操作人（存在待办工作项）。
-  * 取消/编辑：任务 status=0 且无节点已完成，且仅发起人或管理员可操作。
+  * 取消：任务 status=0 且无节点已完成，且仅管理员可操作。
+  * 编辑：任务 status=0 且无节点已完成，且仅管理员或总体部成员可操作。
 
 ---
 
