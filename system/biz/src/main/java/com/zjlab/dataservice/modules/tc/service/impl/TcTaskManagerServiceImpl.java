@@ -342,6 +342,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
             // 4.1 查询每个任务的当前节点及其角色信息
             List<Long> taskIds = vos.stream().map(TaskManagerListItemVO::getTaskId).collect(Collectors.toList());
+            List<Long> processedTaskIdList = taskNodeInstMapper.selectTaskIdsWithProcessedNodes(taskIds);
+            Set<Long> processedTaskIds = new HashSet<>();
+            if (processedTaskIdList != null) {
+                processedTaskIds.addAll(processedTaskIdList);
+            }
             List<CurrentNodeRow> rows = taskNodeInstMapper.selectCurrentNodes(taskIds);
             Map<Long, Map<Long, CurrentNodeVO>> taskNodeMap = new HashMap<>();
             Set<String> roleIds = new HashSet<>();
@@ -425,6 +430,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 } else {
                     vo.setCurrentNodes(new ArrayList<>());
                 }
+                boolean hasProcessedNodes = processedTaskIds.contains(vo.getTaskId());
+                boolean running = vo.getStatus() != null && vo.getStatus() == TaskManagerStatusEnum.RUNNING.getCode();
+                boolean canOperate = running && !hasProcessedNodes;
+                vo.setEditable(canOperate);
             }
         }
         // 5. 返回分页结果
@@ -455,7 +464,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
         boolean admin = sysUserService.isAdmin(userId);
-        if (!admin && !userId.equals(info.getCreateBy())) {
+        if (!admin) {
             throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
         }
 
@@ -497,7 +506,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             throw new BaseException(ResultCode.USERID_IS_NULL);
         }
         boolean admin = sysUserService.isAdmin(userId);
-        if (!admin && !userId.equals(info.getCreateBy())) {
+        boolean overall = sysUserService.isOverall(userId);
+        if (!admin && !overall) {
             throw new BaseException(ResultCode.TASKMANAGE_NO_PERMISSION);
         }
 
@@ -704,10 +714,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     if (workbookData == null) {
                         workbookData = new ArrayList<>();
                     }
-                    payload.put("orbit_plans", workbookData);
+                    List<OrbitPlanExportVO> payloadOrbitPlans = new ArrayList<>(workbookData);
+                    payload.put("orbit_plans", payloadOrbitPlans);
                     Workbook workbook = ExcelExportUtil.exportExcel(
                             new ExportParams("测运控仿真轨道计划", "轨道计划"),
-                            OrbitPlanExportVO.class, workbookData);
+                            OrbitPlanExportVO.class, new ArrayList<>(workbookData));
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     try {
                         workbook.write(baos);
