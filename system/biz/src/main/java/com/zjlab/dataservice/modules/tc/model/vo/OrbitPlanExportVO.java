@@ -35,7 +35,7 @@ public class OrbitPlanExportVO implements Serializable {
     private String groundStation;
 
     @Excel(name = "公司名称")
-    @NotBlank(message = "companyName不能为空")
+//    @NotBlank(message = "companyName不能为空")
     private String companyName;
 
     @Excel(name = "时长")

@@ -167,7 +167,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         String remoteCmdsJson = dto.getRemoteCmds() == null ? null : JSON.toJSONString(dto.getRemoteCmds());
         List<OrbitPlanExportVO> normalizedOrbitPlans = normalizeOrbitPlans(dto.getOrbitPlans());
         dto.setOrbitPlans(normalizedOrbitPlans);
-        //todo 遥感指令这里需要根据测运控数据计算，怎么存，存什么等后面需要进一步沟通，暂时先mock一个json
+
         String orbitPlansJson = normalizedOrbitPlans == null ? null : JSON.toJSONString(normalizedOrbitPlans);
         dto.setSatellitesJson(satellitesJson);
         dto.setRemoteCmdsJson(remoteCmdsJson);
