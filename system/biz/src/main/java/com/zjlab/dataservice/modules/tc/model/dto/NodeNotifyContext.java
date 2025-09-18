@@ -17,4 +17,5 @@ public class NodeNotifyContext implements Serializable {
     private String nodeName;
     private Integer maxDuration;
     private LocalDateTime startedAt;
+    private Integer timeoutRemind;
 }

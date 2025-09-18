@@ -161,6 +161,7 @@ CREATE TABLE `tc_task_node_inst` (
   `started_at` DATETIME COMMENT '开始时间',
   `completed_at` DATETIME COMMENT '完成时间',
   `max_duration` INT COMMENT '最大时长（分钟）',
+  `timeout_remind` INT COMMENT '超时提醒频率（分钟）',
   `actions` JSON NOT NULL COMMENT '操作控制项数组：[{type,name,config}]',
   `completed_by` varchar(32) DEFAULT NULL COMMENT '最终完成该节点的用户ID',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记：0正常，1删除',

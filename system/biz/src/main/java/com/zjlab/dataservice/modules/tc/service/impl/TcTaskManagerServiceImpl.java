@@ -194,7 +194,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         for (TemplateNode n : nodes) {
             String rolesJson = JSON.toJSONString(n.getRoleIds());
             String actionsJson = JSON.toJSONString(n.getActions());
-            taskNodeInstMapper.insertNodeInst(taskId, dto.getTemplateId(), n.getNodeId(), rolesJson, n.getOrderNo(), n.getMaxDuration(), actionsJson, userId);
+            taskNodeInstMapper.insertNodeInst(taskId, dto.getTemplateId(), n.getNodeId(), rolesJson,
+                    n.getOrderNo(), n.getMaxDuration(), n.getTimeoutRemind(), actionsJson, userId);
             Long instId = taskNodeInstMapper.selectLastInsertId();
             map.put(n.getKey(), instId);
         }
@@ -221,7 +222,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     Integer maxOrderNo = taskNodeInstMapper.selectMaxOrderNo(taskId);
                     Integer orderNo = maxOrderNo == null ? 1 : maxOrderNo + 1;
                     Integer maxDuration = viewNode.getExpectedDuration();
-                    taskNodeInstMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, orderNo, maxDuration, viewNode.getActions(), userId);
+                    taskNodeInstMapper.insertViewNodeInst(taskId, dto.getTemplateId(), viewNode.getId(), prevNodeIds,
+                            handlerRoleIds, orderNo, maxDuration, viewNode.getTimeoutRemind(), viewNode.getActions(), userId);
                     Long viewInstId = taskNodeInstMapper.selectLastInsertId();
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
@@ -558,7 +560,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     Integer maxOrderNo = taskNodeInstMapper.selectMaxOrderNo(dto.getTaskId());
                     Integer orderNo = maxOrderNo == null ? 1 : maxOrderNo + 1;
                     Integer maxDuration = viewNode.getExpectedDuration();
-                    taskNodeInstMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds, handlerRoleIds, orderNo, maxDuration, viewNode.getActions(), userId);
+                        taskNodeInstMapper.insertViewNodeInst(dto.getTaskId(), info.getTemplateId(), viewNode.getId(), prevNodeIds,
+                                handlerRoleIds, orderNo, maxDuration, viewNode.getTimeoutRemind(), viewNode.getActions(), userId);
                     Long viewInstId = taskNodeInstMapper.selectLastInsertId();
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
@@ -1368,6 +1371,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 node.setNodeName(params.getString("name"));
                 node.setNodeDescription(params.getString("description"));
                 node.setMaxDuration(params.getInteger("expectedDuration"));
+                node.setTimeoutRemind(params.getInteger("timeoutRemind"));
                 List<String> roleIds = new ArrayList<>();
                 JSONArray roles = params.getJSONArray("roles");
                 if (roles != null) {
@@ -1509,6 +1513,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (context != null) {
             payload.put("taskName", context.getTaskName());
             payload.put("nodeName", context.getNodeName());
+            if (context.getTimeoutRemind() != null) {
+                payload.put("timeoutRemind", context.getTimeoutRemind());
+            }
         }
         int channelCode = ChannelEnum.DINGTALK.getCode();
         String dedupKey = BizTypeEnum.NODE_TIMEOUT.getCode() + "_" + nodeInstId + "_" + channelCode;

@@ -17,6 +17,7 @@ public interface TcTaskNodeInstMapper {
                        @Param("handlerRoleIds") String handlerRoleIds,
                        @Param("orderNo") Integer orderNo,
                        @Param("maxDuration") Integer maxDuration,
+                       @Param("timeoutRemind") Integer timeoutRemind,
                        @Param("actions") String actions,
                        @Param("userId") String userId);
 
@@ -48,6 +49,7 @@ public interface TcTaskNodeInstMapper {
                            @Param("handlerRoleIds") String handlerRoleIds,
                            @Param("orderNo") Integer orderNo,
                            @Param("maxDuration") Integer maxDuration,
+                           @Param("timeoutRemind") Integer timeoutRemind,
                            @Param("actions") String actions,
                            @Param("userId") String userId);
 

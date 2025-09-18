@@ -20,6 +20,7 @@ public class TemplateNode implements Serializable {
     private List<String> next;
     private List<String> roleIds;
     private Integer maxDuration;
+    private Integer timeoutRemind;
     private List<NodeActionDto> actions;
 }
 
