@@ -206,6 +206,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             taskNodeInstMapper.updateNodeInstPrevNext(instId, JSON.toJSONString(prevIds), JSON.toJSONString(nextIds), userId);
         }
 
+        Set<String> allUserIds = new HashSet<>();
+
         // 5. 根据需求追加查看影像结果节点
         if (dto.getResultDisplayNeeded() != null && dto.getResultDisplayNeeded() == 1) {
             List<Long> endIds = taskNodeInstMapper.selectEndNodeInstIds(taskId);
@@ -224,8 +226,11 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     if (viewInstId != null) {
                         taskNodeInstMapper.appendViewNodeToEndNodes(viewInstId, endIds, userId);
                         List<String> userIds = tcTaskManagerMapper.selectUserIdsByRoleIds(roleIds);
-                        for (String uid : userIds) {
-                            taskWorkItemMapper.insertWorkItem(taskId, viewInstId, uid, 0, userId);
+                        if (!userIds.isEmpty()) {
+                            for (String uid : userIds) {
+                                taskWorkItemMapper.insertWorkItem(taskId, viewInstId, uid, 0, userId);
+                            }
+                            allUserIds.addAll(userIds);
                         }
                     }
                 }
@@ -233,7 +238,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         // 6. 激活起始节点并生成工作项
-        Set<String> allUserIds = new HashSet<>();
         for (TemplateNode n : nodes) {
             Long instId = map.get(n.getKey());
             boolean isStart = n.getPrev() == null || n.getPrev().isEmpty();
@@ -248,8 +252,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 for (String uid : userIds) {
                     taskWorkItemMapper.insertWorkItem(taskId, instId, uid, phaseStatus, userId);
                 }
-                allUserIds.addAll(userIds);
             }
+            allUserIds.addAll(userIds);
             if (isStart) {
                 scheduleNodeTimeout(instId, n.getMaxDuration(), userIds, userId);
             }
