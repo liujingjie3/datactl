@@ -25,6 +25,8 @@ import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditInfo;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TemplateNode;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskNotifyContext;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeNotifyContext;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeInfo;
 import com.zjlab.dataservice.modules.tc.model.entity.NodeRoleRel;
 import com.zjlab.dataservice.modules.tc.model.entity.TaskNodeActionRecord;
@@ -123,7 +125,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     private static final String BUCKET_NAME = "dspp";
     private static final String TASK_FOLDER = "/TJEOS/WORKDIR/FILE/task";
-    private static final DateTimeFormatter ORBIT_PLAN_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter ORBIT_PLAN_TIME_FORMATTER = DATE_TIME_FORMATTER;
 
 
     /**
@@ -174,6 +177,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         dto.setOrbitPlansJson(orbitPlansJson);
         tcTaskManagerMapper.insertTask(taskCode, dto, userId);
         Long taskId = tcTaskManagerMapper.selectLastInsertId();
+        TaskNotifyContext taskContext = tcTaskManagerMapper.selectTaskNotifyContext(taskId);
+        String creatorName = resolveUserRealName(taskContext != null ? taskContext.getCreatorId() : userId);
+        String createTimeStr = formatDateTime(taskContext != null ? taskContext.getCreateTime() : LocalDateTime.now());
+        String taskName = taskContext != null ? taskContext.getTaskName() : dto.getTaskName();
 
         // 4. 解析模板并初始化所有节点实例
         String attr = tcTaskManagerMapper.selectTemplateAttr(dto.getTemplateId());
@@ -253,8 +260,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         recipients.remove(userId);
         if (!recipients.isEmpty()) {
             JSONObject payload = new JSONObject();
-            payload.put("taskId", taskId);
-            payload.put("taskName", dto.getTaskName());
+            payload.put("taskName", taskName);
+            payload.put("creatorName", creatorName);
+            payload.put("createTime", createTimeStr);
             int channelCode = ChannelEnum.DINGTALK.getCode();
             String dedupKey = BizTypeEnum.TASK_CREATED.getCode() + "_" + taskId + "_" + channelCode;
             notifyService.enqueue((byte) BizTypeEnum.TASK_CREATED.getCode(), taskId,
@@ -274,10 +282,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         LocalDateTime run = inTime.minusMinutes(m);
                         if (run.isAfter(LocalDateTime.now())) {
                             JSONObject payload = new JSONObject();
-                            payload.put("taskId", taskId);
-                            payload.put("taskName", dto.getTaskName());
-                            payload.put("orbitNo", plan.getOrbitNo());
-                            payload.put("inTime", plan.getInTime());
+                            payload.put("taskName", taskName);
                             payload.put("remainMin", m);
                             int channelCode = ChannelEnum.DINGTALK.getCode();
                             String dedup = BizTypeEnum.ORBIT_REMIND.getCode() + "_" + taskId + "_" +
@@ -791,6 +796,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         TaskNodeActionVO decisionAction = dto.getActions().stream()
                 .filter(a -> a.getActionType() != null && a.getActionType() == NodeActionTypeEnum.DECISION.getCode())
                 .findFirst().orElse(null);
+        TaskNotifyContext taskContext = tcTaskManagerMapper.selectTaskNotifyContext(dto.getTaskId());
+        NodeNotifyContext currentNodeContext = taskNodeInstMapper.selectNodeNotifyContext(dto.getNodeInstId());
+        String finishedNodeName = currentNodeContext != null ? currentNodeContext.getNodeName() : null;
         if (decisionAction != null) {
             boolean processed = true;
             if (decisionAction.getActionPayload() != null) {
@@ -812,7 +820,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 List<String> users = getAllUserIds(dto.getTaskId(), true);
                 if (!users.isEmpty()) {
                     JSONObject payload = new JSONObject();
-                    payload.put("taskId", dto.getTaskId());
+                    if (taskContext != null) {
+                        payload.put("taskName", taskContext.getTaskName());
+                    }
                     int channelCode = ChannelEnum.DINGTALK.getCode();
                     String dedupKey = BizTypeEnum.TASK_ABNORMAL.getCode() + "_" + dto.getTaskId() + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.TASK_ABNORMAL.getCode(), dto.getTaskId(),
@@ -839,16 +849,27 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         taskWorkItemMapper.activateWorkItem(dto.getTaskId(), nextId, userId);
                         List<String> userIds = taskWorkItemMapper.selectAssigneeIds(dto.getTaskId(), nextId);
                         if (!userIds.isEmpty()) {
+                            NodeNotifyContext nextNodeContext = taskNodeInstMapper.selectNodeNotifyContext(nextId);
                             JSONObject payload = new JSONObject();
-                            payload.put("taskId", dto.getTaskId());
-                            payload.put("nodeInstId", nextId);
+                            if (nextNodeContext != null) {
+                                payload.put("taskName", nextNodeContext.getTaskName());
+                                if (nextNodeContext.getMaxDuration() != null) {
+                                    payload.put("remainMin", nextNodeContext.getMaxDuration());
+                                }
+                            } else if (taskContext != null) {
+                                payload.put("taskName", taskContext.getTaskName());
+                            }
+                            if (StringUtils.isNotBlank(finishedNodeName)) {
+                                payload.put("finishedNodeName", finishedNodeName);
+                            }
                             int channelCode = ChannelEnum.DINGTALK.getCode();
                             String dedupKey = BizTypeEnum.NODE_DONE.getCode() + "_" + dto.getTaskId() + "_" +
                                     nextId + "_" + channelCode;
                             notifyService.enqueue((byte) BizTypeEnum.NODE_DONE.getCode(), nextId,
                                     (byte) channelCode, payload, userIds,
                                     dedupKey, LocalDateTime.now(), userId);
-                            Integer maxDur = taskNodeInstMapper.selectMaxDuration(nextId);
+                            Integer maxDur = nextNodeContext != null ? nextNodeContext.getMaxDuration()
+                                    : taskNodeInstMapper.selectMaxDuration(nextId);
                             scheduleNodeTimeout(nextId, maxDur, userIds, userId);
                         }
                     }
@@ -862,7 +883,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 List<String> users = getAllUserIds(dto.getTaskId(), true);
                 if (!users.isEmpty()) {
                     JSONObject payload = new JSONObject();
-                    payload.put("taskId", dto.getTaskId());
+                    if (taskContext != null) {
+                        payload.put("taskName", taskContext.getTaskName());
+                    }
                     int channelCode = ChannelEnum.DINGTALK.getCode();
                     String dedupKey = BizTypeEnum.TASK_FINISHED.getCode() + "_" + dto.getTaskId() + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.TASK_FINISHED.getCode(), dto.getTaskId(),
@@ -1450,14 +1473,39 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         return users;
     }
 
+    private String formatDateTime(LocalDateTime time) {
+        return time == null ? null : DATE_TIME_FORMATTER.format(time);
+    }
+
+    private String resolveUserRealName(String userId) {
+        if (StringUtils.isBlank(userId)) {
+            return null;
+        }
+        SysUser user = sysUserService.getById(userId);
+        return user != null ? user.getRealname() : userId;
+    }
+
     private void scheduleNodeTimeout(Long nodeInstId, Integer maxDuration,
                                      List<String> userIds, String operator) {
-        if (maxDuration == null || maxDuration <= 0 || userIds == null || userIds.isEmpty()) {
+        if (userIds == null || userIds.isEmpty()) {
             return;
         }
-        LocalDateTime runTime = LocalDateTime.now().plusMinutes(maxDuration);
+        NodeNotifyContext context = taskNodeInstMapper.selectNodeNotifyContext(nodeInstId);
+        Integer duration = maxDuration != null ? maxDuration
+                : (context != null ? context.getMaxDuration() : null);
+        if (duration == null || duration <= 0) {
+            return;
+        }
+        LocalDateTime baseTime = context != null && context.getStartedAt() != null
+                ? context.getStartedAt()
+                : LocalDateTime.now();
+        LocalDateTime runTime = baseTime.plusMinutes(duration);
         JSONObject payload = new JSONObject();
-        payload.put("nodeInstId", nodeInstId);
+        payload.put("maxDuration", duration);
+        if (context != null) {
+            payload.put("taskName", context.getTaskName());
+            payload.put("nodeName", context.getNodeName());
+        }
         int channelCode = ChannelEnum.DINGTALK.getCode();
         String dedupKey = BizTypeEnum.NODE_TIMEOUT.getCode() + "_" + nodeInstId + "_" + channelCode;
         notifyService.enqueue((byte) BizTypeEnum.NODE_TIMEOUT.getCode(), nodeInstId,

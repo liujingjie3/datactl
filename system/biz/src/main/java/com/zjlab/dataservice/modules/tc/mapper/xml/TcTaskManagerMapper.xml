@@ -181,6 +181,15 @@
         SELECT LAST_INSERT_ID()
     </select>
 
+    <select id="selectTaskNotifyContext" resultType="com.zjlab.dataservice.modules.tc.model.dto.TaskNotifyContext">
+        SELECT t.id AS taskId,
+               t.task_name AS taskName,
+               t.create_by AS creatorId,
+               t.create_time AS createTime
+        FROM tc_task t
+        WHERE t.id = #{taskId} AND t.del_flag = 0
+    </select>
+
     <select id="selectUserIdsByRoleIds" resultType="string">
         SELECT DISTINCT ur.user_id
         FROM sys_user_role ur

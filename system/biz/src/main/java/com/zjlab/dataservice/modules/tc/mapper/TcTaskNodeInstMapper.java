@@ -2,6 +2,7 @@ package com.zjlab.dataservice.modules.tc.mapper;
 
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskNodeVO;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeNotifyContext;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -83,5 +84,8 @@ public interface TcTaskNodeInstMapper {
 
     /** 查询节点预计最大时长 */
     Integer selectMaxDuration(@Param("nodeInstId") Long nodeInstId);
+
+    /** 查询通知所需的节点上下文 */
+    NodeNotifyContext selectNodeNotifyContext(@Param("nodeInstId") Long nodeInstId);
 }
 
