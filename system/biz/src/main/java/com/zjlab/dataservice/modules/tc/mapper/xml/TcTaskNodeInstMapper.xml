@@ -5,11 +5,11 @@
     <insert id="insertNodeInst">
         INSERT INTO tc_task_node_inst(
             task_id, template_id, node_id, prev_node_ids, next_node_ids,
-            arrived_count, handler_role_ids, order_no, status, max_duration, actions,
+            arrived_count, handler_role_ids, order_no, status, max_duration, timeout_remind, actions,
             create_by, create_time, update_by, update_time
         ) VALUES (
             #{taskId}, #{templateId}, #{nodeId}, '[]', '[]',
-            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration}, #{actions},
+            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration}, #{timeoutRemind}, #{actions},
             #{userId}, NOW(), #{userId}, NOW()
         )
     </insert>
@@ -94,11 +94,11 @@
     <insert id="insertViewNodeInst">
         INSERT INTO tc_task_node_inst(
             task_id, template_id, node_id, prev_node_ids, next_node_ids,
-            arrived_count, handler_role_ids, order_no, status, max_duration, actions,
+            arrived_count, handler_role_ids, order_no, status, max_duration, timeout_remind, actions,
             create_by, create_time, update_by, update_time
         ) VALUES (
             #{taskId}, #{templateId}, #{nodeId}, #{prevNodeIds}, '[]',
-            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration}, #{actions},
+            0, #{handlerRoleIds}, #{orderNo}, 0, #{maxDuration}, #{timeoutRemind}, #{actions},
             #{userId}, NOW(), #{userId}, NOW()
         )
     </insert>
@@ -167,7 +167,8 @@
         SELECT t.task_name AS taskName,
                ninfo.name AS nodeName,
                ni.max_duration AS maxDuration,
-               ni.started_at AS startedAt
+               ni.started_at AS startedAt,
+               ni.timeout_remind AS timeoutRemind
         FROM tc_task_node_inst ni
         JOIN tc_task t ON t.id = ni.task_id AND t.del_flag = 0
         JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
@@ -200,6 +201,7 @@
                ni.prev_node_ids AS prevNodeIdsJson,
                ni.next_node_ids AS nextNodeIdsJson,
                ni.handler_role_ids AS handlerRoleIds,
+               ni.timeout_remind AS timeoutRemind,
                ni.started_at AS startedAt,
                ni.completed_at AS completedAt,
                ni.completed_by AS completedBy,

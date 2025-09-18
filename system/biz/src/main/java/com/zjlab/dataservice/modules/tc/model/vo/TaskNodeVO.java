@@ -21,6 +21,8 @@ public class TaskNodeVO implements Serializable {
     private Integer orderNo;
     /** 节点状态 */
     private Integer status;
+    /** 超时提醒频率（分钟） */
+    private Integer timeoutRemind;
     /** 前驱节点 */
     private List<Long> prevNodeIds;
     /** 后继节点 */
