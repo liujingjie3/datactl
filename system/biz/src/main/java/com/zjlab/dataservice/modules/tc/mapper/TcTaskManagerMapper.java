@@ -7,6 +7,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TaskManagerListItemVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.vo.TaskDetailVO;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskStatusCountDto;
+import com.zjlab.dataservice.modules.tc.model.dto.TaskNotifyContext;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -45,6 +46,9 @@ public interface TcTaskManagerMapper {
 
     /** 查询最近插入ID */
     Long selectLastInsertId();
+
+    /** 查询通知所需的任务上下文 */
+    TaskNotifyContext selectTaskNotifyContext(@Param("taskId") Long taskId);
 
     /** 根据角色ID集合查询用户ID */
     List<String> selectUserIdsByRoleIds(@Param("roleIds") List<String> roleIds);

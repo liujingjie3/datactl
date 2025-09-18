@@ -163,6 +163,17 @@
         WHERE id = #{nodeInstId} AND del_flag = 0
     </select>
 
+    <select id="selectNodeNotifyContext" resultType="com.zjlab.dataservice.modules.tc.model.dto.NodeNotifyContext">
+        SELECT t.task_name AS taskName,
+               ninfo.name AS nodeName,
+               ni.max_duration AS maxDuration,
+               ni.started_at AS startedAt
+        FROM tc_task_node_inst ni
+        JOIN tc_task t ON t.id = ni.task_id AND t.del_flag = 0
+        JOIN tc_node_info ninfo ON ninfo.id = ni.node_id
+        WHERE ni.id = #{nodeInstId} AND ni.del_flag = 0
+    </select>
+
     <select id="countOngoingNodeInst" resultType="long">
         SELECT COUNT(*) FROM tc_task_node_inst
         WHERE task_id = #{taskId} AND del_flag = 0 AND status IN (0,1)
