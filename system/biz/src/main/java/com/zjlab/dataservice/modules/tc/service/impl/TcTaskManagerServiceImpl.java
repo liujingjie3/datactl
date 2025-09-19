@@ -280,29 +280,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         // 7.1 进站前提醒：对所有圈次定时通知
         List<String> orbitRecipients = new ArrayList<>(allUserIds);
         orbitRecipients.add(userId);
-        DateTimeFormatter df = ORBIT_PLAN_TIME_FORMATTER;
-        if (dto.getOrbitPlans() != null && !orbitRecipients.isEmpty()) {
-            for (OrbitPlanExportVO plan : dto.getOrbitPlans()) {
-                try {
-                    LocalDateTime inTime = LocalDateTime.parse(plan.getInTime(), df);
-                    for (int m = 60; m >= 0; m -= 15) {
-                        LocalDateTime run = inTime.minusMinutes(m);
-                        if (run.isAfter(LocalDateTime.now())) {
-                            JSONObject payload = new JSONObject();
-                            payload.put("taskName", taskName);
-                            payload.put("remainMin", m);
-                            int channelCode = ChannelEnum.DINGTALK.getCode();
-                            String dedup = BizTypeEnum.ORBIT_REMIND.getCode() + "_" + taskId + "_" +
-                                    plan.getOrbitNo() + "_" + m + "_" + channelCode;
-                            notifyService.enqueue((byte) BizTypeEnum.ORBIT_REMIND.getCode(), taskId,
-                                    (byte) channelCode, payload, orbitRecipients,
-                                    dedup, run, userId);
-                        }
-                    }
-                } catch (Exception ignore) {
-                    // ignore parse errors
-                }
-            }
+        if (dto.getOrbitPlans() != null) {
+            scheduleOrbitReminders(taskId, taskName, dto.getOrbitPlans(), orbitRecipients, userId);
         }
 
         // 8. 返回任务ID
@@ -693,6 +672,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         String folder = TASK_FOLDER + "/taskId_" + dto.getTaskId() + "/nodeInstId_" + dto.getNodeInstId();
 
         // 4. 记录本次操作
+        boolean hasSelectOrbitPlanAction = false;
+        List<OrbitPlanExportVO> orbitPlansForRemind = null;
         for (TaskNodeActionVO action : dto.getActions()) {
             NodeActionTypeEnum type = NodeActionTypeEnum.fromCode(action.getActionType());
             if (type != null) {
@@ -730,6 +711,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     }
                     List<OrbitPlanExportVO> payloadOrbitPlans = new ArrayList<>(workbookData);
                     payload.put("orbit_plans", payloadOrbitPlans);
+                    hasSelectOrbitPlanAction = true;
+                    orbitPlansForRemind = new ArrayList<>(workbookData);
                     Workbook workbook = ExcelExportUtil.exportExcel(
                             new ExportParams("测运控仿真轨道计划", "轨道计划"),
                             OrbitPlanExportVO.class, new ArrayList<>(workbookData));
@@ -799,6 +782,15 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             record.setCreateBy(userId);
             record.setUpdateBy(userId);
             actionRecordMapper.insert(record);
+        }
+
+        if (hasSelectOrbitPlanAction) {
+            cancelOrbitReminders(dto.getTaskId(), userId);
+            if (orbitPlansForRemind != null && !orbitPlansForRemind.isEmpty()) {
+                List<String> recipients = getAllUserIds(dto.getTaskId(), true);
+                String taskNameForRemind = taskContext != null ? taskContext.getTaskName() : null;
+                scheduleOrbitReminders(dto.getTaskId(), taskNameForRemind, orbitPlansForRemind, recipients, userId);
+            }
         }
 
         // 5. 处理决策操作
@@ -1482,6 +1474,48 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             }
         }
         return users;
+    }
+
+    private void cancelOrbitReminders(Long taskId, String operator) {
+        if (taskId == null || StringUtils.isBlank(operator)) {
+            return;
+        }
+        List<Long> bizIds = Collections.singletonList(taskId);
+        List<Byte> expected = Collections.singletonList(NotifyJobStatusEnum.WAITING.getCode());
+        notifyService.updateStatus((byte) BizTypeEnum.ORBIT_REMIND.getCode(),
+                bizIds, NotifyJobStatusEnum.CANCELED.getCode(), expected, operator);
+    }
+
+    private void scheduleOrbitReminders(Long taskId, String taskName, List<OrbitPlanExportVO> orbitPlans,
+                                        Collection<String> recipients, String operator) {
+        if (taskId == null || orbitPlans == null || orbitPlans.isEmpty()
+                || recipients == null || recipients.isEmpty() || StringUtils.isBlank(operator)) {
+            return;
+        }
+        List<String> userList = new ArrayList<>(recipients);
+        int channelCode = ChannelEnum.DINGTALK.getCode();
+        for (OrbitPlanExportVO plan : orbitPlans) {
+            if (plan == null) {
+                continue;
+            }
+            LocalDateTime inTime = parseOrbitPlanTime(plan.getInTime());
+            if (inTime == null) {
+                continue;
+            }
+            for (int m = 60; m >= 0; m -= 15) {
+                LocalDateTime run = inTime.minusMinutes(m);
+                if (run.isAfter(LocalDateTime.now())) {
+                    JSONObject payload = new JSONObject();
+                    payload.put("taskName", taskName);
+                    payload.put("remainMin", m);
+                    String dedup = BizTypeEnum.ORBIT_REMIND.getCode() + "_" + taskId + "_" +
+                            plan.getOrbitNo() + "_" + m + "_" + channelCode;
+                    notifyService.enqueue((byte) BizTypeEnum.ORBIT_REMIND.getCode(), taskId,
+                            (byte) channelCode, payload, userList,
+                            dedup, run, operator);
+                }
+            }
+        }
     }
 
     private String formatDateTime(LocalDateTime time) {
