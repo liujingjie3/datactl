@@ -95,17 +95,14 @@ public class NotifyDispatcher {
             return false;
         }
         Integer status = taskNodeInstMapper.selectNodeInstStatus(job.getBizId());
-        if (status == null) {
-            return false;
+
+
+        if (status == null || status != 1) {
+                return false;
         }
-        // 节点状态：0-未激活、1-进行中、2-已完成、3-已取消、4-异常结束
-        // 仅当节点仍处于未激活或进行中时，才需要继续进行超时提醒。
-        if (status == 0 || status == 1) {
-            LocalDateTime nextTime = LocalDateTime.now().plusMinutes(interval);
-            jobMapper.reschedule(job.getId(), nextTime);
-            return true;
-        }
-        return false;
+        LocalDateTime nextTime = LocalDateTime.now().plusMinutes(interval);
+        jobMapper.reschedule(job.getId(), nextTime);
+        return true;
     }
 }
 
