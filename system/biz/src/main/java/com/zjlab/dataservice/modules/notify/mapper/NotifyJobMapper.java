@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,5 +27,14 @@ public interface NotifyJobMapper extends BaseMapper<NotifyJob> {
 
     int reschedule(@Param("id") long id,
                    @Param("nextRunTime") LocalDateTime nextRunTime);
+
+    List<Long> selectIdsByBiz(@Param("bizType") byte bizType,
+                              @Param("bizIds") Collection<Long> bizIds,
+                              @Param("statuses") Collection<Byte> statuses);
+
+    int updateStatusByIds(@Param("ids") Collection<Long> ids,
+                          @Param("status") byte status,
+                          @Param("operator") String operator,
+                          @Param("expected") Collection<Byte> expectedStatuses);
 }
 

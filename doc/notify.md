@@ -50,7 +50,7 @@ CREATE TABLE `tc_notify_job` (
   `dedup_key` VARCHAR(128) DEFAULT NULL COMMENT '幂等去重键（相同key不重复投递）',
   `payload` JSON NOT NULL COMMENT '业务上下文快照JSON（模板渲染所需变量）',
   `channel` TINYINT NOT NULL COMMENT '0OA / 1钉钉',
-  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0待处理,1成功,2失败,3取消',
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0待处理,1成功,2失败,3取消,4异常结束',
   `retry_count` INT NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `next_run_time` DATETIME NOT NULL COMMENT '下一次尝试时间（用于重试或定时提醒）',
   `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
@@ -77,7 +77,7 @@ CREATE TABLE `tc_notify_recipient` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '收件人记录ID',
   `job_id` BIGINT NOT NULL COMMENT 'tc_notify_job.id',
   `user_id` VARCHAR(32) NOT NULL COMMENT '接收人用户ID',
-  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0待发,1成功,2失败,3跳过',
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0待发,1成功,2失败,3取消,4异常结束',
   `last_error` VARCHAR(255) DEFAULT NULL COMMENT '失败原因',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记',
   `create_by` VARCHAR(32) DEFAULT NULL COMMENT '创建人ID',
@@ -268,7 +268,7 @@ Java 流程：
 
 ● NODE\_DONE / 钉钉：
 ○ Title：【\${taskName}】进入下一节点
-○ Content：【星地协同平台】您好，您有一个\${taskName}任务需要马上处理\${finishedNodeName}，剩余\${remainMin}分钟即将超时，请登录系统进行处理，感谢支持！
+○ Content：【星地协同平台】您好，您有一个\${taskName}任务需要马上处理\${nextNodeName}，剩余\${remainMin}分钟即将超时，请登录系统进行处理，感谢支持！
 
 ● ORBIT\_REMIND / 钉钉：
 ○ Title：【\${taskName}】进站提醒
@@ -295,7 +295,7 @@ Java 流程：
   "taskCode": "T2025-0001",
   "creatorName": "张三",
   "createTime": "2025-08-01 10:20",
-  "finishedNodeName": "飞控准备",
+  "nextNodeName": "资源确认",
   "nextNodeNames": "资源确认, 数据准备",
   "orbitId": "O-2025-0009",
   "orbitNo": 9,
@@ -314,7 +314,7 @@ Java 流程：
 ● 去重（dedup\_key）：同一业务事件在同一渠道仅生成一次 Job。即使上游重复调用，也只返回已存在的 jobId。
 ● 重试：失败后指数退避（如 1m, 5m, 30m, 1h, 3h），上限 max\_retries=5。
 ● 限流：渠道驱动内部实现（例如钉钉机器人每分钟 N 条）；分发器按渠道分桶发送（可选）。
-● 取消：当任务被取消/异常，如需停止未来计划的提醒，将对应 Job status=3（取消）。
+● 取消：当任务被取消或异常结束，如需停止未来计划的提醒，将对应 Job status=3（取消）或 status=4（异常结束），收件人明细状态与之对应。
 
 ## 7. 与任务管理的对接点（关键调用）
 

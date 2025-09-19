@@ -12,9 +12,10 @@ import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeActionRecordMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeInstMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskWorkItemMapper;
-import com.zjlab.dataservice.modules.notify.service.NotifyService;
 import com.zjlab.dataservice.modules.notify.model.enums.BizTypeEnum;
 import com.zjlab.dataservice.modules.notify.model.enums.ChannelEnum;
+import com.zjlab.dataservice.modules.notify.model.enums.NotifyJobStatusEnum;
+import com.zjlab.dataservice.modules.notify.service.NotifyService;
 import com.zjlab.dataservice.modules.tc.model.dto.CurrentNodeRow;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeActionSubmitDto;
 import com.zjlab.dataservice.modules.tc.model.dto.NodeActionDto;
@@ -492,6 +493,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         tcTaskManagerMapper.updateTaskCancel(taskId, userId);
         taskNodeInstMapper.updateNodeInstCancel(taskId, userId);
         taskWorkItemMapper.updateWorkItemCancel(taskId, userId);
+        updateNotifyJobsForTask(taskId, NotifyJobStatusEnum.CANCELED, userId);
     }
 
     /**
@@ -804,8 +806,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 .filter(a -> a.getActionType() != null && a.getActionType() == NodeActionTypeEnum.DECISION.getCode())
                 .findFirst().orElse(null);
         TaskNotifyContext taskContext = tcTaskManagerMapper.selectTaskNotifyContext(dto.getTaskId());
-        NodeNotifyContext currentNodeContext = taskNodeInstMapper.selectNodeNotifyContext(dto.getNodeInstId());
-        String finishedNodeName = currentNodeContext != null ? currentNodeContext.getNodeName() : null;
         if (decisionAction != null) {
             boolean processed = true;
             if (decisionAction.getActionPayload() != null) {
@@ -824,6 +824,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 tcTaskManagerMapper.updateTaskAbort(dto.getTaskId(), userId);
                 taskNodeInstMapper.updateNodeInstAbort(dto.getTaskId(), userId);
                 taskWorkItemMapper.updateWorkItemAbort(dto.getTaskId(), userId);
+                updateNotifyJobsForTask(dto.getTaskId(), NotifyJobStatusEnum.ABORTED, userId);
                 List<String> users = getAllUserIds(dto.getTaskId(), true);
                 if (!users.isEmpty()) {
                     JSONObject payload = new JSONObject();
@@ -858,16 +859,18 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                         if (!userIds.isEmpty()) {
                             NodeNotifyContext nextNodeContext = taskNodeInstMapper.selectNodeNotifyContext(nextId);
                             JSONObject payload = new JSONObject();
+                            String nextNodeName = null;
                             if (nextNodeContext != null) {
                                 payload.put("taskName", nextNodeContext.getTaskName());
                                 if (nextNodeContext.getMaxDuration() != null) {
                                     payload.put("remainMin", nextNodeContext.getMaxDuration());
                                 }
+                                nextNodeName = nextNodeContext.getNodeName();
                             } else if (taskContext != null) {
                                 payload.put("taskName", taskContext.getTaskName());
                             }
-                            if (StringUtils.isNotBlank(finishedNodeName)) {
-                                payload.put("finishedNodeName", finishedNodeName);
+                            if (StringUtils.isNotBlank(nextNodeName)) {
+                                payload.put("nextNodeName", nextNodeName);
                             }
                             int channelCode = ChannelEnum.DINGTALK.getCode();
                             String dedupKey = BizTypeEnum.NODE_DONE.getCode() + "_" + dto.getTaskId() + "_" +
@@ -1491,6 +1494,28 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         SysUser user = sysUserService.getById(userId);
         return user != null ? user.getRealname() : userId;
+    }
+
+    private void updateNotifyJobsForTask(Long taskId, NotifyJobStatusEnum status, String operator) {
+        if (taskId == null || status == null || StringUtils.isBlank(operator)) {
+            return;
+        }
+        List<Byte> expected = Collections.singletonList(NotifyJobStatusEnum.WAITING.getCode());
+        notifyService.updateStatus((byte) BizTypeEnum.ORBIT_REMIND.getCode(),
+                Collections.singletonList(taskId), status.getCode(), expected, operator);
+        List<TaskNodeVO> nodes = taskNodeInstMapper.selectNodeInstsByTaskId(taskId);
+        if (nodes == null || nodes.isEmpty()) {
+            return;
+        }
+        List<Long> nodeInstIds = nodes.stream()
+                .map(TaskNodeVO::getNodeInstId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+        if (nodeInstIds.isEmpty()) {
+            return;
+        }
+        notifyService.updateStatus((byte) BizTypeEnum.NODE_TIMEOUT.getCode(),
+                nodeInstIds, status.getCode(), expected, operator);
     }
 
     private void scheduleNodeTimeout(Long nodeInstId, Integer maxDuration,

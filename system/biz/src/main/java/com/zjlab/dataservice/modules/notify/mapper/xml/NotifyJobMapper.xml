@@ -44,4 +44,40 @@
         WHERE id = #{id}
     </update>
 
+    <select id="selectIdsByBiz" resultType="java.lang.Long">
+        SELECT id
+        FROM tc_notify_job
+        WHERE del_flag = 0
+          AND biz_type = #{bizType}
+        <if test="bizIds != null and bizIds.size() &gt; 0">
+          AND biz_id IN
+          <foreach collection="bizIds" item="bid" open="(" close=")" separator=",">
+              #{bid}
+          </foreach>
+        </if>
+        <if test="statuses != null and statuses.size() &gt; 0">
+          AND status IN
+          <foreach collection="statuses" item="st" open="(" close=")" separator=",">
+              #{st}
+          </foreach>
+        </if>
+    </select>
+
+    <update id="updateStatusByIds">
+        UPDATE tc_notify_job
+        SET status = #{status},
+            update_by = #{operator},
+            update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        <if test="expected != null and expected.size() &gt; 0">
+          AND status IN
+          <foreach collection="expected" item="ex" open="(" close=")" separator=",">
+              #{ex}
+          </foreach>
+        </if>
+    </update>
+
 </mapper>
