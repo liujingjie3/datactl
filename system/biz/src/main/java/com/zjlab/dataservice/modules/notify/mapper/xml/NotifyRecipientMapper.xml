@@ -29,4 +29,21 @@
         WHERE id = #{id}
     </update>
 
+    <update id="updateStatusByJobIds">
+        UPDATE tc_notify_recipient
+        SET status = #{status},
+            update_by = #{operator},
+            update_time = NOW()
+        WHERE job_id IN
+        <foreach collection="jobIds" item="jid" open="(" close=")" separator=",">
+            #{jid}
+        </foreach>
+        <if test="expected != null and expected.size() &gt; 0">
+          AND status IN
+          <foreach collection="expected" item="ex" open="(" close=")" separator=",">
+              #{ex}
+          </foreach>
+        </if>
+    </update>
+
 </mapper>

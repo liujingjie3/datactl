@@ -33,7 +33,7 @@ public class NotifyJob extends BasePo {
     @ApiModelProperty("渠道")
     private Byte channel;
 
-    @ApiModelProperty("状态0待处理1成功2失败3取消")
+    @ApiModelProperty("状态0待处理1成功2失败3取消4异常结束")
     private Byte status;
 
     @ApiModelProperty("已重试次数")

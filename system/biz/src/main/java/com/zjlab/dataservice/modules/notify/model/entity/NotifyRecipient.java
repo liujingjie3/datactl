@@ -22,7 +22,7 @@ public class NotifyRecipient extends BasePo {
     @ApiModelProperty("接收人用户ID")
     private String userId;
 
-    @ApiModelProperty("状态0待发1成功2失败3跳过")
+    @ApiModelProperty("状态0待发1成功2失败3取消4异常结束")
     private Byte status;
 
     @ApiModelProperty("失败原因")

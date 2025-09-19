@@ -5,6 +5,7 @@ import com.zjlab.dataservice.modules.notify.model.entity.NotifyRecipient;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -22,5 +23,10 @@ public interface NotifyRecipientMapper extends BaseMapper<NotifyRecipient> {
     int updateStatus(@Param("id") long id,
                      @Param("success") boolean success,
                      @Param("error") String error);
+
+    int updateStatusByJobIds(@Param("jobIds") Collection<Long> jobIds,
+                             @Param("status") byte status,
+                             @Param("operator") String operator,
+                             @Param("expected") Collection<Byte> expectedStatuses);
 }
 
