@@ -23,5 +23,8 @@ public interface NotifyJobMapper extends BaseMapper<NotifyJob> {
     int scheduleRetry(@Param("id") long id,
                       @Param("nextRunTime") LocalDateTime nextRunTime,
                       @Param("retryCount") int retryCount);
+
+    int reschedule(@Param("id") long id,
+                   @Param("nextRunTime") LocalDateTime nextRunTime);
 }
 

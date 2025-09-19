@@ -7,8 +7,10 @@ import com.zjlab.dataservice.modules.notify.mapper.NotifyJobMapper;
 import com.zjlab.dataservice.modules.notify.mapper.NotifyRecipientMapper;
 import com.zjlab.dataservice.modules.notify.model.entity.NotifyJob;
 import com.zjlab.dataservice.modules.notify.model.entity.NotifyRecipient;
+import com.zjlab.dataservice.modules.notify.model.enums.BizTypeEnum;
 import com.zjlab.dataservice.modules.notify.render.NotifyRenderer;
 import com.zjlab.dataservice.modules.notify.render.RenderedMsg;
+import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeInstMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -32,6 +34,8 @@ public class NotifyDispatcher {
     private NotifyRenderer renderer;
     @Autowired
     private List<NotifyDriver> drivers;
+    @Autowired
+    private TcTaskNodeInstMapper taskNodeInstMapper;
 
     private Map<Byte, NotifyDriver> driverMap;
 
@@ -40,21 +44,22 @@ public class NotifyDispatcher {
         ensureDriverMap();
         List<NotifyJob> jobs = jobMapper.lockDueJobs(200);
         for (NotifyJob j : jobs) {
-            RenderedMsg msg = renderer.render(j.getBizType(), j.getChannel(),
-                    JSONObject.parseObject(j.getPayload()));
+            JSONObject payload = JSONObject.parseObject(j.getPayload());
+            RenderedMsg msg = renderer.render(j.getBizType(), j.getChannel(), payload);
             List<NotifyRecipient> rs = recMapper.findByJobId(j.getId());
             boolean allOk = true;
             for (NotifyRecipient r : rs) {
                 NotifyDriver driver = driverMap.get(j.getChannel());
-                SendResult sr = driver.send(r.getUserId(), msg.getTitle(), msg.getContent(),
-                        JSONObject.parseObject(j.getPayload()));
+                SendResult sr = driver.send(r.getUserId(), msg.getTitle(), msg.getContent(), payload);
                 recMapper.updateStatus(r.getId(), sr.isOk(), sr.getError());
                 if (!sr.isOk()) {
                     allOk = false;
                 }
             }
             if (allOk) {
-                jobMapper.markSuccess(j.getId());
+                if (!scheduleNextTimeoutReminder(j, payload)) {
+                    jobMapper.markSuccess(j.getId());
+                }
             } else {
                 int nextRetry = j.getRetryCount() + 1;
                 jobMapper.scheduleRetry(j.getId(), calcNext(nextRetry), nextRetry);
@@ -72,9 +77,30 @@ public class NotifyDispatcher {
     }
 
     private LocalDateTime calcNext(int retryCount) {
-        int[] minutes = new int[]{1, 5, 30, 60, 180};
+        int[] minutes = new int[]{1, 3, 5, 10, 30, 60, 180};
         int idx = Math.min(retryCount - 1, minutes.length - 1);
         return LocalDateTime.now().plusMinutes(minutes[idx]);
+    }
+
+    private boolean scheduleNextTimeoutReminder(NotifyJob job, JSONObject payload) {
+        if (job.getBizType() == null
+                || job.getBizType() != (byte) BizTypeEnum.NODE_TIMEOUT.getCode()) {
+            return false;
+        }
+        if (payload == null) {
+            return false;
+        }
+        Integer interval = payload.getInteger("timeoutRemind");
+        if (interval == null || interval <= 0) {
+            return false;
+        }
+        Integer status = taskNodeInstMapper.selectNodeInstStatus(job.getBizId());
+        if (status == null || status != 1) {
+            return false;
+        }
+        LocalDateTime nextTime = LocalDateTime.now().plusMinutes(interval);
+        jobMapper.reschedule(job.getId(), nextTime);
+        return true;
     }
 }
 

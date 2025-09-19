@@ -36,4 +36,12 @@
         WHERE id = #{id}
     </update>
 
+    <update id="reschedule">
+        UPDATE tc_notify_job
+        SET next_run_time = #{nextRunTime},
+            retry_count = 0,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
 </mapper>
