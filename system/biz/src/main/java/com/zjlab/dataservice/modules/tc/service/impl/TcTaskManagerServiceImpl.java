@@ -1501,8 +1501,15 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             return;
         }
         List<Byte> expected = Collections.singletonList(NotifyJobStatusEnum.WAITING.getCode());
-        notifyService.updateStatus((byte) BizTypeEnum.ORBIT_REMIND.getCode(),
-                Collections.singletonList(taskId), status.getCode(), expected, operator);
+        List<Long> taskBizIds = Collections.singletonList(taskId);
+        for (BizTypeEnum bizType : Arrays.asList(
+                BizTypeEnum.TASK_CREATED,
+                BizTypeEnum.ORBIT_REMIND,
+                BizTypeEnum.TASK_FINISHED,
+                BizTypeEnum.TASK_ABNORMAL)) {
+            notifyService.updateStatus((byte) bizType.getCode(),
+                    taskBizIds, status.getCode(), expected, operator);
+        }
         List<TaskNodeVO> nodes = taskNodeInstMapper.selectNodeInstsByTaskId(taskId);
         if (nodes == null || nodes.isEmpty()) {
             return;
@@ -1514,8 +1521,10 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         if (nodeInstIds.isEmpty()) {
             return;
         }
-        notifyService.updateStatus((byte) BizTypeEnum.NODE_TIMEOUT.getCode(),
-                nodeInstIds, status.getCode(), expected, operator);
+        for (BizTypeEnum bizType : Arrays.asList(BizTypeEnum.NODE_TIMEOUT, BizTypeEnum.NODE_DONE)) {
+            notifyService.updateStatus((byte) bizType.getCode(),
+                    nodeInstIds, status.getCode(), expected, operator);
+        }
     }
 
     private void scheduleNodeTimeout(Long nodeInstId, Integer maxDuration,
