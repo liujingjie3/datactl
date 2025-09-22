@@ -94,7 +94,7 @@ public class TcTaskManagerController {
         mv.addObject(NormalExcelConstants.FILE_NAME, "遥控指令单");
         mv.addObject(NormalExcelConstants.CLASS, RemoteCmdExportVO.class);
         mv.addObject(NormalExcelConstants.PARAMS,
-                new ExportParams("遥控指令单", "遥控指令单"));
+                new ExportParams(null, "遥控指令单"));
         mv.addObject(NormalExcelConstants.DATA_LIST, list);
         return mv;
     }
@@ -107,7 +107,7 @@ public class TcTaskManagerController {
         mv.addObject(NormalExcelConstants.FILE_NAME, "测运控仿真轨道计划");
         mv.addObject(NormalExcelConstants.CLASS, OrbitPlanExportVO.class);
         mv.addObject(NormalExcelConstants.PARAMS,
-                new ExportParams("测运控仿真轨道计划", "轨道计划"));
+                new ExportParams(null, "轨道计划"));
         mv.addObject(NormalExcelConstants.DATA_LIST, list);
         return mv;
     }
