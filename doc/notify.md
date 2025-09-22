@@ -167,11 +167,12 @@ CREATE TABLE `tc_notify_channel_config` (
 
 ### 3.5 超时提醒（biz\_type=5）
 
-● 触发：定时扫描（见 §6.3）。
-● 条件：ni.status=1 AND ni.max\_duration IS NOT NULL AND NOW() > ni.started\_at + INTERVAL max\_duration MINUTE。
-● 受众：该节点当前办理人（建议以 tc\_task\_work\_item 的 phase\_status=1 定位）。
+● 触发：节点实例被激活时由 `scheduleNodeTimeout` 入库（创建任务时为起始节点，节点办理完成后为已激活的下一节点）。
+● 条件：节点配置了 `max_duration`，以节点开始办理时间（`started_at`）+ `max_duration` 作为首次提醒触发点。
+● 受众：该节点当前办理人（以 `tc_task_work_item` 的待办记录定位）。
 ● 去重：dedup\_key = '5\_'||nodeInstId||'\_'||channel。
-● biz\_id=node\_inst\_id，next\_run\_time=NOW() 或下一次提醒时点。
+● biz\_id=node\_inst\_id，next\_run\_time=started\_at + max\_duration（若 started\_at 为空则按入库时间计算）。
+● 重复提醒：payload 中若存在 `timeoutRemind`（分钟），分发器成功推送后会检查节点仍为办理中状态（`tc_task_node_inst.status=1`），继续将同一 Job 的 `next_run_time` 顺延 `timeoutRemind` 分钟，直至节点完成或取消。
 
 ## 4. 核心组件与接口
 
@@ -251,12 +252,16 @@ Java 流程：
 
 1. 置发送中（可选）。
 2. 加载模板并渲染标题/正文；查询 tc\_notify\_recipient 批量发送。
-3. 全部成功 → status=1；部分失败 → status=2，retry\_count++，回填 next\_run\_time = now + backoff(retry\_count)；超过上限 → 维持失败并记录 last\_error。
+3. 全部成功 → status=1。若 biz\_type=NODE\_TIMEOUT 且 payload 中包含 timeoutRemind，则在标记成功前调用调度逻辑检查节点仍在办理中：
+   ● 若仍在办理中 → job `next_run_time` = now + timeoutRemind，保持 status=0；
+   ● 否则 → 直接标记成功。
+   部分失败 → status=2，retry\_count++，回填 next\_run\_time = now + backoff(retry\_count)；超过上限 → 维持失败并记录 last\_error。
 
-### 4.7 规划器/扫描器（Scheduler）
+### 4.7 规划器/调度器（Scheduler）
 
-● OrbitRemindPlanner：解析 tc\_task.orbit\_plans，为每个圈次生成 T-60/T-45/T-30/T-15/T-0 的 tc\_notify\_job（若不存在 dedup\_key）。
-● NodeTimeoutScanner：扫描超时节点，按策略写 tc\_notify\_job，dedup\_key 使用 '5\_'||nodeInstId||'\_'||channel。
+● 进站提醒：由任务管理服务（`scheduleOrbitReminders`）在任务创建或轨道计划调整时解析 tc\_task.orbit\_plans，为每个圈次生成 T-60/T-45/T-30/T-15/T-0 的 tc\_notify\_job（若不存在 dedup\_key）。
+● 节点超时：同一服务在节点激活时调用 `scheduleNodeTimeout` 写入初始提醒 Job，并在分发器中根据 timeoutRemind 自动顺延，取代额外的扫描器。
+● NotifyDispatcher：消费待发任务并推送，同时负责 NodeTimeout 的重复提醒调度。
 
 ## 5. 模板与 payload 规范
 
