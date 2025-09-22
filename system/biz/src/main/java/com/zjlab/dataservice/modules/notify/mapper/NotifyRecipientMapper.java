@@ -18,7 +18,6 @@ public interface NotifyRecipientMapper extends BaseMapper<NotifyRecipient> {
                     @Param("userIds") List<String> userIds,
                     @Param("operator") String operator);
 
-    int deleteByJobId(@Param("jobId") long jobId);
 
     List<NotifyRecipient> findByJobId(@Param("jobId") long jobId);
 
