@@ -10,6 +10,11 @@
         </foreach>
     </insert>
 
+    <delete id="deleteByJobId">
+        DELETE FROM tc_notify_recipient
+        WHERE job_id = #{jobId}
+    </delete>
+
     <select id="findByJobId" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyRecipient">
         SELECT id, del_flag, create_by, create_time, update_by, update_time,
                job_id, user_id, status, last_error
