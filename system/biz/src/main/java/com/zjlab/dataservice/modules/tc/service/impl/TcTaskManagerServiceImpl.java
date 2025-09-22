@@ -670,6 +670,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         String folder = TASK_FOLDER + "/taskId_" + dto.getTaskId() + "/nodeInstId_" + dto.getNodeInstId();
+        TaskNotifyContext taskContext = tcTaskManagerMapper.selectTaskNotifyContext(dto.getTaskId());
 
         // 4. 记录本次操作
         boolean hasSelectOrbitPlanAction = false;
@@ -797,7 +798,6 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         TaskNodeActionVO decisionAction = dto.getActions().stream()
                 .filter(a -> a.getActionType() != null && a.getActionType() == NodeActionTypeEnum.DECISION.getCode())
                 .findFirst().orElse(null);
-        TaskNotifyContext taskContext = tcTaskManagerMapper.selectTaskNotifyContext(dto.getTaskId());
         if (decisionAction != null) {
             boolean processed = true;
             if (decisionAction.getActionPayload() != null) {
