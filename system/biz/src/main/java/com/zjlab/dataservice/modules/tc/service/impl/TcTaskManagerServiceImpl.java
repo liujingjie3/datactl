@@ -715,7 +715,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     hasSelectOrbitPlanAction = true;
                     orbitPlansForRemind = new ArrayList<>(workbookData);
                     Workbook workbook = ExcelExportUtil.exportExcel(
-                            new ExportParams("测运控仿真轨道计划", "轨道计划"),
+                            new ExportParams(null, "轨道计划"),
                             OrbitPlanExportVO.class, new ArrayList<>(workbookData));
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     try {
@@ -748,7 +748,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             ? Collections.emptyList()
                             : cmdArray.toJavaList(RemoteCmdExportVO.class);
                     Workbook workbook = ExcelExportUtil.exportExcel(
-                            new ExportParams("遥控指令单", "遥控指令单"),
+                            new ExportParams(null, "遥控指令单"),
                             RemoteCmdExportVO.class, list);
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     try {
