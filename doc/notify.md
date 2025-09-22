@@ -103,6 +103,7 @@ CREATE TABLE `tc_notify_template` (
   `channel` TINYINT NOT NULL COMMENT '0OA / 1钉钉',
   `title_tpl` VARCHAR(200) NOT NULL COMMENT '标题模板，支持占位符',
   `content_tpl` TEXT NOT NULL COMMENT '正文模板（占位符如 ${taskName}）',
+  `external_tpl_id` VARCHAR(64) DEFAULT NULL COMMENT '第三方平台模板ID',
   `enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用',
   `del_flag` TINYINT DEFAULT 0,
   `create_by` VARCHAR(32) DEFAULT NULL COMMENT '创建人ID',
@@ -131,6 +132,30 @@ CREATE TABLE `tc_notify_channel_config` (
   UNIQUE KEY `uk_channel` (`channel`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='渠道配置';
 ```
+
+钉钉渠道建议的 `config_json` 结构：
+
+```json
+{
+  "baseUrl": "http://10.102.3.2/MCConsumerApplication/consumer/mc/send",
+  "agentId": "ZJLAB1045002",
+  "corpId": "ZJLAB1045"
+}
+```
+
+也可通过 `address` + `scheme` + `path` 组合配置，例如：
+
+```json
+{
+  "scheme": "https",
+  "address": "gateway.cmind.zhejianglab.com",
+  "path": "/MCConsumerApplication/consumer/mc/send",
+  "agentId": "ZJLAB1045002",
+  "corpId": "ZJLAB1045"
+}
+```
+
+地址会自动拼接默认路径 `/MCConsumerApplication/consumer/mc/send`，如需自定义可以通过 `path` 覆盖。
 
 ## 3. 触发点与入库（Outbox）
 
@@ -235,6 +260,12 @@ public interface ChannelDriver {
 
 提供 DingTalkRobotDriver 与 OAHttpDriver 两个实现，配置从 tc\_notify\_channel\_config 读取。
 
+● DingTalkRobotDriver：
+  - 读取 `tc_notify_channel_config.config_json` 获取 `baseUrl/agentId/corpId`，支持按上文示例配置测试或正式地址。
+  - 使用 `tc_notify_template.external_tpl_id` 作为三方模板 ID，模板正文由第三方渲染，仅在本地渲染标题。
+  - 收件人支持 `sys_user.username`（userid_list）、`sys_user.phone`（tel_list）与 `sys_user.email`（email_list）。若数据库缺失则回退使用传入的 `userId`。
+  - 标题超出 20 个字符时会自动截断，同时保留完整的日志输出。
+
 ### 4.6 分发器（Dispatcher）
 
 ● 单机或集群部署，支持 FOR UPDATE SKIP LOCKED 抢占。
@@ -313,6 +344,21 @@ Java 流程：
   "maxDuration": 60
 }
 ```
+
+### 5.3 钉钉 external_tpl_id 配置
+
+`tc_notify_template.external_tpl_id` 需与第三方模板保持一致，当前约定如下：
+
+| BizTypeEnum      | external_tpl_id | 说明           |
+|-----------------|-----------------|----------------|
+| TASK_CREATED     | SE1001          | 任务创建通知   |
+| NODE_DONE        | SE1002          | 节点完成通知   |
+| ORBIT_REMIND     | SE1003          | 卫星进站提醒   |
+| TASK_FINISHED    | SE1004          | 任务完成通知   |
+| TASK_ABNORMAL    | SE1005          | 任务异常结束   |
+| NODE_TIMEOUT     | SE1006          | 节点超时提醒   |
+
+后续如有新增业务类型，请同步维护该映射表。
 
 ## 6. 去重、重试与限流
 

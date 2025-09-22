@@ -4,7 +4,7 @@
 
     <select id="selectByBizAndChannel" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyTemplate">
         SELECT id, del_flag, create_by, create_time, update_by, update_time,
-               biz_type, channel, title_tpl, content_tpl, enabled
+               biz_type, channel, title_tpl, content_tpl, external_tpl_id, enabled
         FROM tc_notify_template
         WHERE biz_type = #{bizType}
           AND channel = #{channel}
