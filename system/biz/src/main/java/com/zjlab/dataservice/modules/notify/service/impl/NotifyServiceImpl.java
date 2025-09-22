@@ -33,33 +33,26 @@ public class NotifyServiceImpl implements NotifyService {
                         JSONObject payload, List<String> userIds,
                         String dedupKey, LocalDateTime nextRunTime,
                         String operator) {
-        NotifyJob job = notifyJobMapper.selectByDedupKey(dedupKey);
-        if (job == null) {
-            job = new NotifyJob();
-            job.setBizType(bizType);
-            job.setBizId(bizId);
-            job.setChannel(channel);
-            job.setPayload(payload.toJSONString());
-            job.setDedupKey(dedupKey);
-            job.setNextRunTime(nextRunTime);
-            job.setStatus(NotifyJobStatusEnum.WAITING.getCode());
-            job.setRetryCount(0);
-            job.initBase(true, operator);
-            notifyJobMapper.insert(job);
-        } else {
-            job.setBizType(bizType);
-            job.setBizId(bizId);
-            job.setChannel(channel);
-            job.setPayload(payload.toJSONString());
-            job.setNextRunTime(nextRunTime);
-            job.setStatus(NotifyJobStatusEnum.WAITING.getCode());
-            job.setRetryCount(0);
-            job.setDelFlag(false);
-            job.initBase(false, operator);
-            notifyJobMapper.updateById(job);
-            notifyRecipientMapper.deleteByJobId(job.getId().longValue());
+        Long jobId = null;
+        if (dedupKey != null && !dedupKey.isEmpty()) {
+            jobId = notifyJobMapper.selectIdByDedupKey(dedupKey);
         }
-        long jobId = job.getId().longValue();
+        if (jobId != null) {
+            return jobId;
+        }
+
+        NotifyJob job = new NotifyJob();
+        job.setBizType(bizType);
+        job.setBizId(bizId);
+        job.setChannel(channel);
+        job.setPayload(payload.toJSONString());
+        job.setDedupKey(dedupKey);
+        job.setNextRunTime(nextRunTime);
+        job.setStatus(NotifyJobStatusEnum.WAITING.getCode());
+        job.setRetryCount(0);
+        job.initBase(true, operator);
+        notifyJobMapper.insert(job);
+        jobId = job.getId().longValue();
         List<String> distinctUsers = userIds.stream().distinct().collect(Collectors.toList());
         notifyRecipientMapper.batchInsert(jobId, distinctUsers, operator);
         return jobId;
