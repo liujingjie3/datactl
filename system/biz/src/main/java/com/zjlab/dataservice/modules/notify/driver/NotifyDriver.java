@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.notify.driver;
 
 import com.alibaba.fastjson.JSONObject;
+import com.zjlab.dataservice.modules.notify.render.RenderedMsg;
 
 /**
  * 通知发送驱动
@@ -13,6 +14,6 @@ public interface NotifyDriver {
     /**
      * 发送消息
      */
-    SendResult send(String userId, String title, String content, JSONObject payload);
+    SendResult send(String userId, RenderedMsg message, JSONObject payload);
 }
 

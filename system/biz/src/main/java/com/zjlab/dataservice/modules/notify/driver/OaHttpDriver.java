@@ -1,6 +1,7 @@
 package com.zjlab.dataservice.modules.notify.driver;
 
 import com.alibaba.fastjson.JSONObject;
+import com.zjlab.dataservice.modules.notify.render.RenderedMsg;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,7 +16,7 @@ public class OaHttpDriver implements NotifyDriver {
     }
 
     @Override
-    public SendResult send(String userId, String title, String content, JSONObject payload) {
+    public SendResult send(String userId, RenderedMsg message, JSONObject payload) {
         // todo 这里简化为直接成功返回,后续需要接入具体send逻辑
         return SendResult.success();
     }

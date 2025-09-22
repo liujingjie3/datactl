@@ -25,7 +25,7 @@ public class TemplateNotifyRenderer implements NotifyRenderer {
         }
         String title = replace(tpl.getTitleTpl(), payload);
         String content = replace(tpl.getContentTpl(), payload);
-        return new RenderedMsg(title, content);
+        return new RenderedMsg(title, content, tpl.getExternalTplId());
     }
 
     private String replace(String template, JSONObject payload) {

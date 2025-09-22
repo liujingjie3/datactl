@@ -28,6 +28,9 @@ public class NotifyTemplate extends BasePo {
     @ApiModelProperty("正文模板")
     private String contentTpl;
 
+    @ApiModelProperty("三方平台模板ID")
+    private String externalTplId;
+
     @ApiModelProperty("是否启用")
     private Byte enabled;
 }

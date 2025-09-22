@@ -53,7 +53,7 @@ public class NotifyDispatcher {
             boolean allOk = true;
             for (NotifyRecipient r : rs) {
                 NotifyDriver driver = driverMap.get(j.getChannel());
-                SendResult sr = driver.send(r.getUserId(), msg.getTitle(), msg.getContent(), payload);
+                SendResult sr = driver.send(r.getUserId(), msg, payload);
                 recMapper.updateStatus(r.getId(), sr.isOk(), sr.getError());
                 if (!sr.isOk()) {
                     allOk = false;
