@@ -45,6 +45,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static antlr.ANTLRTokdefParserTokenTypes.STRING;
+import static java.sql.Types.NUMERIC;
+
 @Service
 @Slf4j
 public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoTemplate> implements TcTemplateService {
@@ -370,20 +373,34 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         List<CommandVO> list = new ArrayList<>();
 
         try (InputStream is = MinioUtil.getObject(BUCKET_NAME, filePath)) {
-            Workbook workbook = new XSSFWorkbook(is);
+            Workbook workbook = WorkbookFactory.create(is);
             Sheet sheet = workbook.getSheetAt(0);
             for (int i = 1; i <= sheet.getLastRowNum(); i++) { // 从第2行开始
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 CommandVO cmd = new CommandVO();
-                Cell cell = row.getCell(0); // 获取第0列
+                // 处理第0列
+                Cell cell = row.getCell(0);
+                int index;
                 if (cell != null) {
-                    cell.setCellType(CellType.NUMERIC); // 强制转为数字类型（如果是数字）
-                    int value = (int) cell.getNumericCellValue();
-                    cmd.setIndex(value);
+                    switch (cell.getCellType()) {
+                        case NUMERIC:
+                            index = (int) cell.getNumericCellValue();
+                            break;
+                        case STRING:
+                            try {
+                                index = Integer.parseInt(cell.getStringCellValue().trim());
+                            } catch (NumberFormatException e) {
+                                index = i; // 解析失败用行号
+                            }
+                            break;
+                        default:
+                            index = i;
+                    }
                 } else {
-                    cmd.setIndex(i);
+                    index = i;
                 }
+                cmd.setIndex(index);
                 cmd.setCmdCode(row.getCell(1).getStringCellValue());
                 cmd.setCmdName(row.getCell(2).getStringCellValue());
                 cmd.setExecSequence(row.getCell(3).getStringCellValue());

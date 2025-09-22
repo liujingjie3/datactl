@@ -103,7 +103,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private ISysUserRoleService sysUserRoleService;
 
     @Override
-    public Result<IPage<SysUser>> queryPageList(HttpServletRequest req, QueryWrapper<SysUser> queryWrapper, Integer pageSize, Integer pageNo, Boolean filter) {
+    public Result<IPage<SysUser>> queryPageList(HttpServletRequest req, QueryWrapper<SysUser> queryWrapper, Integer pageSize, Integer pageNo, Boolean filter,String roleInfo) {
         Result<IPage<SysUser>> result = new Result<IPage<SysUser>>();
         //update-begin-Author:wangshuai--Date:20211119--for:【vue3】通过部门id查询用户，通过code查询id
         //部门ID
@@ -151,6 +151,19 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 queryWrapper.in("id", tianjiUserIds);
             } else {
                 return Result.OK(); // 没有符合的用户直接返回空
+            }
+        }
+
+// ===== roleInfo 过滤逻辑 =====
+        if (oConvertUtils.isNotEmpty(roleInfo) && roleInfo.trim().length() > 0) {
+            List<String> userIdsWithRole = sysUserRoleService.list(
+                    new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getRoleId, roleInfo)
+            ).stream().map(SysUserRole::getUserId).collect(Collectors.toList());
+
+            if (oConvertUtils.listIsNotEmpty(userIdsWithRole)) {
+                queryWrapper.in("id", userIdsWithRole);
+            } else {
+                return Result.OK(); // 没有匹配用户
             }
         }
 

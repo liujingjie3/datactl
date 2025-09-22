@@ -117,6 +117,8 @@ public class SysUserController {
 	public Result<IPage<SysUser>> queryPageList(SysUser user, @RequestParam(name="pageNo", defaultValue="1") Integer pageNo,
                                                 @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
                                                 @RequestParam(name="filterUser", required=false) Boolean filterUser, // 可选参数
+                                                @RequestParam(name="roleId", required=false) String roleId, // 可选参数
+
                                                 HttpServletRequest req) {
 		QueryWrapper<SysUser> queryWrapper = QueryGenerator.initQueryWrapper(user, req.getParameterMap());
         //------------------------------------------------------------------------------------------------
@@ -133,7 +135,7 @@ public class SysUserController {
             //update-end---author:wangshuai ---date:20221223  for：[QQYUN-3371]租户逻辑改造，改成关系表------------
         }
         //------------------------------------------------------------------------------------------------
-        return sysUserService.queryPageList(req, queryWrapper, pageSize, pageNo,filterUser);
+        return sysUserService.queryPageList(req, queryWrapper, pageSize, pageNo,filterUser,roleId);
 	}
 
     /**
@@ -150,7 +152,7 @@ public class SysUserController {
     public Result<IPage<SysUser>> queryAllPageList(SysUser user, @RequestParam(name = "pageNo", defaultValue = "1") Integer pageNo,
                                                    @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize, HttpServletRequest req) {
         QueryWrapper<SysUser> queryWrapper = QueryGenerator.initQueryWrapper(user, req.getParameterMap());
-        return sysUserService.queryPageList(req, queryWrapper, pageSize, pageNo,false);
+        return sysUserService.queryPageList(req, queryWrapper, pageSize, pageNo,false,null);
     }
 
 //    @RequiresPermissions(value = "system:user:add")
