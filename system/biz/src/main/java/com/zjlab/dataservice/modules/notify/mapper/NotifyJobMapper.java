@@ -38,5 +38,8 @@ public interface NotifyJobMapper extends BaseMapper<NotifyJob> {
                           @Param("status") byte status,
                           @Param("operator") String operator,
                           @Param("expected") Collection<Byte> expectedStatuses);
+
+    int logicDeleteByIds(@Param("ids") Collection<Long> ids,
+                         @Param("operator") String operator);
 }
 

@@ -30,5 +30,8 @@ public interface NotifyRecipientMapper extends BaseMapper<NotifyRecipient> {
                              @Param("status") byte status,
                              @Param("operator") String operator,
                              @Param("expected") Collection<Byte> expectedStatuses);
+
+    int logicDeleteByJobIds(@Param("jobIds") Collection<Long> jobIds,
+                            @Param("operator") String operator);
 }
 
