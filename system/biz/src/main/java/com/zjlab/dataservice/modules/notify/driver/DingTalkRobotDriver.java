@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,16 +29,13 @@ import java.util.List;
 public class DingTalkRobotDriver implements NotifyDriver {
 
     private static final Logger log = LoggerFactory.getLogger(DingTalkRobotDriver.class);
-    private static final String DEFAULT_PATH = "/MCConsumerApplication/consumer/mc/send";
     private static final int TITLE_MAX_LENGTH = 20;
-    private static final long CONFIG_CACHE_MILLIS = 60_000L;
 
     private final NotifyChannelConfigMapper channelConfigMapper;
     private final RestTemplate restTemplate;
     private final SysUserMapper sysUserMapper;
 
     private volatile DingTalkConfig cachedConfig;
-    private volatile long configLoadedAt;
 
     public DingTalkRobotDriver(NotifyChannelConfigMapper channelConfigMapper,
                                RestTemplate restTemplate,
@@ -45,6 +43,14 @@ public class DingTalkRobotDriver implements NotifyDriver {
         this.channelConfigMapper = channelConfigMapper;
         this.restTemplate = restTemplate;
         this.sysUserMapper = sysUserMapper;
+    }
+
+    @PostConstruct
+    public void loadConfigOnStartup() {
+        this.cachedConfig = loadConfigFromDb();
+        if (this.cachedConfig == null) {
+            log.error("dingTalk channel config failed to load during startup");
+        }
     }
 
     @Override
@@ -58,7 +64,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
                 userId, message == null ? null : message.getTitle(),
                 message == null ? null : message.getExternalTemplateId(), payload);
 
-        DingTalkConfig config = getConfig();
+        DingTalkConfig config = ensureConfigLoaded();
         if (config == null) {
             String error = "dingTalk channel config not found or invalid";
             log.error("{}", error);
@@ -124,21 +130,10 @@ public class DingTalkRobotDriver implements NotifyDriver {
         }
     }
 
-    private synchronized void refreshConfigIfNeeded() {
-        long now = System.currentTimeMillis();
-        if (configLoadedAt != 0 && (now - configLoadedAt) < CONFIG_CACHE_MILLIS) {
-            if (cachedConfig != null) {
-                return;
-            }
-            // 配置尚未准备好时，按 TTL 缓存空结果，避免频繁访问数据库
-            return;
+    private synchronized DingTalkConfig ensureConfigLoaded() {
+        if (cachedConfig == null) {
+            cachedConfig = loadConfigFromDb();
         }
-        cachedConfig = loadConfigFromDb();
-        configLoadedAt = now;
-    }
-
-    private DingTalkConfig getConfig() {
-        refreshConfigIfNeeded();
         return cachedConfig;
     }
 
@@ -164,11 +159,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
         }
         SysUser user = sysUserMapper.selectById(userId);
         if (user == null) {
-            if (looksLikePhone(userId)) {
-                recipient.getTelList().add(userId);
-            } else {
-                recipient.getUseridList().add(userId);
-            }
+            recipient.getUseridList().add(userId);
             return recipient;
         }
         if (StringUtils.isNotBlank(user.getUsername())) {
@@ -181,10 +172,6 @@ public class DingTalkRobotDriver implements NotifyDriver {
             recipient.getEmailList().add(user.getEmail());
         }
         return recipient;
-    }
-
-    private boolean looksLikePhone(String value) {
-        return StringUtils.isNotBlank(value) && value.matches("1\\d{10}");
     }
 
     private JSONObject buildTemplateParams(JSONObject payload) {
@@ -252,15 +239,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
             }
             String baseUrl = obj.getString("baseUrl");
             if (StringUtils.isBlank(baseUrl)) {
-                String address = obj.getString("address");
-                if (StringUtils.isNotBlank(address)) {
-                    String scheme = StringUtils.defaultIfBlank(obj.getString("scheme"), "http");
-                    String path = StringUtils.defaultIfBlank(obj.getString("path"), DEFAULT_PATH);
-                    baseUrl = buildUrl(scheme, address, path);
-                }
-            }
-            if (StringUtils.isBlank(baseUrl)) {
-                log.error("dingTalk channel config missing baseUrl/address");
+                log.error("dingTalk channel config missing baseUrl");
                 return null;
             }
             String agentId = obj.getString("agentId");
@@ -270,21 +249,6 @@ public class DingTalkRobotDriver implements NotifyDriver {
                 return null;
             }
             return new DingTalkConfig(baseUrl, agentId, corpId);
-        }
-
-        private static String buildUrl(String scheme, String address, String path) {
-            String normalizedPath = StringUtils.isBlank(path) ? DEFAULT_PATH : path;
-            if (!normalizedPath.startsWith("/")) {
-                normalizedPath = "/" + normalizedPath;
-            }
-            String normalizedAddress = address;
-            if (address.startsWith("http://") || address.startsWith("https://")) {
-                if (address.endsWith("/") && normalizedPath.startsWith("/")) {
-                    return address + normalizedPath.substring(1);
-                }
-                return address.endsWith("/") ? address + normalizedPath.substring(1) : address + normalizedPath;
-            }
-            return scheme + "://" + normalizedAddress + normalizedPath;
         }
     }
 
