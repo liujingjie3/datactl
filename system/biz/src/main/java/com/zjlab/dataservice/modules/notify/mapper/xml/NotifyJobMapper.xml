@@ -89,4 +89,16 @@
         </if>
     </update>
 
+    <update id="logicDeleteByIds">
+        UPDATE tc_notify_job
+        SET del_flag = 1,
+            update_by = #{operator},
+            update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+          AND del_flag = 0
+    </update>
+
 </mapper>

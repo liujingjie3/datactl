@@ -64,7 +64,7 @@ CREATE TABLE `tc_notify_job` (
 -- 索引
 CREATE INDEX `idx_job_status_time` ON `tc_notify_job`(`status`,`next_run_time`);
 CREATE INDEX `idx_job_biz` ON `tc_notify_job`(`biz_type`,`biz_id`);
-CREATE UNIQUE INDEX `uk_job_dedup` ON `tc_notify_job`(`dedup_key`);
+CREATE UNIQUE INDEX `uk_job_dedup` ON `tc_notify_job`(`dedup_key`, `del_flag`);
 CREATE INDEX `idx_job_channel` ON `tc_notify_job`(`channel`);
 ```
 

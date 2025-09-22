@@ -1481,9 +1481,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             return;
         }
         List<Long> bizIds = Collections.singletonList(taskId);
-        List<Byte> expected = Collections.singletonList(NotifyJobStatusEnum.WAITING.getCode());
-        notifyService.updateStatus((byte) BizTypeEnum.ORBIT_REMIND.getCode(),
-                bizIds, NotifyJobStatusEnum.CANCELED.getCode(), expected, operator);
+        notifyService.deleteByBiz((byte) BizTypeEnum.ORBIT_REMIND.getCode(), bizIds, operator);
     }
 
     private void scheduleOrbitReminders(Long taskId, String taskName, List<OrbitPlanExportVO> orbitPlans,

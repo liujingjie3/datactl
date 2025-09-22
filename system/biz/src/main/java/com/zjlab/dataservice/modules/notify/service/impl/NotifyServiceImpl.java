@@ -80,5 +80,19 @@ public class NotifyServiceImpl implements NotifyService {
         notifyJobMapper.updateStatusByIds(jobIds, status, operator, expectedStatuses);
         notifyRecipientMapper.updateStatusByJobIds(jobIds, status, operator, expectedStatuses);
     }
+
+    @Override
+    @Transactional
+    public void deleteByBiz(byte bizType, Collection<Long> bizIds, String operator) {
+        if (bizIds == null || bizIds.isEmpty()) {
+            return;
+        }
+        List<Long> jobIds = notifyJobMapper.selectIdsByBiz(bizType, bizIds, null);
+        if (jobIds == null || jobIds.isEmpty()) {
+            return;
+        }
+        notifyJobMapper.logicDeleteByIds(jobIds, operator);
+        notifyRecipientMapper.logicDeleteByJobIds(jobIds, operator);
+    }
 }
 

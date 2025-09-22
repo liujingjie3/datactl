@@ -15,5 +15,7 @@ public interface NotifyService {
     void updateStatus(byte bizType, Collection<Long> bizIds,
                       byte status, Collection<Byte> expectedStatuses,
                       String operator);
+
+    void deleteByBiz(byte bizType, Collection<Long> bizIds, String operator);
 }
 
