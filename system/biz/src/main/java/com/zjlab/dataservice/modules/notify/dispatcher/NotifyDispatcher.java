@@ -11,10 +11,12 @@ import com.zjlab.dataservice.modules.notify.model.enums.BizTypeEnum;
 import com.zjlab.dataservice.modules.notify.render.NotifyRenderer;
 import com.zjlab.dataservice.modules.notify.render.RenderedMsg;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeInstMapper;
+import com.zjlab.dataservice.modules.tc.model.dto.NodeNotifyContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +47,7 @@ public class NotifyDispatcher {
         List<NotifyJob> jobs = jobMapper.lockDueJobs(200);
         for (NotifyJob j : jobs) {
             JSONObject payload = JSONObject.parseObject(j.getPayload());
+            enrichTimeoutPayload(j, payload);
             RenderedMsg msg = renderer.render(j.getBizType(), j.getChannel(), payload);
             List<NotifyRecipient> rs = recMapper.findByJobId(j.getId());
             boolean allOk = true;
@@ -103,6 +106,37 @@ public class NotifyDispatcher {
         LocalDateTime nextTime = LocalDateTime.now().plusMinutes(interval);
         jobMapper.reschedule(job.getId(), nextTime);
         return true;
+    }
+
+    private void enrichTimeoutPayload(NotifyJob job, JSONObject payload) {
+        if (job.getBizType() == null
+                || job.getBizType() != (byte) BizTypeEnum.NODE_TIMEOUT.getCode()
+                || payload == null) {
+            return;
+        }
+        Integer originalDuration = payload.getInteger("maxDuration");
+        LocalDateTime deadline = resolveDeadline(job.getBizId(), originalDuration);
+        if (deadline == null) {
+            return;
+        }
+        long overtime = Duration.between(deadline, LocalDateTime.now()).toMinutes();
+        if (overtime < 0) {
+            overtime = 0;
+        }
+        payload.put("overtime", overtime);
+        payload.put("maxDuration", overtime);
+    }
+
+    private LocalDateTime resolveDeadline(Long nodeInstId, Integer originalDuration) {
+        NodeNotifyContext context = taskNodeInstMapper.selectNodeNotifyContext(nodeInstId);
+        if (context == null) {
+            return null;
+        }
+        LocalDateTime startedAt = context.getStartedAt();
+        if (startedAt == null || originalDuration == null) {
+            return null;
+        }
+        return startedAt.plusMinutes(originalDuration);
     }
 }
 
