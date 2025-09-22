@@ -308,7 +308,7 @@ public interface ISysUserService extends IService<SysUser> {
 	 * @param departs 选择的部门id，多个以逗号隔开
 	 * @param relTenantIds 多个租户id
 	 */
-	void editUser(SysUser user, String roles, String departs, String relTenantIds);
+	void editUser(SysUser user, String roles, String departs, String relTenantIds,Integer tc);
 
 	/**
      * userId转为username

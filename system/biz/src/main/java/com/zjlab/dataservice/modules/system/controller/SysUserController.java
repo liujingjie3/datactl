@@ -20,6 +20,7 @@ import com.zjlab.dataservice.common.util.*;
 import com.zjlab.dataservice.config.mybatis.MybatisPlusSaasConfig;
 import com.zjlab.dataservice.modules.base.service.BaseCommonService;
 import com.zjlab.dataservice.modules.system.entity.*;
+import com.zjlab.dataservice.modules.system.mapper.SysRoleMapper;
 import com.zjlab.dataservice.modules.system.model.DepartIdModel;
 import com.zjlab.dataservice.modules.system.model.SysUserSysDepartModel;
 import com.zjlab.dataservice.modules.system.service.*;
@@ -99,6 +100,9 @@ public class SysUserController {
 
     @Autowired
     private ISysUserTenantService userTenantService;
+
+    @Autowired
+    private SysRoleMapper sysRoleMapper;
 
     /**
      * 获取租户下用户数据（支持租户隔离）
@@ -204,7 +208,8 @@ public class SysUserController {
                 // 修改用户走一个service 保证事务
                 //获取租户ids
                 String relTenantIds = jsonObject.getString("relTenantIds");
-				sysUserService.editUser(user, roles, departs, relTenantIds);
+                Integer tc = jsonObject.containsKey("tc") ? jsonObject.getInteger("tc") : null;
+				sysUserService.editUser(user, roles, departs, relTenantIds,tc);
 				result.success("修改成功!");
 			}
 		} catch (Exception e) {
@@ -280,19 +285,54 @@ public class SysUserController {
 
     //@RequiresPermissions("system:user:queryUserRole")
     @RequestMapping(value = "/queryUserRole", method = RequestMethod.GET)
-    public Result<List<String>> queryUserRole(@RequestParam(name = "userid", required = true) String userid) {
+    public Result<List<String>> queryUserRole(@RequestParam(name = "userid", required = true) String userid,@RequestParam(name = "tc", required = false) Integer tc) {
+//        Result<List<String>> result = new Result<>();
+//        List<String> list = new ArrayList<String>();
+//        List<SysUserRole> userRole = sysUserRoleService.list(new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, userid));
+//        if (userRole == null || userRole.size() <= 0) {
+//            result.error500("未找到用户相关角色信息");
+//        } else {
+//            for (SysUserRole sysUserRole : userRole) {
+//                list.add(sysUserRole.getRoleId());
+//            }
+//            result.setSuccess(true);
+//            result.setResult(list);
+//        }
+//        return result;
         Result<List<String>> result = new Result<>();
-        List<String> list = new ArrayList<String>();
-        List<SysUserRole> userRole = sysUserRoleService.list(new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, userid));
-        if (userRole == null || userRole.size() <= 0) {
+        List<String> roleIds = new ArrayList<>();
+
+        // 查出用户的角色
+        List<SysUserRole> userRoleList = sysUserRoleService.list(
+                new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, userid)
+        );
+
+        if (userRoleList == null || userRoleList.isEmpty()) {
             result.error500("未找到用户相关角色信息");
-        } else {
-            for (SysUserRole sysUserRole : userRole) {
-                list.add(sysUserRole.getRoleId());
-            }
-            result.setSuccess(true);
-            result.setResult(list);
+            return result;
         }
+
+        // 收集所有 roleId
+        List<String> allRoleIds = userRoleList.stream()
+                .map(SysUserRole::getRoleId)
+                .collect(Collectors.toList());
+
+        if (tc != null) {
+            // 根据 roleId 批量查询 sys_role
+            List<SysRole> roles = sysRoleMapper.selectBatchIds(allRoleIds);
+
+            // 过滤 tc=传入值 的角色
+            roleIds = roles.stream()
+                    .filter(role -> role.getTc() != null && role.getTc().equals(tc))
+                    .map(SysRole::getId)
+                    .collect(Collectors.toList());
+        } else {
+            // 不传 tc 就直接返回所有角色ID
+            roleIds = allRoleIds;
+        }
+
+        result.setSuccess(true);
+        result.setResult(roleIds);
         return result;
     }
 

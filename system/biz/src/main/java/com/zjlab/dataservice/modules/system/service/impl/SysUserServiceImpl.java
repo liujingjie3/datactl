@@ -52,6 +52,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -165,8 +166,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             pageList.getRecords().forEach(item -> {
                 //查询角色信息
                 List<SysUserRole> userRole = sysUserRoleService.list(new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, item.getId()));
+                // 过滤：只保留 sys_role.tc = 1 的角色ID
+                if (Boolean.TRUE.equals(filter)) {
+                    List<String> roleIds = userRole.stream()
+                            .map(SysUserRole::getRoleId)
+                            .filter(roleId -> {
+                                SysRole role = sysRoleMapper.selectById(roleId);
+                                return role != null && Objects.equals(role.getTc(), 1);
+                            })
+                            .collect(Collectors.toList());
+                    item.setRoles(roleIds);
+                }
                 item.setRoles(userRole.stream().map(sysUserRole -> sysUserRole.getRoleId()).collect(Collectors.toList()));
-
                 //查询部门名称
                 item.setOrgCodeTxt(useDepNames.get(item.getId()));
                 //查询用户的租户ids
@@ -181,7 +192,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         result.setSuccess(true);
         result.setResult(pageList);
-        //log.info(pageList.toString());
+//        log.info(pageList.toString());
         return result;
     }
 
@@ -341,6 +352,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         log.info("-------通过数据库读取用户拥有的角色Rules------username： " + userId + ",Roles size: " + (roles == null ? 0 : roles.size()));
         return new HashSet<>(roles);
     }
+
     /**
      * 通过用户名获取用户权限集合
      *
@@ -694,19 +706,54 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = {CacheConstant.SYS_USERS_CACHE}, allEntries = true)
-    public void editUser(SysUser user, String roles, String departs, String relTenantIds) {
+    public void editUser(SysUser user, String roles, String departs, String relTenantIds, Integer tc) {
         //获取用户编辑前台传过来的租户id
         this.editUserTenants(user.getId(), relTenantIds);
         //step.1 修改用户基础信息
         this.updateById(user);
         //step.2 修改角色
         //处理用户角色 先删后加
-        sysUserRoleMapper.delete(new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, user.getId()));
-        if (oConvertUtils.isNotEmpty(roles)) {
-            String[] arr = roles.split(",");
-            for (String roleId : arr) {
-                SysUserRole userRole = new SysUserRole(user.getId(), roleId);
-                sysUserRoleMapper.insert(userRole);
+//        判断tc是否为1
+        if (tc != null && tc == 1) {
+            // step1: 获取用户原有角色
+            List<SysUserRole> existingRoles = sysUserRoleMapper.selectList(
+                    new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, user.getId())
+            );
+            // step2: 删除原有的 tc=1 角色
+            List<String> tc1RoleIds = existingRoles.stream()
+                    .map(SysUserRole::getRoleId)
+                    .filter(roleId -> {
+                        SysRole role = sysRoleMapper.selectById(roleId);
+                        return role != null && Objects.equals(role.getTc(), 1);
+                    })
+                    .collect(Collectors.toList());
+
+            if (!tc1RoleIds.isEmpty()) {
+                sysUserRoleMapper.delete(
+                        new QueryWrapper<SysUserRole>().lambda()
+                                .eq(SysUserRole::getUserId, user.getId())
+                                .in(SysUserRole::getRoleId, tc1RoleIds)
+                );
+            }
+            // step3: 插入新的角色，只添加 tc=1 的角色
+            if (oConvertUtils.isNotEmpty(roles)) {
+                String[] arr = roles.split(",");
+                for (String roleId : arr) {
+                    SysRole role = sysRoleMapper.selectById(roleId);
+                    if (role != null && Objects.equals(role.getTc(), 1)) {
+                        SysUserRole userRole = new SysUserRole(user.getId(), roleId);
+                        sysUserRoleMapper.insert(userRole);
+                    }
+                }
+            }
+        } else {
+            sysUserRoleMapper.delete(new QueryWrapper<SysUserRole>().lambda().eq(SysUserRole::getUserId, user.getId()));
+            if (oConvertUtils.isNotEmpty(roles)) {
+                String[] arr = roles.split(",");
+                for (String roleId : arr) {
+                    SysUserRole userRole = new SysUserRole(user.getId(), roleId);
+                    sysUserRoleMapper.insert(userRole);
+                }
             }
         }
 

@@ -28,9 +28,7 @@ import com.zjlab.dataservice.modules.tc.model.vo.TemplateCountVO;
 import com.zjlab.dataservice.modules.tc.model.vo.TemplateQueryListVO;
 import com.zjlab.dataservice.modules.tc.service.TcTemplateService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -377,14 +375,20 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             for (int i = 1; i <= sheet.getLastRowNum(); i++) { // 从第2行开始
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
-//                if (row.getCell(0) == null) continue;
                 CommandVO cmd = new CommandVO();
-                cmd.setIndex(i);
-                cmd.setCmdCode(row.getCell(0).getStringCellValue());
-                cmd.setCmdName(row.getCell(1).getStringCellValue());
-                cmd.setExecSequence(row.getCell(2).getStringCellValue());
-                cmd.setExecCriteria(row.getCell(3).getStringCellValue());
-                cmd.setRemark(row.getCell(4).getStringCellValue());
+                Cell cell = row.getCell(0); // 获取第0列
+                if (cell != null) {
+                    cell.setCellType(CellType.NUMERIC); // 强制转为数字类型（如果是数字）
+                    int value = (int) cell.getNumericCellValue();
+                    cmd.setIndex(value);
+                } else {
+                    cmd.setIndex(i);
+                }
+                cmd.setCmdCode(row.getCell(1).getStringCellValue());
+                cmd.setCmdName(row.getCell(2).getStringCellValue());
+                cmd.setExecSequence(row.getCell(3).getStringCellValue());
+                cmd.setExecCriteria(row.getCell(4).getStringCellValue());
+                cmd.setRemark(row.getCell(5).getStringCellValue());
                 list.add(cmd);
             }
         }
