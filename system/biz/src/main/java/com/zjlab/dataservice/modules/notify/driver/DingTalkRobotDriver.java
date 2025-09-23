@@ -68,9 +68,9 @@ public class DingTalkRobotDriver implements NotifyDriver {
 
     @Override
     public SendResult send(String userId, RenderedMsg message, JSONObject payload) {
-        log.info("DingTalkRobotDriver.send userId={}, title={}, templateId={}, payload={}",
+        log.info("DingTalkRobotDriver.send userId={}, title={}, templateId={}, content={},payload={}",
                 userId, message == null ? null : message.getTitle(),
-                message == null ? null : message.getExternalTemplateId(), payload);
+                message == null ? null : message.getExternalTemplateId(), message.getContent(),payload);
 
         DingTalkConfig config = ensureConfigLoaded();
         if (config == null) {
