@@ -75,7 +75,8 @@ public class Swagger2Config implements WebMvcConfigurer {
                 .apiInfo(apiInfo())
                 .select()
                 // 仅生成 tc 模块和 system 模块下带有 RestController 和 ApiOperation 注解的接口文档
-                .apis(tcModule.or(systemModule).and(restControllers).and(apiOperations))
+//                .apis(tcModule.or(systemModule).and(restControllers).and(apiOperations))
+                .apis(tcModule.and(restControllers).and(apiOperations))
                 .paths(PathSelectors.any())
                 .build()
                 .securitySchemes(Collections.singletonList(securityScheme()))

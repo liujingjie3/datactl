@@ -3,6 +3,7 @@ package com.zjlab.dataservice.modules.tc.controller;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.zjlab.dataservice.common.api.page.PageResult;
 import com.zjlab.dataservice.common.api.vo.Result;
+import com.zjlab.dataservice.modules.system.service.ISysUserService;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerCreateDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerEditDto;
 import com.zjlab.dataservice.modules.tc.model.dto.TaskManagerListQuery;
@@ -46,6 +47,9 @@ public class TcTaskManagerController {
 
     @Autowired
     private TcTaskManagerService taskManagerService;
+
+    @Autowired
+    private ISysUserService sysUserService;
 
     @GetMapping("/list")
     @ApiOperationSupport(order = 1)
@@ -171,4 +175,31 @@ public class TcTaskManagerController {
     public void download(@RequestParam String url, HttpServletResponse response) {
         taskManagerService.downloadAttachment(url, response);
     }
+
+    /**
+     * 判断用户是否为管理员
+     *
+     * @param userId 用户ID
+     * @return 是否为管理员
+     */
+    @GetMapping("/isAdmin")
+    @ApiOperationSupport(order = 14)
+    @ApiOperation(value = "管理员身份判定", notes = "管理员身份判定")
+    public Result<Boolean> isAdmin(@RequestParam(name = "userId") String userId) {
+        return Result.ok(sysUserService.isAdmin(userId));
+    }
+
+    /**
+     * 判断用户是否为总体组
+     *
+     * @param userId 用户ID
+     * @return 是否为总体组
+     */
+    @GetMapping("/isOverall")
+    @ApiOperationSupport(order = 15)
+    @ApiOperation(value = "总体部身份判定", notes = "总体部身份判定")
+    public Result<Boolean> isOverall(@RequestParam(name = "userId") String userId) {
+        return Result.ok(sysUserService.isOverall(userId));
+    }
+
 }

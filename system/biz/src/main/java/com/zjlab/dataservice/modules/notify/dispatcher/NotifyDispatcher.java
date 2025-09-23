@@ -43,31 +43,31 @@ public class NotifyDispatcher {
 
     @Scheduled(fixedDelay = 3000)
     public void dispatch() {
-        ensureDriverMap();
-        List<NotifyJob> jobs = jobMapper.lockDueJobs(200);
-        for (NotifyJob j : jobs) {
-            JSONObject payload = JSONObject.parseObject(j.getPayload());
-            enrichTimeoutPayload(j, payload);
-            RenderedMsg msg = renderer.render(j.getBizType(), j.getChannel(), payload);
-            List<NotifyRecipient> rs = recMapper.findByJobId(j.getId());
-            boolean allOk = true;
-            for (NotifyRecipient r : rs) {
-                NotifyDriver driver = driverMap.get(j.getChannel());
-                SendResult sr = driver.send(r.getUserId(), msg, payload);
-                recMapper.updateStatus(r.getId(), sr.isOk(), sr.getError());
-                if (!sr.isOk()) {
-                    allOk = false;
-                }
-            }
-            if (allOk) {
-                if (!scheduleNextTimeoutReminder(j, payload)) {
-                    jobMapper.markSuccess(j.getId());
-                }
-            } else {
-                int nextRetry = j.getRetryCount() + 1;
-                jobMapper.scheduleRetry(j.getId(), calcNext(nextRetry), nextRetry);
-            }
-        }
+//        ensureDriverMap();
+//        List<NotifyJob> jobs = jobMapper.lockDueJobs(200);
+//        for (NotifyJob j : jobs) {
+//            JSONObject payload = JSONObject.parseObject(j.getPayload());
+//            enrichTimeoutPayload(j, payload);
+//            RenderedMsg msg = renderer.render(j.getBizType(), j.getChannel(), payload);
+//            List<NotifyRecipient> rs = recMapper.findByJobId(j.getId());
+//            boolean allOk = true;
+//            for (NotifyRecipient r : rs) {
+//                NotifyDriver driver = driverMap.get(j.getChannel());
+//                SendResult sr = driver.send(r.getUserId(), msg, payload);
+//                recMapper.updateStatus(r.getId(), sr.isOk(), sr.getError());
+//                if (!sr.isOk()) {
+//                    allOk = false;
+//                }
+//            }
+//            if (allOk) {
+//                if (!scheduleNextTimeoutReminder(j, payload)) {
+//                    jobMapper.markSuccess(j.getId());
+//                }
+//            } else {
+//                int nextRetry = j.getRetryCount() + 1;
+//                jobMapper.scheduleRetry(j.getId(), calcNext(nextRetry), nextRetry);
+//            }
+//        }
     }
 
     private void ensureDriverMap() {
