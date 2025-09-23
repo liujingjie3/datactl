@@ -371,6 +371,28 @@ public class SysUserController {
     }
 
     /**
+     * 判断用户是否为管理员
+     *
+     * @param userId 用户ID
+     * @return 是否为管理员
+     */
+    @GetMapping("/isAdmin")
+    public Result<Boolean> isAdmin(@RequestParam(name = "userId") String userId) {
+        return Result.ok(sysUserService.isAdmin(userId));
+    }
+
+    /**
+     * 判断用户是否为总体组
+     *
+     * @param userId 用户ID
+     * @return 是否为总体组
+     */
+    @GetMapping("/isOverall")
+    public Result<Boolean> isOverall(@RequestParam(name = "userId") String userId) {
+        return Result.ok(sysUserService.isOverall(userId));
+    }
+
+    /**
      * 修改密码
      */
     //@RequiresPermissions("system:user:changepwd")
