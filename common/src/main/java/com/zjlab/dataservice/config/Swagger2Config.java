@@ -2,6 +2,7 @@ package com.zjlab.dataservice.config;
 
 
 import com.github.xiaoymin.knife4j.spring.annotations.EnableKnife4j;
+import com.google.common.base.Predicate;
 import com.zjlab.dataservice.common.constant.CommonConstant;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.BeansException;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 import springfox.bean.validators.configuration.BeanValidatorPluginsConfiguration;
+import springfox.documentation.RequestHandler;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.ParameterBuilder;
 import springfox.documentation.builders.PathSelectors;
@@ -64,15 +66,16 @@ public class Swagger2Config implements WebMvcConfigurer {
      */
     @Bean(value = "defaultApi2")
     public Docket defaultApi2() {
+        Predicate<RequestHandler> tcModule = RequestHandlerSelectors.basePackage("com.zjlab.dataservice.modules.tc");
+        Predicate<RequestHandler> systemModule = RequestHandlerSelectors.basePackage("com.zjlab.dataservice.modules.system");
+        Predicate<RequestHandler> restControllers = RequestHandlerSelectors.withClassAnnotation(RestController.class);
+        Predicate<RequestHandler> apiOperations = RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class);
+
         return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(apiInfo())
                 .select()
-                //此包路径下的类，才生成接口文档
-//                .apis(RequestHandlerSelectors.basePackage("org.jeecg"))
-                .apis(RequestHandlerSelectors.basePackage("com.zjlab.dataservice.modules.tc"))
-                //加了ApiOperation注解的类，才生成接口文档
-                .apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))
-                .apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
+                // 仅生成 tc 模块和 system 模块下带有 RestController 和 ApiOperation 注解的接口文档
+                .apis(tcModule.or(systemModule).and(restControllers).and(apiOperations))
                 .paths(PathSelectors.any())
                 .build()
                 .securitySchemes(Collections.singletonList(securityScheme()))
