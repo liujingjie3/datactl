@@ -171,7 +171,9 @@ public class DingTalkRobotDriver implements NotifyDriver {
             if (StringUtils.isBlank(recipient.getUserId())) {
                 String error = "dingTalk recipient userId missing";
                 log.error(error);
-                results.put(recipient.getId(), SendResult.failure(error));
+                if (recipient.getId() != null) {
+                    results.put(recipient.getId(), SendResult.failure(error));
+                }
                 continue;
             }
             recipientsByUser.computeIfAbsent(recipient.getUserId(), k -> new ArrayList<>()).add(recipient);
@@ -317,7 +319,9 @@ public class DingTalkRobotDriver implements NotifyDriver {
         SendResult failure = SendResult.failure(error);
         for (NotifyRecipient recipient : recipients) {
             if (recipient != null) {
-                container.put(recipient.getId(), failure);
+                if (recipient.getId() != null) {
+                    container.put(recipient.getId(), failure);
+                }
             }
         }
     }
@@ -343,7 +347,9 @@ public class DingTalkRobotDriver implements NotifyDriver {
         }
         for (NotifyRecipient recipient : recipients) {
             if (recipient != null) {
-                container.put(recipient.getId(), result);
+                if (recipient.getId() != null) {
+                    container.put(recipient.getId(), result);
+                }
             }
         }
     }

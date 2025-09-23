@@ -1,7 +1,7 @@
 package com.zjlab.dataservice.modules.notify.model.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.zjlab.dataservice.common.system.base.entity.BasePo;
+import com.zjlab.dataservice.modules.tc.model.dto.TcBaseEntityDto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("tc_notify_job")
 @ApiModel(value = "NotifyJob", description = "通知任务")
-public class NotifyJob extends BasePo {
+public class NotifyJob extends TcBaseEntityDto {
 
 
     private static final long serialVersionUID = 1181807558798720880L;

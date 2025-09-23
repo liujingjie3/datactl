@@ -1,7 +1,7 @@
 package com.zjlab.dataservice.modules.notify.model.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.zjlab.dataservice.common.system.base.entity.BasePo;
+import com.zjlab.dataservice.modules.tc.model.dto.TcBaseEntityDto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -12,7 +12,7 @@ import lombok.Data;
 @Data
 @TableName(value = "tc_notify_channel_config", excludeProperty = {"tenantId"})
 @ApiModel(value = "NotifyChannelConfig", description = "通知渠道配置")
-public class NotifyChannelConfig extends BasePo {
+public class NotifyChannelConfig extends TcBaseEntityDto {
 
 
     private static final long serialVersionUID = -2852282620881529837L;
