@@ -2,7 +2,6 @@ package com.zjlab.dataservice.config;
 
 
 import com.github.xiaoymin.knife4j.spring.annotations.EnableKnife4j;
-import com.google.common.base.Predicate;
 import com.zjlab.dataservice.common.constant.CommonConstant;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.BeansException;
@@ -35,6 +34,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
