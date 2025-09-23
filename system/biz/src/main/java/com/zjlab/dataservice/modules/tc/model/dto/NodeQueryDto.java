@@ -14,6 +14,6 @@ public class NodeQueryDto implements Serializable {
     private String name;
     private String roleId;
 
-    private Integer page = 1;
+    private Integer pageNo = 1;
     private Integer pageSize = 20;
 }

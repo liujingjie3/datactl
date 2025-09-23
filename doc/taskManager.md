@@ -173,7 +173,7 @@ Tab 值：
 | status        | int      | 否   | 任务状态：0运行中，1结束，2异常结束，3取消 |
 | templateId    | string   | 否   | 任务类型（模板ID）                    |
 | startTimeFrom | datetime | 否   | 创建时间起（含）                      |
-| page          | int      | 否   | 页码，默认 1                         |
+| pageNo        | int      | 否   | 页码，默认 1                         |
 | pageSize      | int      | 否   | 每页条数，默认 10                     |
 
 #### 2.2.3 统一返回字段（对象化）
@@ -672,7 +672,7 @@ Resp：`[RemoteCmdExportVO]`
 查询轨道计划 `GET /task/orbitPlans?taskId=...`
 Resp：`[OrbitPlanExportVO]`
 
-列表 `GET /task/list?tab=&page=&pageSize=`
+列表 `GET /task/list?tab=&pageNo=&pageSize=`
 
 说明：统一接口，通过 `tab` 参数区分四种列表。管理员仅允许 `tab=all`，请求其他值返回 `TASKMANAGE_ADMIN_ONLY_ALL`；非管理员请求 `tab=all` 返回 `TASKMANAGE_ONLY_ADMIN_ALL`。
 

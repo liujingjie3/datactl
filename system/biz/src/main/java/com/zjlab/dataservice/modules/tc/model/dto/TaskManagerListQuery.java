@@ -30,7 +30,7 @@ public class TaskManagerListQuery implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startTimeFrom;
     /** 页码，默认1 */
-    private Integer page;
+    private Integer pageNo;
     /** 每页条数，默认10 */
     private Integer pageSize;
     /** 当前登录用户ID */

@@ -37,7 +37,7 @@
 * **NodeInfoDto**：用于请求和响应的节点信息载体，包含节点基础字段、角色列表、操作控制项数组及创建/更新人信息。
 * **NodeRoleDto**：`{ roleId, roleName }`。
 * **NodeActionDto**：`{ type, name, config }`，type 取值：0上传、1选择圈次计划、2决策、3文本填写。
-* **NodeQueryDto**：列表查询参数，支持按 `status`、`name`、`roleId` 过滤，并分页（page/pageSize）。
+* **NodeQueryDto**：列表查询参数，支持按 `status`、`name`、`roleId` 过滤，并分页（pageNo/pageSize）。
 * **NodeStatsVO**：节点统计数据载体，`{ activeCount, disabledCount, totalCount }`。
 
 ---
@@ -81,7 +81,7 @@
 | 方法 | 路径 | 描述 |
 | --- | --- | --- |
 | GET | `/tc/node/stats` | 获取节点统计数据 |
-| GET | `/tc/node/list` | 查询节点列表，参数：`status?`、`name?`、`roleId?`、`page`、`pageSize` |
+| GET | `/tc/node/list` | 查询节点列表，参数：`status?`、`name?`、`roleId?`、`pageNo`、`pageSize` |
 | POST | `/tc/node/create` | 新建节点，请求体为 `NodeInfoDto` |
 | PUT | `/tc/node/update/{id}` | 编辑节点 |
 | PATCH | `/tc/node/status/{id}?status=` | 更新节点状态 |
