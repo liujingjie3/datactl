@@ -90,12 +90,6 @@ public class DingTalkRobotDriver implements NotifyDriver {
         if (!recipient.getUseridList().isEmpty()) {
             requestBody.put("userid_list", recipient.getUseridList());
         }
-        if (!recipient.getTelList().isEmpty()) {
-            requestBody.put("tel_list", recipient.getTelList());
-        }
-        if (!recipient.getEmailList().isEmpty()) {
-            requestBody.put("email_list", recipient.getEmailList());
-        }
         requestBody.put("agent_id", config.getAgentId());
         requestBody.put("corp_id", config.getCorpId());
 
@@ -159,18 +153,12 @@ public class DingTalkRobotDriver implements NotifyDriver {
         }
         SysUser user = sysUserMapper.selectById(userId);
         if (user == null) {
-            recipient.getUseridList().add(userId);
             return recipient;
         }
         if (StringUtils.isNotBlank(user.getUsername())) {
             recipient.getUseridList().add(user.getUsername());
         }
-        if (StringUtils.isNotBlank(user.getPhone())) {
-            recipient.getTelList().add(user.getPhone());
-        }
-        if (StringUtils.isNotBlank(user.getEmail())) {
-            recipient.getEmailList().add(user.getEmail());
-        }
+
         return recipient;
     }
 
