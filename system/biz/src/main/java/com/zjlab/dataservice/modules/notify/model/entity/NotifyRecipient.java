@@ -1,7 +1,6 @@
 package com.zjlab.dataservice.modules.notify.model.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.zjlab.dataservice.modules.tc.model.dto.TcBaseEntityDto;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -12,7 +11,7 @@ import lombok.Data;
 @Data
 @TableName("tc_notify_recipient")
 @ApiModel(value = "NotifyRecipient", description = "通知收件人明细")
-public class NotifyRecipient extends TcBaseEntityDto {
+public class NotifyRecipient extends NotifyBasePo {
 
 
     private static final long serialVersionUID = -5788599433990527415L;

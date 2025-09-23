@@ -40,7 +40,7 @@
 
 存放“要发”的一条通知任务（收件人由模板展开后写入明细表）。
 
-> 该模块为单租户设计，表结构中不包含 `tenant_id` 字段。
+> 表结构沿用系统通用的 `BasePo` 约定，包含基础审计字段（del_flag、create_by、update_by 等）。
 
 ```sql
 CREATE TABLE `tc_notify_job` (
@@ -79,6 +79,7 @@ CREATE TABLE `tc_notify_recipient` (
   `user_id` VARCHAR(32) NOT NULL COMMENT '接收人用户ID',
   `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0待发,1成功,2失败,3取消,4异常结束',
   `last_error` VARCHAR(255) DEFAULT NULL COMMENT '失败原因',
+  `external_msgid` VARCHAR(128) DEFAULT NULL COMMENT '第三方返回的消息ID',
   `del_flag` TINYINT DEFAULT 0 COMMENT '删除标记',
   `create_by` VARCHAR(32) DEFAULT NULL COMMENT '创建人ID',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -133,6 +134,7 @@ CREATE TABLE `tc_notify_channel_config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='渠道配置';
 ```
 
+
 钉钉渠道建议的 `config_json` 结构：
 
 ```json
@@ -143,19 +145,7 @@ CREATE TABLE `tc_notify_channel_config` (
 }
 ```
 
-也可通过 `address` + `scheme` + `path` 组合配置，例如：
-
-```json
-{
-  "scheme": "https",
-  "address": "gateway.cmind.zhejianglab.com",
-  "path": "/MCConsumerApplication/consumer/mc/send",
-  "agentId": "ZJLAB1045002",
-  "corpId": "ZJLAB1045"
-}
-```
-
-地址会自动拼接默认路径 `/MCConsumerApplication/consumer/mc/send`，如需自定义可以通过 `path` 覆盖。
+`baseUrl` 需要提供完整的发送地址；当前实现不再支持拆分配置（如 `scheme`/`address`/`path`），若三方地址调整请直接更新该字段。
 
 ## 3. 触发点与入库（Outbox）
 
@@ -197,103 +187,106 @@ CREATE TABLE `tc_notify_channel_config` (
 ● 受众：该节点当前办理人（以 `tc_task_work_item` 的待办记录定位）。
 ● 去重：dedup\_key = '5\_'||nodeInstId||'\_'||channel。
 ● biz\_id=node\_inst\_id，next\_run\_time=started\_at + max\_duration（若 started\_at 为空则按入库时间计算）。
-● 重复提醒：payload 中若存在 `timeoutRemind`（分钟），分发器成功推送后会检查节点仍为办理中状态（`tc_task_node_inst.status=1`），继续将同一 Job 的 `next_run_time` 顺延 `timeoutRemind` 分钟，直至节点完成或取消。
+● 重复提醒：payload 中若存在 `timeoutRemind`（分钟），分发器成功推送后会检查节点仍为办理中状态（`tc_task_node_inst.status=1`），继续将同一 Job 的 `next_run_time` 顺延 `timeoutRemind` 分钟，直至节点完成或取消；分发前还会通过 `enrichTimeoutPayload` 计算“已超时分钟数”，将 payload 中的 `maxDuration` 覆写为实际超时时长，并追加 `overtime` 字段供模板引用。
 
 ## 4. 核心组件与接口
 
-### 4.1 Facade（应用门面）
-
-```java
-public interface NotifyFacade {
-  long onTaskCreated(long taskId, List<Integer> channels, String operator);
-  long onNodeDone(long taskId, long nodeInstId, List<Integer> channels, String operator);
-  long onTaskFinished(long taskId, List<Integer> channels, String operator);
-  long onTaskAbnormal(long taskId, String reason, List<Integer> channels, String operator);
-  // 进站提醒与超时提醒由调度器触发，Facade 暴露可选手动触发：
-  List<Long> planOrbitReminds(long taskId, List<Integer> channels, String operator);
-  List<Long> enqueueNodeTimeout(long nodeInstId, List<Integer> channels, String operator);
-}
-```
-
-### 4.2 入库服务（Service）
+### 4.1 NotifyService（通知入库服务）
 
 ```java
 public interface NotifyService {
-  long enqueue(byte bizType, long bizId, byte channel,
-               JSONObject payload, List<String> userIds,
-               String dedupKey, LocalDateTime nextRunTime,
-               String operator);
+    long enqueue(byte bizType, long bizId, byte channel,
+                 JSONObject payload, List<String> userIds,
+                 String dedupKey, LocalDateTime nextRunTime,
+                 String operator);
+
+    void updateStatus(byte bizType, Collection<Long> bizIds,
+                      byte status, Collection<Byte> expectedStatuses,
+                      String operator);
+
+    void deleteByBiz(byte bizType, Collection<Long> bizIds, String operator);
 }
-行为：
-1. 检查 dedup_key 是否存在 → 存在直接返回对应 jobId（幂等）。
-2. 插入 tc_notify_job；批量插入 tc_notify_recipient（对 userIds 去重）。
 ```
 
-### 4.3 收件人解析（RecipientResolver）
+- `enqueue` 先按 `dedup_key` 查重（为空则跳过），命中直接返回已存在的 Job ID；否则写入 `tc_notify_job` 并为去重后的收件人批量插入 `tc_notify_recipient`。
+- `updateStatus` / `deleteByBiz` 供任务模块在任务取消、终止等场景清理或同步状态，内部通过 `selectIdsByBiz` 反查 Job 并批量更新、逻辑删除。
+
+### 4.2 NotifyRenderer 与模板实现
 
 ```java
-public interface NotifyRecipientResolver {
-  Set<String> resolveAllParticipants(long taskId, boolean includeCreator);
-  Set<String> resolveNextNodeHandlers(long taskId, long currentNodeInstId);
-  Set<String> resolveCurrentTodoUsers(long nodeInstId);
+public interface NotifyRenderer {
+    RenderedMsg render(byte bizType, byte channel, JSONObject payload);
 }
 ```
 
-### 4.4 模板渲染（TemplateRenderer）
+当前提供 `TemplateNotifyRenderer` 实现：按 `biz_type` + `channel` 读取 `tc_notify_template`，用 payload 中的键值做 `${key}` 占位符替换。
+
+### 4.3 RenderedMsg 结构
 
 ```java
-public interface TemplateRenderer {
-  RenderedMsg render(byte bizType, byte channel, JSONObject payload);
-  class RenderedMsg { public String title; public String content; }
+public class RenderedMsg {
+    private final String title;
+    private final String content;
+    private final String externalTemplateId;
 }
 ```
 
-### 4.5 渠道驱动（ChannelDriver SPI）
+`externalTemplateId` 会透传到渠道驱动，用于钉钉等三方模板消息。
+
+### 4.4 渠道驱动（NotifyDriver SPI）
 
 ```java
-public interface ChannelDriver {
-  byte channelCode(); // 0=OA,1=钉钉
-  SendResult send(String userId, String title, String content, JSONObject payload);
-  class SendResult { public boolean ok; public String error; }
+public interface NotifyDriver {
+    byte channel();
+
+    SendResult send(String userId, RenderedMsg message, JSONObject payload);
+
+    default Map<Long, SendResult> sendBatch(List<NotifyRecipient> recipients, RenderedMsg message, JSONObject payload) {
+        // 默认逐个调用 send
+    }
 }
 ```
 
-提供 DingTalkRobotDriver 与 OAHttpDriver 两个实现，配置从 tc\_notify\_channel\_config 读取。
+驱动按照 `channel()` 注册，由分发器在运行期注入。`sendBatch` 默认串行调用 `send`，也可被实现类重写以支持批量投递。
 
-● DingTalkRobotDriver：
-  - 读取 `tc_notify_channel_config.config_json` 获取 `baseUrl/agentId/corpId`，支持按上文示例配置测试或正式地址。
-  - 使用 `tc_notify_template.external_tpl_id` 作为三方模板 ID，模板正文由第三方渲染，仅在本地渲染标题。
-  - 收件人支持 `sys_user.username`（userid_list）、`sys_user.phone`（tel_list）与 `sys_user.email`（email_list）。若数据库缺失则回退使用传入的 `userId`。
-  - 标题超出 20 个字符时会自动截断，同时保留完整的日志输出。
+### 4.5 SendResult
 
-### 4.6 分发器（Dispatcher）
-
-● 单机或集群部署，支持 FOR UPDATE SKIP LOCKED 抢占。
-伪代码：
-
-```sql
--- 拉取待执行任务
-SELECT * FROM tc_notify_job
-WHERE status=0 AND next_run_time <= NOW() AND del_flag=0
-ORDER BY next_run_time ASC
-LIMIT 200 FOR UPDATE SKIP LOCKED;
+```java
+public class SendResult {
+    private final boolean ok;
+    private final String error;
+    private final String externalMsgId;
+    public static SendResult success();
+    public static SendResult success(String externalMsgId);
+    public static SendResult failure(String error);
+}
 ```
 
-Java 流程：
+`externalMsgId` 会写回 `tc_notify_recipient.external_msgid`，便于后续对账或补偿。
 
-1. 置发送中（可选）。
-2. 加载模板并渲染标题/正文；查询 tc\_notify\_recipient 批量发送。
-3. 全部成功 → status=1。若 biz\_type=NODE\_TIMEOUT 且 payload 中包含 timeoutRemind，则在标记成功前调用调度逻辑检查节点仍在办理中：
-   ● 若仍在办理中 → job `next_run_time` = now + timeoutRemind，保持 status=0；
-   ● 否则 → 直接标记成功。
-   部分失败 → status=2，retry\_count++，回填 next\_run\_time = now + backoff(retry\_count)；超过上限 → 维持失败并记录 last\_error。
+### 4.6 NotifyDispatcher（分发器）
 
-### 4.7 规划器/调度器（Scheduler）
+- `lockDueJobs(limit)` 使用 `FOR UPDATE SKIP LOCKED` 拉取待执行的 Job，默认每 3 秒调度一次。
+- 对每个 Job：解析 payload → `NotifyRenderer` 渲染 → 查询收件人明细 → 按渠道获取 `NotifyDriver` 并调用 `sendBatch`。
+- 收到的 `SendResult` 会逐条写入收件人状态及 `external_msgid`。全部成功则尝试 `scheduleNextTimeoutReminder`；若未触发重复提醒则调用 `markSuccess`。
+- 失败时根据 `retryCount` 计算下一次执行时间，回退序列为 1,3,5,10,30,60,180（分钟）。
+- `scheduleNextTimeoutReminder` 会在节点仍为办理中的情况下重置 `next_run_time` 并清零 `retry_count`，从而实现持续提醒。
 
-● 进站提醒：由任务管理服务（`scheduleOrbitReminders`）在任务创建或轨道计划调整时解析 tc\_task.orbit\_plans，为每个圈次生成 T-60/T-45/T-30/T-15/T-0 的 tc\_notify\_job（若不存在 dedup\_key）。
-● 节点超时：同一服务在节点激活时调用 `scheduleNodeTimeout` 写入初始提醒 Job，并在分发器中根据 timeoutRemind 自动顺延，取代额外的扫描器。
-● NotifyDispatcher：消费待发任务并推送，同时负责 NodeTimeout 的重复提醒调度。
+### 4.7 DingTalkRobotDriver
 
+- 启动时加载并缓存最新一条启用的 `tc_notify_channel_config`，要求 `config_json` 至少包含 `baseUrl`、`agentId`、`corpId`。
+- 仅支持使用 `sys_user.username` 作为钉钉 userid，若未配置则返回失败；不再拼装电话/邮箱。
+- 自动将标题截断至 20 个字符并记录 warn 日志。
+- `sendBatch` 会按业务用户 ID 去重并合并为一次三方调用，成功后把三方返回的 `msgid` 写入 `externalMsgId`。
+- 请求体中的 `template_params` 直接由 payload 填充，并透传 `RenderedMsg.externalTemplateId` 作为三方模板 ID。
+
+### 4.8 OAHttpDriver
+
+当前实现仍为占位符，直接返回成功，后续接入 OA 平台时可在此封装 HTTP 调用。
+
+### 4.9 NotifyProperties（平台链接）
+
+`NotifyProperties.platformUrl` 可注入到 payload 中，模板可通过 `${platformUrl}` 渲染跳转链接。
 ## 5. 模板与 payload 规范
 
 ### 5.1 模板示例（可后台维护）
@@ -320,7 +313,7 @@ Java 流程：
 
 ● NODE\_TIMEOUT / 钉钉：
 ○ Title：【\${taskName}】节点超时
-○ Content：【星地协同平台】您好，您参与的任务\${taskName}节点\${nodeName}已经超时\${maxDuration}分钟，请尽快登录系统进行处理，感谢支持！
+○ Content：【星地协同平台】您好，您参与的任务\${taskName}节点\${nodeName}已经超时\${overtime}分钟（payload 同时保留原始 \${maxDuration} 可按需展示），请尽快登录系统进行处理，感谢支持！
 
 ### 5.2 示例 payload（由业务侧封装）
 
@@ -337,13 +330,15 @@ Java 流程：
   "orbitNo": 9,
   "inTime": "2025-08-02 14:00",
   "remainMin": 45,
+  "platformUrl": "https://dspp.example.com/tasks/1001",
   "finishTime": "2025-08-02 20:30",
   "reason": "B节点决策为不执行",
   "nodeInstId": 8882,
   "nodeName": "资源确认",
-  "maxDuration": 60
+  "maxDuration": 60,
+  "timeoutRemind": 30
 }
-```
+分发器在发送节点超时通知前会根据节点办理时长追加 `overtime` 字段，并将 `maxDuration` 覆写为实时超时时长。
 
 ### 5.3 钉钉 external_tpl_id 配置
 
@@ -362,59 +357,95 @@ Java 流程：
 
 ## 6. 去重、重试与限流
 
-● 去重（dedup\_key）：同一业务事件在同一渠道仅生成一次 Job。即使上游重复调用，也只返回已存在的 jobId。
-● 重试：失败后指数退避（如 1m, 5m, 30m, 1h, 3h），上限 max\_retries=5。
+● 去重（dedup\_key）：同一业务事件在同一渠道仅生成一次 Job。若未传 `dedup_key` 则总是新建；传入重复键会直接返回已有 jobId。
+● 重试：失败后按 1,3,5,10,30,60,180（分钟）回退；节点仍在办理且命中 `timeoutRemind` 时会重置 `retry_count` 并重新排期。
 ● 限流：渠道驱动内部实现（例如钉钉机器人每分钟 N 条）；分发器按渠道分桶发送（可选）。
 ● 取消：当任务被取消或异常结束，如需停止未来计划的提醒，将对应 Job status=3（取消）或 status=4（异常结束），收件人明细状态与之对应。
 
 ## 7. 与任务管理的对接点（关键调用）
 
-● TaskService.createTask() → NotifyFacade.onTaskCreated(taskId, channels, operator)
-● TaskService.submitAction() 节点完成后 → NotifyFacade.onNodeDone(taskId, nodeInstId, channels, operator)
-● 任务状态流转 → onTaskFinished / onTaskAbnormal
-● 调度器：OrbitRemindPlanner、NodeTimeoutScanner、NotifyDispatcher
+● `TcTaskManagerServiceImpl.createTask`：写入 TASK_CREATED Job，并调用 `scheduleOrbitReminders` 计划进站提醒。
+● `TcTaskManagerServiceImpl.submitTaskAction`：节点完成时推送 NODE_DONE，任务完成/异常时分别推送 TASK_FINISHED、TASK_ABNORMAL。
+● `TcTaskManagerServiceImpl.scheduleNodeTimeout`：节点激活时根据 `maxDuration` 入库 NODE_TIMEOUT Job，并携带 `timeoutRemind`。
+● `TcTaskManagerServiceImpl.updateNotifyJobsForTask`：任务终止/取消时批量调用 `notifyService.updateStatus` 标记待发 Job 为已终止。
+● `TcTaskManagerServiceImpl.cancelOrbitReminders`：根据任务 ID 调用 `notifyService.deleteByBiz` 清理尚未发送的进站提醒。
+● `NotifyDispatcher`：常驻调度器，按固定频率扫描 Job 并委派渠道驱动发送。
 
 ## 8. 代码骨架（示例）
 
 ```java
 @Service
 public class NotifyServiceImpl implements NotifyService {
-  @Transactional
-  public long enqueue(byte bizType, long bizId, byte channel,
-                      JSONObject payload, List<String> userIds,
-                      String dedupKey, LocalDateTime nextRunTime,
-                      String operator) {
-    Long jobId = notifyJobMapper.selectIdByDedupKey(dedupKey);
-    if (jobId != null) return jobId;
+    @Autowired
+    private NotifyJobMapper notifyJobMapper;
+    @Autowired
+    private NotifyRecipientMapper notifyRecipientMapper;
 
-    jobId = notifyJobMapper.insertJob(bizType, bizId, channel, payload, dedupKey, nextRunTime, operator);
-    List<String> distinctUsers = userIds.stream().distinct().toList();
-    notifyRecipientMapper.batchInsert(jobId, distinctUsers, operator);
-    return jobId;
-  }
+    @Override
+    @Transactional
+    public long enqueue(byte bizType, long bizId, byte channel,
+                        JSONObject payload, List<String> userIds,
+                        String dedupKey, LocalDateTime nextRunTime,
+                        String operator) {
+        Long jobId = null;
+        if (dedupKey != null && !dedupKey.isEmpty()) {
+            jobId = notifyJobMapper.selectIdByDedupKey(dedupKey);
+        }
+        if (jobId != null) {
+            return jobId;
+        }
+        NotifyJob job = new NotifyJob();
+        job.setBizType(bizType);
+        job.setBizId(bizId);
+        job.setChannel(channel);
+        job.setPayload(payload.toJSONString());
+        job.setDedupKey(dedupKey);
+        job.setNextRunTime(nextRunTime);
+        job.setStatus(NotifyJobStatusEnum.WAITING.getCode());
+        job.setRetryCount(0);
+        job.initBase(true, operator);
+        notifyJobMapper.insert(job);
+        jobId = job.getId();
+        List<String> distinctUsers = userIds.stream().distinct().collect(Collectors.toList());
+        notifyRecipientMapper.batchInsert(jobId, distinctUsers, operator);
+        return jobId;
+    }
 }
 
 @Component
 public class NotifyDispatcher {
-  @Scheduled(fixedDelay = 3000)
-  public void dispatch() {
-    List<Job> jobs = jobMapper.lockDueJobs(200); // SELECT ... FOR UPDATE SKIP LOCKED
-    for (Job j : jobs) {
-      RenderedMsg msg = renderer.render(j.bizType, j.channel, j.payload);
-      List<Recipient> rs = recMapper.findByJobId(j.id);
-      boolean allOk = true;
-      for (Recipient r : rs) {
-        SendResult sr = driver(j.channel).send(r.userId, msg.title, msg.content, j.payload);
-        recMapper.updateStatus(r.id, sr.ok, sr.error);
-        if (!sr.ok) allOk = false;
-      }
-      if (allOk) jobMapper.markSuccess(j.id);
-      else jobMapper.scheduleRetry(j.id, calcNext(j.retryCount+1), j.retryCount+1);
+    @Scheduled(fixedDelay = 3000)
+    public void dispatch() {
+        List<NotifyJob> jobs = jobMapper.lockDueJobs(200);
+        for (NotifyJob job : jobs) {
+            JSONObject payload = JSONObject.parseObject(job.getPayload());
+            enrichTimeoutPayload(job, payload);
+            RenderedMsg msg = renderer.render(job.getBizType(), job.getChannel(), payload);
+            List<NotifyRecipient> recipients = recMapper.findByJobId(job.getId());
+            NotifyDriver driver = driverMap.get(job.getChannel());
+            Map<Long, SendResult> results = driver.sendBatch(recipients, msg, payload);
+            boolean allOk = true;
+            for (NotifyRecipient recipient : recipients) {
+                SendResult sr = results.get(recipient.getId());
+                boolean ok = sr != null && sr.isOk();
+                recMapper.updateStatus(recipient.getId(), ok, sr == null ? "send result missing" : sr.getError(),
+                        sr == null ? null : sr.getExternalMsgId());
+                if (!ok) {
+                    allOk = false;
+                }
+            }
+            if (allOk) {
+                if (!scheduleNextTimeoutReminder(job, payload)) {
+                    jobMapper.markSuccess(job.getId());
+                }
+            } else {
+                int nextRetry = job.getRetryCount() + 1;
+                jobMapper.scheduleRetry(job.getId(), calcNext(nextRetry), nextRetry);
+            }
+        }
     }
-  }
 }
 ```
-
 ## 9. 收件人解析策略
 
 ● 工作流全体：遍历该任务的 tc\_task\_node\_inst，汇总 handler\_role\_ids → sys\_user\_role 得到用户集合；可追加发起人 tc\_task.create\_by。
