@@ -168,7 +168,7 @@ public class TcNodeServiceImpl implements TcNodeService {
     @Override
     public PageResult<NodeInfoDto> listNodes(NodeQueryDto queryDto) {
         // 1. 构建分页与查询条件
-        Page<NodeInfo> page = new Page<>(queryDto.getPage(), queryDto.getPageSize());
+        Page<NodeInfo> page = new Page<>(queryDto.getPageNo(), queryDto.getPageSize());
         LambdaQueryWrapper<NodeInfo> wrapper = Wrappers.<NodeInfo>lambdaQuery()
                 .eq(NodeInfo::getDelFlag, 0);
         if (queryDto.getStatus() != null) {
@@ -183,7 +183,7 @@ public class TcNodeServiceImpl implements TcNodeService {
                             .eq(NodeRoleRel::getRoleId, queryDto.getRoleId()))
                     .stream().map(NodeRoleRel::getNodeId).collect(Collectors.toList());
             if (nodeIds.isEmpty()) {
-                return new PageResult<>(queryDto.getPage(), queryDto.getPageSize(), 0, Collections.emptyList());
+                return new PageResult<>(queryDto.getPageNo(), queryDto.getPageSize(), 0, Collections.emptyList());
             }
             wrapper.in(NodeInfo::getId, nodeIds);
         }

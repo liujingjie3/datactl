@@ -320,13 +320,13 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
 
         // 3. 处理分页参数
-        if (query.getPage() == null || query.getPage() < 1) {
-            query.setPage(1);
+        if (query.getPageNo() == null || query.getPageNo() < 1) {
+            query.setPageNo(1);
         }
         if (query.getPageSize() == null || query.getPageSize() < 1) {
             query.setPageSize(10);
         }
-        query.setOffset((query.getPage() - 1) * query.getPageSize());
+        query.setOffset((query.getPageNo() - 1) * query.getPageSize());
 
         // 4. 查询任务列表
         List<TaskManagerListItemVO> vos = tcTaskManagerMapper.selectTaskList(query);
@@ -434,7 +434,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         // 5. 返回分页结果
         long total = tcTaskManagerMapper.countTaskList(query);
-        return new PageResult<>(query.getPage(), query.getPageSize(), (int) total, vos);
+        return new PageResult<>(query.getPageNo(), query.getPageSize(), (int) total, vos);
     }
 
     /**
