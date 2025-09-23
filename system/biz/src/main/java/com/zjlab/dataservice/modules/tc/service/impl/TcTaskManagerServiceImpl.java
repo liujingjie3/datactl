@@ -12,6 +12,7 @@ import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeActionRecordMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskManagerMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskNodeInstMapper;
 import com.zjlab.dataservice.modules.tc.mapper.TcTaskWorkItemMapper;
+import com.zjlab.dataservice.modules.notify.config.NotifyProperties;
 import com.zjlab.dataservice.modules.notify.model.enums.BizTypeEnum;
 import com.zjlab.dataservice.modules.notify.model.enums.ChannelEnum;
 import com.zjlab.dataservice.modules.notify.model.enums.NotifyJobStatusEnum;
@@ -123,6 +124,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
 
     @Autowired
     private MinioFileServiceImpl minioFileService;
+
+    @Autowired
+    private NotifyProperties notifyProperties;
 
     private static final String BUCKET_NAME = "dspp";
     private static final String TASK_FOLDER = "/TJEOS/WORKDIR/FILE/task";
@@ -270,6 +274,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             payload.put("taskName", taskName);
             payload.put("creatorName", creatorName);
             payload.put("createTime", createTimeStr);
+            putPlatformUrl(payload);
             int channelCode = ChannelEnum.DINGTALK.getCode();
             String dedupKey = BizTypeEnum.TASK_CREATED.getCode() + "_" + taskId + "_" + channelCode;
             notifyService.enqueue((byte) BizTypeEnum.TASK_CREATED.getCode(), taskId,
@@ -823,6 +828,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     if (taskContext != null) {
                         payload.put("taskName", taskContext.getTaskName());
                     }
+                    putPlatformUrl(payload);
                     int channelCode = ChannelEnum.DINGTALK.getCode();
                     String dedupKey = BizTypeEnum.TASK_ABNORMAL.getCode() + "_" + dto.getTaskId() + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.TASK_ABNORMAL.getCode(), dto.getTaskId(),
@@ -864,6 +870,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                             if (StringUtils.isNotBlank(nextNodeName)) {
                                 payload.put("nextNodeName", nextNodeName);
                             }
+                            putPlatformUrl(payload);
                             int channelCode = ChannelEnum.DINGTALK.getCode();
                             String dedupKey = BizTypeEnum.NODE_DONE.getCode() + "_" + dto.getTaskId() + "_" +
                                     nextId + "_" + channelCode;
@@ -888,6 +895,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     if (taskContext != null) {
                         payload.put("taskName", taskContext.getTaskName());
                     }
+                    putPlatformUrl(payload);
                     int channelCode = ChannelEnum.DINGTALK.getCode();
                     String dedupKey = BizTypeEnum.TASK_FINISHED.getCode() + "_" + dto.getTaskId() + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.TASK_FINISHED.getCode(), dto.getTaskId(),
@@ -1484,6 +1492,16 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         notifyService.deleteByBiz((byte) BizTypeEnum.ORBIT_REMIND.getCode(), bizIds, operator);
     }
 
+    private void putPlatformUrl(JSONObject payload) {
+        if (payload == null) {
+            return;
+        }
+        String platformUrl = notifyProperties != null ? notifyProperties.getPlatformUrl() : null;
+        if (StringUtils.isNotBlank(platformUrl)) {
+            payload.put("platformUrl", platformUrl);
+        }
+    }
+
     private void scheduleOrbitReminders(Long taskId, String taskName, List<OrbitPlanExportVO> orbitPlans,
                                         Collection<String> recipients, String operator) {
         if (taskId == null || orbitPlans == null || orbitPlans.isEmpty()
@@ -1506,6 +1524,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                     JSONObject payload = new JSONObject();
                     payload.put("taskName", taskName);
                     payload.put("remainMin", m);
+                    putPlatformUrl(payload);
                     String dedup = BizTypeEnum.ORBIT_REMIND.getCode() + "_" + taskId + "_" +
                             plan.getOrbitNo() + "_" + m + "_" + channelCode;
                     notifyService.enqueue((byte) BizTypeEnum.ORBIT_REMIND.getCode(), taskId,
@@ -1583,6 +1602,7 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
                 payload.put("timeoutRemind", context.getTimeoutRemind());
             }
         }
+        putPlatformUrl(payload);
         int channelCode = ChannelEnum.DINGTALK.getCode();
         String dedupKey = BizTypeEnum.NODE_TIMEOUT.getCode() + "_" + nodeInstId + "_" + channelCode;
         notifyService.enqueue((byte) BizTypeEnum.NODE_TIMEOUT.getCode(), nodeInstId,
