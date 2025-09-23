@@ -84,7 +84,7 @@ public class NotifyDispatcher {
     }
 
     private LocalDateTime calcNext(int retryCount) {
-        int[] minutes = new int[]{1, 3, 5, 10, 30, 60, 180};
+        int[] minutes = new int[]{1, 5, 10, 30, 60};
         int idx = Math.min(retryCount - 1, minutes.length - 1);
         return LocalDateTime.now().plusMinutes(minutes[idx]);
     }
