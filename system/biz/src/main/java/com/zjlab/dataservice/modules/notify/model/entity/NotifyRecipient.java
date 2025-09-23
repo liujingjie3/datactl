@@ -27,5 +27,8 @@ public class NotifyRecipient extends BasePo {
 
     @ApiModelProperty("失败原因")
     private String lastError;
+
+    @ApiModelProperty("第三方消息ID")
+    private String externalMsgId;
 }
 

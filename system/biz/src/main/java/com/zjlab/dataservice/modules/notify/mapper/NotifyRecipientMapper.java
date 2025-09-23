@@ -23,7 +23,8 @@ public interface NotifyRecipientMapper extends BaseMapper<NotifyRecipient> {
 
     int updateStatus(@Param("id") long id,
                      @Param("success") boolean success,
-                     @Param("error") String error);
+                     @Param("error") String error,
+                     @Param("externalMsgId") String externalMsgId);
 
     int updateStatusByJobIds(@Param("jobIds") Collection<Long> jobIds,
                              @Param("status") byte status,

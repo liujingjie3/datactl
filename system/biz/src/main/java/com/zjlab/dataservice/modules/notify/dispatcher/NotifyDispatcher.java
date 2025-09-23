@@ -51,11 +51,15 @@ public class NotifyDispatcher {
             RenderedMsg msg = renderer.render(j.getBizType(), j.getChannel(), payload);
             List<NotifyRecipient> rs = recMapper.findByJobId(j.getId());
             boolean allOk = true;
+            NotifyDriver driver = driverMap.get(j.getChannel());
+            Map<Long, SendResult> results = driver.sendBatch(rs, msg, payload);
             for (NotifyRecipient r : rs) {
-                NotifyDriver driver = driverMap.get(j.getChannel());
-                SendResult sr = driver.send(r.getUserId(), msg, payload);
-                recMapper.updateStatus(r.getId(), sr.isOk(), sr.getError());
-                if (!sr.isOk()) {
+                SendResult sr = results.get(r.getId());
+                boolean ok = sr != null && sr.isOk();
+                String error = sr == null ? "send result missing" : sr.getError();
+                String externalMsgId = sr == null ? null : sr.getExternalMsgId();
+                recMapper.updateStatus(r.getId(), ok, error, externalMsgId);
+                if (!ok) {
                     allOk = false;
                 }
             }

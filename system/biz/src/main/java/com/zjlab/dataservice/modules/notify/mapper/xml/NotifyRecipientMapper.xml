@@ -3,17 +3,17 @@
 <mapper namespace="com.zjlab.dataservice.modules.notify.mapper.NotifyRecipientMapper">
 
     <insert id="batchInsert">
-        INSERT INTO tc_notify_recipient (job_id, user_id, status, del_flag, create_by, create_time, update_by, update_time)
+        INSERT INTO tc_notify_recipient (job_id, user_id, status, external_msgid, del_flag, create_by, create_time, update_by, update_time)
         VALUES
         <foreach collection="userIds" item="uid" separator=",">
-            (#{jobId}, #{uid}, 0, 0, #{operator}, NOW(), #{operator}, NOW())
+            (#{jobId}, #{uid}, 0, NULL, 0, #{operator}, NOW(), #{operator}, NOW())
         </foreach>
     </insert>
 
 
     <select id="findByJobId" resultType="com.zjlab.dataservice.modules.notify.model.entity.NotifyRecipient">
         SELECT id, del_flag, create_by, create_time, update_by, update_time,
-               job_id, user_id, status, last_error
+               job_id, user_id, status, last_error, external_msgid
         FROM tc_notify_recipient
         WHERE job_id = #{jobId}
     </select>
@@ -26,6 +26,7 @@
                 <otherwise>2</otherwise>
             </choose>,
             last_error = #{error},
+            external_msgid = #{externalMsgId},
             update_time = NOW()
         WHERE id = #{id}
     </update>
