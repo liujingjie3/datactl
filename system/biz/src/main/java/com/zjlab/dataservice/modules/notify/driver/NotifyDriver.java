@@ -15,11 +15,6 @@ public interface NotifyDriver {
     /** 渠道 */
     byte channel();
 
-    /**
-     * 发送消息
-     */
-    SendResult send(String userId, RenderedMsg message, JSONObject payload);
-
     Map<Long, SendResult> sendBatch(List<NotifyRecipient> recipients, RenderedMsg message, JSONObject payload);
 }
 
