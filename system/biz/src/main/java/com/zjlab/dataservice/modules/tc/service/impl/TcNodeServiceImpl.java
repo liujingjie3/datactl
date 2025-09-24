@@ -170,7 +170,8 @@ public class TcNodeServiceImpl implements TcNodeService {
         // 1. 构建分页与查询条件
         Page<NodeInfo> page = new Page<>(queryDto.getPageNo(), queryDto.getPageSize());
         LambdaQueryWrapper<NodeInfo> wrapper = Wrappers.<NodeInfo>lambdaQuery()
-                .eq(NodeInfo::getDelFlag, 0);
+                .eq(NodeInfo::getDelFlag, 0)
+                .orderByDesc(NodeInfo::getCreateTime);
         if (queryDto.getStatus() != null) {
             wrapper.eq(NodeInfo::getStatus, queryDto.getStatus());
         }
