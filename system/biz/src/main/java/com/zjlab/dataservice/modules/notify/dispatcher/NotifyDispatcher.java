@@ -58,10 +58,11 @@ public class NotifyDispatcher {
             for (NotifyRecipient r : rs) {
                 SendResult sr = results.get(r.getId());
                 boolean ok = sr != null && sr.isOk();
+                boolean retryableFailure = sr == null || (!ok && sr.isRetryable());
                 String error = sr == null ? "send result missing" : sr.getError();
                 String externalMsgId = sr == null ? null : sr.getExternalMsgId();
                 recMapper.updateStatus(r.getId(), ok, error, externalMsgId);
-                if (!ok) {
+                if (retryableFailure) {
                     allOk = false;
                 }
             }
