@@ -28,6 +28,8 @@ import java.util.Map;
 @Component
 public class NotifyDispatcher {
 
+    private static final int MAX_RETRY_COUNT = 4;
+
     @Autowired
     private NotifyJobMapper jobMapper;
     @Autowired
@@ -69,7 +71,11 @@ public class NotifyDispatcher {
                 }
             } else {
                 int nextRetry = j.getRetryCount() + 1;
-                jobMapper.scheduleRetry(j.getId(), calcNext(nextRetry), nextRetry);
+                if (nextRetry > MAX_RETRY_COUNT) {
+                    jobMapper.markFailure(j.getId());
+                } else {
+                    jobMapper.scheduleRetry(j.getId(), calcNext(nextRetry), nextRetry);
+                }
             }
         }
     }
