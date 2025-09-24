@@ -93,40 +93,25 @@ public class DingTalkRobotDriver implements NotifyDriver {
             return results;
         }
 
-        Map<String, List<NotifyRecipient>> recipientsByUser = new LinkedHashMap<>();
-        for (NotifyRecipient recipient : recipients) {
-            if (recipient == null) {
-                continue;
-            }
-            if (StringUtils.isBlank(recipient.getUserId())) {
-                String error = "dingTalk recipient userId missing";
-                log.error(error);
-                if (recipient.getId() != null) {
-                    results.put(recipient.getId(), SendResult.permanentFailure(error));
-                }
-                continue;
-            }
-            recipientsByUser.computeIfAbsent(recipient.getUserId(), k -> new ArrayList<>()).add(recipient);
-        }
-
+        Map<String, List<NotifyRecipient>> recipientsByUser = groupRecipientsByUser(recipients, results);
         if (recipientsByUser.isEmpty()) {
             return results;
         }
 
-        Map<String, Recipient> recipientMap = resolveRecipients(recipientsByUser.keySet());
+        Map<String, List<String>> recipientMap = resolveContacts(recipientsByUser.keySet());
         List<String> resolvedUserIds = new ArrayList<>();
         Set<String> dingtalkUserIds = new LinkedHashSet<>();
         for (Map.Entry<String, List<NotifyRecipient>> entry : recipientsByUser.entrySet()) {
             String userId = entry.getKey();
-            Recipient contact = recipientMap.get(userId);
-            if (contact == null || contact.isEmpty()) {
+            List<String> contactIds = recipientMap.get(userId);
+            if (contactIds == null || contactIds.isEmpty()) {
                 String error = "dingTalk recipient contact not found";
                 log.error("{} userId={}", error, userId);
                 fillFailure(results, entry.getValue(), SendResult.permanentFailure(error));
                 continue;
             }
             resolvedUserIds.add(userId);
-            dingtalkUserIds.addAll(contact.getUseridList());
+            dingtalkUserIds.addAll(contactIds);
         }
 
         if (dingtalkUserIds.isEmpty()) {
@@ -202,15 +187,33 @@ public class DingTalkRobotDriver implements NotifyDriver {
         return DingTalkConfig.fromJson(config.getConfigJson());
     }
 
-    private Recipient resolveRecipient(String userId) {
-        Map<String, Recipient> map = resolveRecipients(Collections.singleton(userId));
-        return map.getOrDefault(userId, new Recipient());
+    private Map<String, List<NotifyRecipient>> groupRecipientsByUser(List<NotifyRecipient> recipients,
+                                                                    Map<Long, SendResult> results) {
+        Map<String, List<NotifyRecipient>> grouped = new LinkedHashMap<>();
+        if (recipients == null) {
+            return grouped;
+        }
+        for (NotifyRecipient recipient : recipients) {
+            if (recipient == null) {
+                continue;
+            }
+            if (StringUtils.isBlank(recipient.getUserId())) {
+                String error = "dingTalk recipient userId missing";
+                log.error(error);
+                if (recipient.getId() != null) {
+                    results.put(recipient.getId(), SendResult.permanentFailure(error));
+                }
+                continue;
+            }
+            grouped.computeIfAbsent(recipient.getUserId(), k -> new ArrayList<>()).add(recipient);
+        }
+        return grouped;
     }
 
-    private Map<String, Recipient> resolveRecipients(Iterable<String> userIds) {
-        Map<String, Recipient> recipients = new HashMap<>();
+    private Map<String, List<String>> resolveContacts(Iterable<String> userIds) {
+        Map<String, List<String>> contacts = new HashMap<>();
         if (userIds == null) {
-            return recipients;
+            return contacts;
         }
         List<String> ids = new ArrayList<>();
         for (String uid : userIds) {
@@ -219,7 +222,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
             }
         }
         if (ids.isEmpty()) {
-            return recipients;
+            return contacts;
         }
         List<SysUser> users = sysUserMapper.selectBatchIds(ids);
         Map<String, SysUser> userMap = new HashMap<>();
@@ -233,13 +236,13 @@ public class DingTalkRobotDriver implements NotifyDriver {
             if (user == null) {
                 continue;
             }
-            Recipient recipient = new Recipient();
+            List<String> userIdList = new ArrayList<>();
             if (StringUtils.isNotBlank(user.getUsername())) {
-                recipient.getUseridList().add(user.getUsername());
+                userIdList.add(user.getUsername());
             }
-            recipients.put(userId, recipient);
+            contacts.put(userId, userIdList);
         }
-        return recipients;
+        return contacts;
     }
 
     private void fillFailure(Map<Long, SendResult> container, List<NotifyRecipient> recipients, String error) {
@@ -363,18 +366,6 @@ public class DingTalkRobotDriver implements NotifyDriver {
                 return null;
             }
             return new DingTalkConfig(baseUrl, agentId, corpId);
-        }
-    }
-
-    private static class Recipient {
-        private final List<String> useridList = new ArrayList<>();
-
-        public List<String> getUseridList() {
-            return useridList;
-        }
-
-        public boolean isEmpty() {
-            return useridList.isEmpty();
         }
     }
 
