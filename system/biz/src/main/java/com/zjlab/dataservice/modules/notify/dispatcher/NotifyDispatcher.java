@@ -128,7 +128,6 @@ public class NotifyDispatcher {
             overtime = 0;
         }
         payload.put("overtime", overtime);
-        payload.put("maxDuration", overtime);
     }
 
     private LocalDateTime resolveDeadline(Long nodeInstId, Integer originalDuration) {
