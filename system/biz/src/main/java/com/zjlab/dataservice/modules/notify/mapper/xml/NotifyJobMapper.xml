@@ -29,6 +29,13 @@
         WHERE id = #{id}
     </update>
 
+    <update id="markFailure">
+        UPDATE tc_notify_job
+        SET status = 2,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
     <update id="scheduleRetry">
         UPDATE tc_notify_job
         SET next_run_time = #{nextRunTime},
