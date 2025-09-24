@@ -6,7 +6,6 @@ import com.zjlab.dataservice.modules.notify.render.RenderedMsg;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,24 +21,9 @@ public class OaHttpDriver implements NotifyDriver {
     }
 
     @Override
-    public SendResult send(String userId, RenderedMsg message, JSONObject payload) {
-        // todo 这里简化为直接成功返回,后续需要接入具体send逻辑
-        return SendResult.success();
-    }
-
-    @Override
     public Map<Long, SendResult> sendBatch(List<NotifyRecipient> recipients, RenderedMsg message, JSONObject payload) {
-        if (recipients == null || recipients.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<Long, SendResult> result = new HashMap<>(recipients.size());
-        for (NotifyRecipient recipient : recipients) {
-            if (recipient == null) {
-                continue;
-            }
-            result.put(recipient.getId(), send(recipient.getUserId(), message, payload));
-        }
-        return result;
+        // TODO 暂未接入 OA 通知发送，后续补充具体实现
+        return Collections.emptyMap();
     }
 }
 
