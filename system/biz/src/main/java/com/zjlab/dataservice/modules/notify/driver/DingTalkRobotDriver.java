@@ -98,20 +98,20 @@ public class DingTalkRobotDriver implements NotifyDriver {
             return results;
         }
 
-        Map<String, List<String>> recipientMap = resolveContacts(recipientsByUser.keySet());
+        Map<String, String> recipientMap = resolveContacts(recipientsByUser.keySet());
         List<String> resolvedUserIds = new ArrayList<>();
         Set<String> dingtalkUserIds = new LinkedHashSet<>();
         for (Map.Entry<String, List<NotifyRecipient>> entry : recipientsByUser.entrySet()) {
             String userId = entry.getKey();
-            List<String> contactIds = recipientMap.get(userId);
-            if (contactIds == null || contactIds.isEmpty()) {
+            String contactId = recipientMap.get(userId);
+            if (StringUtils.isBlank(contactId)) {
                 String error = "dingTalk recipient contact not found";
                 log.error("{} userId={}", error, userId);
                 fillFailure(results, entry.getValue(), SendResult.permanentFailure(error));
                 continue;
             }
             resolvedUserIds.add(userId);
-            dingtalkUserIds.addAll(contactIds);
+            dingtalkUserIds.add(contactId);
         }
 
         if (dingtalkUserIds.isEmpty()) {
@@ -210,8 +210,8 @@ public class DingTalkRobotDriver implements NotifyDriver {
         return grouped;
     }
 
-    private Map<String, List<String>> resolveContacts(Iterable<String> userIds) {
-        Map<String, List<String>> contacts = new HashMap<>();
+    private Map<String, String> resolveContacts(Iterable<String> userIds) {
+        Map<String, String> contacts = new HashMap<>();
         if (userIds == null) {
             return contacts;
         }
@@ -236,11 +236,9 @@ public class DingTalkRobotDriver implements NotifyDriver {
             if (user == null) {
                 continue;
             }
-            List<String> userIdList = new ArrayList<>();
             if (StringUtils.isNotBlank(user.getUsername())) {
-                userIdList.add(user.getUsername());
+                contacts.put(userId, user.getUsername());
             }
-            contacts.put(userId, userIdList);
         }
         return contacts;
     }
