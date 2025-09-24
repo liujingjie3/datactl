@@ -241,13 +241,11 @@ public interface NotifyDriver {
 
     SendResult send(String userId, RenderedMsg message, JSONObject payload);
 
-    default Map<Long, SendResult> sendBatch(List<NotifyRecipient> recipients, RenderedMsg message, JSONObject payload) {
-        // 默认逐个调用 send
-    }
+    Map<Long, SendResult> sendBatch(List<NotifyRecipient> recipients, RenderedMsg message, JSONObject payload);
 }
 ```
 
-驱动按照 `channel()` 注册，由分发器在运行期注入。`sendBatch` 默认串行调用 `send`，也可被实现类重写以支持批量投递。
+驱动按照 `channel()` 注册，由分发器在运行期注入。
 
 ### 4.5 SendResult
 
@@ -256,9 +254,12 @@ public class SendResult {
     private final boolean ok;
     private final String error;
     private final String externalMsgId;
+    private final boolean retryable;
     public static SendResult success();
     public static SendResult success(String externalMsgId);
     public static SendResult failure(String error);
+    public static SendResult failure(String error, String externalMsgId);
+    public static SendResult permanentFailure(String error);
 }
 ```
 
@@ -268,7 +269,7 @@ public class SendResult {
 
 - `lockDueJobs(limit)` 使用 `FOR UPDATE SKIP LOCKED` 拉取待执行的 Job，默认每 3 秒调度一次。
 - 对每个 Job：解析 payload → `NotifyRenderer` 渲染 → 查询收件人明细 → 按渠道获取 `NotifyDriver` 并调用 `sendBatch`。
-- 收到的 `SendResult` 会逐条写入收件人状态及 `external_msgid`。全部成功则尝试 `scheduleNextTimeoutReminder`；若未触发重复提醒则调用 `markSuccess`。
+- 收到的 `SendResult` 会逐条写入收件人状态及 `external_msgid`。失败结果若标记为 `retryable` 才会触发重试；全部成功或仅存在不可重试的失败则尝试 `scheduleNextTimeoutReminder`，若未触发重复提醒则调用 `markSuccess`。
 - 失败时根据 `retryCount` 计算下一次执行时间，回退序列为 1,3,5,10,30,60,180（分钟）。
 - `scheduleNextTimeoutReminder` 会在节点仍为办理中的情况下重置 `next_run_time` 并清零 `retry_count`，从而实现持续提醒。
 

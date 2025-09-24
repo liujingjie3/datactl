@@ -87,14 +87,14 @@ public class DingTalkRobotDriver implements NotifyDriver {
         if (StringUtils.isBlank(userId)) {
             String error = "dingTalk recipient userId missing";
             log.error(error);
-            return SendResult.failure(error);
+            return SendResult.permanentFailure(error);
         }
 
         Recipient recipient = resolveRecipient(userId);
         if (recipient == null || recipient.isEmpty()) {
             String error = "dingTalk recipient contact not found";
             log.error("{} userId={}", error, userId);
-            return SendResult.failure(error);
+            return SendResult.permanentFailure(error);
         }
 
         JSONObject requestBody = new JSONObject();
@@ -172,7 +172,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
                 String error = "dingTalk recipient userId missing";
                 log.error(error);
                 if (recipient.getId() != null) {
-                    results.put(recipient.getId(), SendResult.failure(error));
+                    results.put(recipient.getId(), SendResult.permanentFailure(error));
                 }
                 continue;
             }
@@ -192,7 +192,7 @@ public class DingTalkRobotDriver implements NotifyDriver {
             if (contact == null || contact.isEmpty()) {
                 String error = "dingTalk recipient contact not found";
                 log.error("{} userId={}", error, userId);
-                fillFailure(results, entry.getValue(), error);
+                fillFailure(results, entry.getValue(), SendResult.permanentFailure(error));
                 continue;
             }
             resolvedUserIds.add(userId);
@@ -313,10 +313,14 @@ public class DingTalkRobotDriver implements NotifyDriver {
     }
 
     private void fillFailure(Map<Long, SendResult> container, List<NotifyRecipient> recipients, String error) {
+        fillFailure(container, recipients, SendResult.failure(error));
+    }
+
+    private void fillFailure(Map<Long, SendResult> container, List<NotifyRecipient> recipients, SendResult result) {
         if (recipients == null || recipients.isEmpty()) {
             return;
         }
-        SendResult failure = SendResult.failure(error);
+        SendResult failure = result == null ? SendResult.failure("unknown error") : result;
         for (NotifyRecipient recipient : recipients) {
             if (recipient != null) {
                 if (recipient.getId() != null) {
