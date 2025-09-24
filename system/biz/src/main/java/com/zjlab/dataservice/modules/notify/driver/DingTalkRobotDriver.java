@@ -70,9 +70,9 @@ public class DingTalkRobotDriver implements NotifyDriver {
     public Map<Long, SendResult> sendBatch(List<NotifyRecipient> recipients, RenderedMsg message, JSONObject payload) {
         List<String> userIds = recipients == null ? Collections.emptyList()
                 : recipients.stream().filter(r -> r != null).map(NotifyRecipient::getUserId).collect(Collectors.toList());
-        log.info("DingTalkRobotDriver.sendBatch userIds={}, title={}, templateId={}, payload={}",
+        log.info("DingTalkRobotDriver.sendBatch userIds={}, title={}, templateId={}, content={}, payload={}",
                 userIds, message == null ? null : message.getTitle(),
-                message == null ? null : message.getExternalTemplateId(), payload);
+                message == null ? null : message.getExternalTemplateId(), message == null ? null : message.getContent(),payload);
 
         Map<Long, SendResult> results = new HashMap<>();
         if (recipients == null || recipients.isEmpty()) {
