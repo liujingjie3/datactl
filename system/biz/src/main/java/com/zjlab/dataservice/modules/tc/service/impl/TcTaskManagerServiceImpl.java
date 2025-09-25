@@ -1514,6 +1514,9 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             if (plan == null) {
                 continue;
             }
+            if (!Boolean.TRUE.equals(plan.getUsed())) {
+                continue;
+            }
             LocalDateTime inTime = parseOrbitPlanTime(plan.getInTime());
             if (inTime == null) {
                 continue;
