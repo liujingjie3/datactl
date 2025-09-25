@@ -67,7 +67,7 @@
         SELECT
         <include refid="selectFields"/>
         FROM (
-            SELECT t.*
+            SELECT DISTINCT t.id, t.create_time
             FROM tc_task t
             <if test="query.tab == 'todo' or query.tab == 'handled'">
                 JOIN tc_task_work_item wi ON wi.task_id = t.id
@@ -86,8 +86,10 @@
             </if>
             ORDER BY t.create_time DESC
             LIMIT #{query.offset}, #{query.pageSize}
-        ) t
+        ) task_page
+        JOIN tc_task t ON t.id = task_page.id
         LEFT JOIN tc_todo_template tt ON tt.template_id = t.template_id
+        ORDER BY t.create_time DESC
     </select>
 
     <select id="countTaskList" resultType="long">
