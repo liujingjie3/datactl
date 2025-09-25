@@ -21,26 +21,59 @@
         <result property="updateTime" column="update_time"/>
         <result property="filePath" column="file_path"/>
     </resultMap>
-    <select id="selectTodoTemplatePage" resultType="com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate">
-        SELECT
-        id,
-        code,
-        template_id,
-        template_type,
-        template_name,
-        flag,
-        remark,
-        template_attr AS attrs,
-        corp_id,
-        agent_id,
-        ext,
-        create_by,
-        create_time,
-        update_by,
-        update_time,
-        file_path
-        FROM
-        tc_todo_template
+<!--    <select id="selectTodoTemplatePage" resultType="com.zjlab.dataservice.modules.tc.model.entity.TodoTemplate">-->
+<!--        SELECT-->
+<!--        id,-->
+<!--        code,-->
+<!--        template_id,-->
+<!--        template_type,-->
+<!--        template_name,-->
+<!--        flag,-->
+<!--        remark,-->
+<!--        template_attr AS template_attr,-->
+<!--        corp_id,-->
+<!--        agent_id,-->
+<!--        ext,-->
+<!--        create_by,-->
+<!--        create_time,-->
+<!--        update_by,-->
+<!--        update_time,-->
+<!--        file_path-->
+<!--        FROM-->
+<!--        tc_todo_template-->
+<!--        WHERE-->
+<!--        del_flag = 0-->
+
+<!--        <if test="request.keyword != null and request.keyword != ''">-->
+<!--            AND (template_name LIKE CONCAT('%', #{request.keyword}, '%')-->
+<!--            OR remark LIKE CONCAT('%', #{request.keyword}, '%'))-->
+<!--        </if>-->
+
+<!--        <if test="request.flag != null">-->
+<!--            AND flag = #{request.flag}-->
+<!--        </if>-->
+
+<!--        <choose>-->
+<!--            <when test="request.orderByField != null and request.orderByField != ''">-->
+<!--                ORDER BY-->
+<!--                ${request.orderByField}-->
+<!--                <choose>-->
+<!--                    <when test="request.orderByType != null and request.orderByType.toLowerCase() == 'asc'">-->
+<!--                        ASC-->
+<!--                    </when>-->
+<!--                    <otherwise>-->
+<!--                        DESC-->
+<!--                    </otherwise>-->
+<!--                </choose>-->
+<!--            </when>-->
+<!--            <otherwise>-->
+<!--                ORDER BY update_time DESC-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </select>-->
+
+    <select id="selectTodoTemplatePage" resultMap="TodoTemplateResultMap">
+        SELECT * FROM tc_todo_template
         WHERE
         del_flag = 0
 

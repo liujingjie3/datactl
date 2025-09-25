@@ -12,7 +12,7 @@ public interface TodoTemplateMapper extends BaseMapper<TodoTemplate> {
      *
      * @return
      */
-    IPage<TodoTemplate> selectTodoTemplatePage(IPage<TodoTemplate> page, @Param("request") QueryListDto queryListDto,@Param("userId") String userId,@Param("isAdmin") boolean isAdmin);
+    IPage<TodoTemplate> selectTodoTemplatePage(IPage<TodoTemplate> page, @Param("request") QueryListDto queryListDto,@Param("userId") String userId);
 
 
     /**

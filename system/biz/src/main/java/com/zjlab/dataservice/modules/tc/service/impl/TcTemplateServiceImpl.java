@@ -42,6 +42,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -76,10 +77,10 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
         IPage<TodoTemplate> page = new Page<>(queryListDto.getPageNo(), queryListDto.getPageSize());
         String userId = UserThreadLocal.getUserId(); // 获取当前用户ID
         List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
-        boolean isAdmin = roles.contains(adminRoleId);
+//        boolean isAdmin = roles.contains(adminRoleId);
 //        boolean isZTZ = roles.contains(ztzRoleId);
 
-        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto, userId, isAdmin);
+        IPage<TodoTemplate> resultPage = baseMapper.selectTodoTemplatePage(page, queryListDto, userId);
 
         List<TodoTemplate> listRecords = resultPage.getRecords();
         if (CollectionUtils.isEmpty(listRecords)) {
@@ -100,8 +101,19 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
             }
             String filePath = TodoTemplate.getFilePath();
             templateQueryListVo.setFileCount(StringUtils.isNotBlank(filePath) ? 1 : 0);
-            templateQueryListVo.setNodeCount(0);
 
+            //todo 节点数量统计
+            Map<String, Object> attr = TodoTemplate.getTemplateAttr();
+            if (attr == null) {
+                templateQueryListVo.setNodeCount(0);
+            }
+            Object nodesObj = attr.get("nodes");
+            if (!(nodesObj instanceof List)) {
+                templateQueryListVo.setNodeCount(0);
+            }else {
+                templateQueryListVo.setNodeCount(((List<?>) nodesObj).size());
+
+            }
             return templateQueryListVo;
         }).collect(Collectors.toList());
 
@@ -350,13 +362,13 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Override
     public TemplateCountVO getCount() {
         String userId = UserThreadLocal.getUserId();
-        List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
+//        List<String> roles = sysUserRoleMapper.getRoleByUserId(userId);
         QueryWrapper<TodoTemplate> baseWrapper = new QueryWrapper<TodoTemplate>().eq("del_flag", false);
         // 如果不是管理员，按用户过滤
         // 如果用户角色ID中不包含指定管理员角色ID，则按用户过滤
-        if (!roles.contains(adminRoleId)) {
-            baseWrapper.eq("create_by", userId);
-        }
+//        if (!roles.contains(adminRoleId)) {
+//            baseWrapper.eq("create_by", userId);
+//        }
 
         long totalCount = baseMapper.selectCount(baseWrapper);
         long publishedCount = baseMapper.selectCount(baseWrapper.eq("flag", 1));

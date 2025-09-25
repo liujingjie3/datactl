@@ -92,7 +92,7 @@ public class PreplanDataServiceImpl extends ServiceImpl<PreplanDataMapper, Prepl
             return new QueryDateVo();
         }
         LocalDateTime now = LocalDateTime.now(); // 当前时间
-        List<String> existingIds = baseMapper.queryExistingSatelliteIds(now,vo.getEndTime());
+        List<String> existingIds = baseMapper.queryExistingSatelliteIds(now, vo.getEndTime());
 
         List<SatelliteStatus> predefinedSatellites = Arrays.asList(
                 new SatelliteStatus("SCS-01-01", "SCS-01-01", false),

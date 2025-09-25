@@ -36,12 +36,12 @@ public class TodoTemplateDto implements Serializable{
     private Map<String, Object> attrs;
 
 
+
     /**
      * 模板备注
      */
     @ApiModelProperty(value = "备注")
     private String remark;
-
 
 
     public Map<String, Object> getAttrs() {
