@@ -248,3 +248,8 @@ CREATE TABLE `tc_node_role_rel` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点与角色关联表（多对多）';
 ```
+
+彭老师处理的部分涉及表
+1.tc_command
+2.tc_cxtask
+3.tc_satellitepasses
