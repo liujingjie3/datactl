@@ -173,9 +173,9 @@
             tenant_id = #{tenantId,jdbcType=INTEGER},
             del_flag = #{delFlag,jdbcType=BOOLEAN},
             create_by = #{createBy},
-            create_time = #{createTime},
+            create_time = #{createTime,jdbcType=TIMESTAMP},
             update_by = #{updateBy},
-            update_time = #{updateTime},
+            update_time = #{updateTime,jdbcType=TIMESTAMP},
             ext = #{ext},
             file_path = #{filePath},
             file_path_old = #{filePathOld}

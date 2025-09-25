@@ -14,6 +14,7 @@ import com.zjlab.dataservice.common.util.oConvertUtils;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Properties;
 
@@ -164,7 +165,12 @@ public class MybatisInterceptor implements Interceptor {
 					}
 					if ("updateTime".equals(field.getName())) {
 						field.setAccessible(true);
-						field.set(parameter, new Date());
+						if (field.getType().equals(LocalDateTime.class)) {
+							field.set(parameter, LocalDateTime.now());
+						} else if (field.getType().equals(Date.class)) {
+							field.set(parameter, new Date());
+						}
+//						field.set(parameter, new Date());
 						field.setAccessible(false);
 					}
 				} catch (Exception e) {

@@ -335,12 +335,12 @@ public class TcTemplateServiceImpl extends ServiceImpl<TodoTemplateMapper, TodoT
     @Override
     public void deleteById(Long id) {
         TodoTemplate todoTemplate = todoTemplateMapper.selectTodoTemplateDetail(id);
-        LocalDateTime now = LocalDateTime.now();
+//        LocalDateTime now = LocalDateTime.now();
         String userId = UserThreadLocal.getUserId();
 
         if (Func.notNull(todoTemplate)) {
             todoTemplate.setDelFlag(true);
-            todoTemplate.setUpdateTime(now);
+            todoTemplate.setUpdateTime(LocalDateTime.now());
             todoTemplate.setUpdateBy(userId);
             log.info("before update template info: {}", todoTemplate);
             todoTemplateMapper.updateTodoTemplate(todoTemplate);
