@@ -843,6 +843,8 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
             taskWorkItemMapper.updateMyWorkItem(dto.getTaskId(), dto.getNodeInstId(), userId);
             taskWorkItemMapper.updateOtherWorkItem(dto.getTaskId(), dto.getNodeInstId(), userId);
 
+            cancelNodeTimeoutReminder(dto.getNodeInstId(), userId);
+
             String nextJson = taskNodeInstMapper.selectNextNodeIds(dto.getNodeInstId());
             List<Long> nextIds = JSON.parseArray(nextJson, Long.class);
             if (nextIds != null) {
@@ -1490,6 +1492,16 @@ public class TcTaskManagerServiceImpl implements TcTaskManagerService {
         }
         List<Long> bizIds = Collections.singletonList(taskId);
         notifyService.deleteByBiz((byte) BizTypeEnum.ORBIT_REMIND.getCode(), bizIds, operator);
+    }
+
+    private void cancelNodeTimeoutReminder(Long nodeInstId, String operator) {
+        if (nodeInstId == null || StringUtils.isBlank(operator)) {
+            return;
+        }
+        List<Long> bizIds = Collections.singletonList(nodeInstId);
+        List<Byte> expected = Collections.singletonList(NotifyJobStatusEnum.WAITING.getCode());
+        notifyService.updateStatus((byte) BizTypeEnum.NODE_TIMEOUT.getCode(),
+                bizIds, NotifyJobStatusEnum.CANCELED.getCode(), expected, operator);
     }
 
     private void putPlatformUrl(JSONObject payload) {
